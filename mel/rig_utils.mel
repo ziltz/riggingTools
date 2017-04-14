@@ -1,0 +1,69 @@
+
+
+
+/*
+
+	rig_orientBetweenTwoPoints( $obj1,  $obj2);
+
+*/
+
+global proc rig_orientBetweenTwoPoints(string $obj1, string $obj2)
+{
+
+	select -cl;
+	string $jnt1 = `joint -n "joint1Orient"`;
+	string $jnt2 = `joint -n "joint2Orient"`;
+	select -cl;
+	string $jntReturn = `joint -n "oriented_JNT"`;
+
+	delete`pointConstraint $obj1 $jnt1`;
+	delete`pointConstraint $obj2 $jnt2`;
+
+	joint -e  -oj yzx -secondaryAxisOrient zdown -zso $jnt1;
+
+	delete`orientConstraint $jnt1 $jntReturn`;
+	delete`pointConstraint $jnt1 $jnt2 $jntReturn`;
+
+	delete $jnt1 $obj1 $obj2;
+
+	makeIdentity -a 1 -r 1 "oriented_JNT";
+
+}
+
+
+global proc string rig_objOffset(string $obj)
+{
+	string $grp = `group -em -n ($obj+"Offset")`;
+	delete`parentConstraint $obj $grp`;
+	parent $obj $grp;
+
+	return $grp;
+}
+
+/*
+
+pass in object that has constraint node
+
+*/
+global proc string[] rig_returnConstrainers(string $obj)
+{
+
+	string $con[] = `listRelatives -typ "constraint" $obj`;
+	string $constrainers[] = `listAttr -ud ($con[0])`;
+	
+	string $return[] = {};
+	for ($c in $constrainers)
+	{
+		string $target = substring ($c,1,(size($c) - 2));
+		$return[size($return)] = $target;
+	}
+	
+	return $return;
+}
+
+
+global proc string rig_stringFirst(string $list[])
+{
+	return $list[0];;
+}
+

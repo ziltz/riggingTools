@@ -1,0 +1,80 @@
+
+/*
+
+aim two pistons to each other
+
+- pass in two locators with parentConstraint on each
+
+rig_makePiston("", "", "l_upperArmPiston");
+
+*/
+global proc rig_makePiston(string $obj1, string $obj2, string $name)
+{
+	// create transform setup
+	string $parentCons[] = {};
+	string $offsets[] = {};
+	string $aimLocs[] = {};
+	string $upLocs[] = {};
+	for ($o in {$obj1, $obj2})
+	{
+		// get constraint
+		string $con[] = `listRelatives -typ "constraint" $o`;
+		string $constraint = $con[0];
+
+		// get parent objects that are constraining
+		string $parents[] = rig_returnConstrainers($o);
+		string $parentCon = $parents[0];
+		print ("parentCon = "+$parentCon+"\n");
+		$parentCons[size($parentCons)] = $parentCon;
+		// delete constraint
+		delete $constraint;
+
+		// make duplicate locator;
+		string $aimLoc = rig_stringFirst(`duplicate -rr -n ($o+"Aim") $o`);
+		$aimLocs[size($aimLocs)] = $aimLoc;
+
+		// offset group
+		string $offset = rig_objOffset( $aimLoc );
+		$offsets[size($offsets)] = $offset;
+		// up locator 
+		string $upLoc = rig_stringFirst(`duplicate -n ($o+"Up") $o`);
+		parent $upLoc $offset;
+		setAttr ($upLoc+".translateX") 0;
+		setAttr ($upLoc+".translateY") 5;
+		setAttr ($upLoc+".translateZ") 0;
+		$upLocs[size($upLocs)] = $upLoc;
+		
+	}
+
+	// aimConstraints
+	int $i = 0;
+	for ($o in {$obj1, $obj2})
+	{
+		if ($i == 0)
+		{
+			aimConstraint -offset 0 0 0 -weight 1 -aimVector -1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $upLocs[$i] $aimLocs[$i] $aimLocs[1];
+		}
+		else
+		{
+			aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $upLocs[$i] $aimLocs[$i] $aimLocs[0];
+		}
+
+		$i++;
+	}
+
+	int $i = 0;
+	// constraint offset and locators to objects
+	for ($o in {$obj1, $obj2})
+	{
+
+		parentConstraint -mo $aimLocs[$i] $o;
+		parentConstraint -mo $parentCons[$i] $offsets[$i];
+		$i++;
+	}
+
+
+	string $group = `group -em -n ($name+"_GRP")`;
+	parent $offsets $obj1 $obj2 $group;
+}
+
+

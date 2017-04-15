@@ -1,6 +1,6 @@
 __author__ = 'Jerry'
 
-import glob, os
+import glob, os, platform
 
 import maya.cmds as mc
 import maya.mel as mm
@@ -15,6 +15,8 @@ def rig_utilsOpenMayaPort():
 
 
 def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):
+	if platform.system() == 'Darwin':
+		dir = '/Users/Jerry/Documents/dev/riggingTools/mel/'
 	os.chdir(dir)
 	for file in glob.glob(ext):
 		print("Sourcing "+file+" ....")

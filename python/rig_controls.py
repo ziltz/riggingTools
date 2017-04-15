@@ -132,6 +132,6 @@ class rig_control(rig_transform):
 			for i in range((len(mods)-1), 0, -1):
 				mc.parent(mods[i], mods[i-1])
 
-		self.modify = mods
+			self.modify = mods
 
-		mc.parent(mods[0], self.offset)
+			mc.parent(mods[0], self.offset)

@@ -1,0 +1,595 @@
+global proc shelf_Custom () {
+    global string $gBuffStr;
+    global string $gBuffStr0;
+    global string $gBuffStr1;
+
+
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Extrude the selected component" 
+        -enableBackground 0
+        -align "center" 
+        -label "Extrude" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polyExtrudeFacet.png" 
+        -image1 "polyExtrudeFacet.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "performPolyExtrude 0" 
+        -sourceType "mel" 
+        -doubleClickCommand "PolyExtrudeOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Select a point on an edge to start cutting the face" 
+        -enableBackground 0
+        -align "center" 
+        -label "Interactive Split Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polySplitFacet.png" 
+        -image1 "polySplitFacet.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "InteractiveSplitTool" 
+        -sourceType "mel" 
+        -doubleClickCommand "InteractiveSplitToolOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Split selected edge ring" 
+        -enableBackground 0
+        -align "center" 
+        -label "Insert Edge Loop Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polySplitEdgeRing.png" 
+        -image1 "polySplitEdgeRing.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "SplitEdgeRingTool" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Delete the selected Vertices / Edges" 
+        -enableBackground 0
+        -align "center" 
+        -label "Delete Edge/Vertex" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polyDelEdgeVertex.png" 
+        -image1 "polyDelEdgeVertex.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "performPolyDeleteElements" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Interactively select and merge vertices" 
+        -enableBackground 0
+        -align "center" 
+        -label "Merge Vertex Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polyMergeVertex.png" 
+        -image1 "polyMergeVertex.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "MergeVertexTool" 
+        -sourceType "mel" 
+        -doubleClickCommand "MergeVertexToolOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Sculpt a geometry object" 
+        -enableBackground 0
+        -align "center" 
+        -label "Sculpt Geometry Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "putty.png" 
+        -image1 "putty.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "SculptGeometryTool" 
+        -sourceType "mel" 
+        -doubleClickCommand "SculptGeometryToolOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Offset Edge Loop Tool: " 
+        -enableBackground 0
+        -align "center" 
+        -label "Offset Edge Loop Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polyDuplicateEdgeLoop.png" 
+        -image1 "polyDuplicateEdgeLoop.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "performPolyDuplicateEdge 0" 
+        -sourceType "mel" 
+        -doubleClickCommand "DuplicateEdgesOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Merge the two selected border edges, if topologically possible" 
+        -enableBackground 0
+        -align "center" 
+        -label "Merge Edge Tool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.25 
+        -image "polyMergeEdge.png" 
+        -image1 "polyMergeEdge.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "MergeEdgeTool" 
+        -sourceType "mel" 
+        -doubleClickCommand "MergeEdgeToolOptions" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "SculptGeometryTool" 
+        -enableBackground 0
+        -align "center" 
+        -label "SculptGeometryTool" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "SCULPT" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "commandButton.png" 
+        -image1 "commandButton.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "SculptGeometryTool" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 37
+        -height 37
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "dockControl -area top -content scriptEditorPanel1Window scriptEditorWin;" 
+        -enableBackground 0
+        -align "center" 
+        -label "dockControl -area top -content scriptEditorPanel1Window scriptEd..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "SCRIPTDOCK" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "scriptEdPersp.png" 
+        -image1 "scriptEdPersp.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "dockControl -area top -content scriptEditorPanel1Window scriptEditorWin;" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Charcoal Editor" 
+        -enableBackground 0
+        -align "center" 
+        -label "Charcoal Editor" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "CE" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "menuIconWindow.png" 
+        -image1 "menuIconWindow.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "charcoalEditor" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "import sys\nsys.path.append(\"C:/dev.riggingTools\")" 
+        -enableBackground 0
+        -align "center" 
+        -label "import sys\nsys.path.append(\"C:/dev.riggingTools\")" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "RIGTOOLS" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "rigidBind.png" 
+        -image1 "rigidBind.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "import sys\n\nimport maya.cmds as mc\nimport pymel.core as pm\nimport maya.mel as mm\n\nimport rig_utils as util\n\nsys.path.append(\"C:/dev/riggingTools/python\")\nutil.rig_sourceMelFiles()\n\n" 
+        -sourceType "python" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "string $sel[] = `ls -sl`;\ndelete`parentConstraint $sel[0] $sel[1]`;" 
+        -enableBackground 0
+        -align "center" 
+        -label "string $sel[] = `ls -sl`;\ndelete`parentConstraint $sel[0] $sel[1..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "MPARENT" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "move_M.png" 
+        -image1 "move_M.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "string $sel[] = `ls -sl`;\nstring $parents[] = {};\nfor ($i=0; $i < size($sel)-1;$i++)\n{\n    $parents[size($parents)] = $sel[$i];\n\tprint ($sel[$i]+\"\\n\");\n}\t\ndelete`parentConstraint $parents $sel[size($sel)-1]`;" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 23
+        -height 23
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "string $sel[] = `ls -sl`;\ndelete`pointConstraint $sel[0] $sel[1]`;" 
+        -enableBackground 0
+        -align "center" 
+        -label "string $sel[] = `ls -sl`;\ndelete`pointConstraint $sel[0] $sel[1]..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "MPOINT" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "moveSewUV.png" 
+        -image1 "moveSewUV.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "string $sel[] = `ls -sl`;\nstring $parents[] = {};\nfor ($i=0; $i < size($sel)-1;$i++)\n{\n    $parents[size($parents)] = $sel[$i];\n\tprint ($sel[$i]+\"\\n\");\n}\t\ndelete`pointConstraint $parents $sel[size($sel)-1]`;" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "delete`listRelatives -typ \"constraint\"`;" 
+        -enableBackground 0
+        -align "center" 
+        -label "delete`listRelatives -typ \"constraint\"`;" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "DELCONSTRAINT" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "deletePoint.png" 
+        -image1 "deletePoint.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "delete`listRelatives -typ \"constraint\"`;" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "mc.makeIdentity( 'r_clavicleJA_JNT', a=1, r=1 )" 
+        -enableBackground 0
+        -align "center" 
+        -label "mc.makeIdentity( 'r_clavicleJA_JNT', a=1, r=1 )" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "FIX-NON-ZEROROTATIONS" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "orientJoint.png" 
+        -image1 "orientJoint.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "\nmc.makeIdentity( mc.ls(sl=True)[0], a=1, r=1 )" 
+        -sourceType "python" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "string $sel[] = `ls -sl`;\nstring $grp = `group -em -n ($sel[0]+\"Offset\")`;\ndelete`parentConstraint $sel[0] $grp`;\nparent $sel[0] $grp;" 
+        -enableBackground 0
+        -align "center" 
+        -label "string $sel[] = `ls -sl`;\nstring $grp = `group -em -n ($sel[0]+\"..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "OFFSETGROUP" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "group.png" 
+        -image1 "group.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "string $sel[] = `ls -sl`;\nfor ($s in $sel)\n{\n\tstring $grp = `group -em -n ($s+\"Offset\")`;\n\tdelete`parentConstraint $s $grp`;\n\tparent $s $grp;\n}\n" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "string $list[] = `ls -sl`;\nselect -cl;\nstring $jnt1 = `joint -n \"joint1Orient\"`;\nstring $jnt2 = `joint -n \"joint2Orient\"`;\nselect -cl;\nstring $jntReturn = `joint -n \"oriented_JNT\"`;\n\ndelete`pointConstraint $list[0] $jnt1`;\ndelete`pointConstraint $list[1] $jnt2`;\n\njoint -e  -oj yzx -secondaryAxisOrient zdown -zso $jnt1;\n\ndelete`orientConstraint $jnt1 $jntReturn`;\ndelete`pointConstraint $jnt1 $jnt2 $jntReturn`;\n\ndelete $jnt1 $list;\n" 
+        -enableBackground 0
+        -align "center" 
+        -label "string $list[] = `ls -sl`;\nselect -cl;\nstring $jnt1 = `joint -n ..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "ONEAXISORIENT" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "orientJoint.png" 
+        -image1 "orientJoint.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "string $list[] = `ls -sl`;\nselect -cl;\nstring $jnt1 = `joint -n \"joint1Orient\"`;\nstring $jnt2 = `joint -n \"joint2Orient\"`;\nselect -cl;\nstring $jntReturn = `joint -n \"oriented_JNT\"`;\n\ndelete`pointConstraint $list[0] $jnt1`;\ndelete`pointConstraint $list[1] $jnt2`;\n\njoint -e  -oj yzx -secondaryAxisOrient zdown -zso $jnt1;\n\ndelete`orientConstraint $jnt1 $jntReturn`;\ndelete`pointConstraint $jnt1 $jnt2 $jntReturn`;\n\ndelete $jnt1 $list;\n\nmakeIdentity -a 1 -r 1 $jntReturn;\n" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "string $sel[] = `ls -sl`;\nfor ($s in $sel)\n{\n\tstring $loc = rig_stringFirst(`spaceLocator`);\n\tdelete`parentConstraint $s $loc`;\n}" 
+        -enableBackground 0
+        -align "center" 
+        -label "string $sel[] = `ls -sl`;\nfor ($s in $sel)\n{\n\tstring $loc = rig_..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "LOCATOR" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "locator.png" 
+        -image1 "locator.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "string $sel[] = `ls -sl`;\nfor ($s in $sel)\n{\n\tstring $loc = rig_stringFirst(`spaceLocator`);\n\tdelete`parentConstraint $s $loc`;\n}" 
+        -sourceType "mel" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+
+} 

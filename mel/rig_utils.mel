@@ -47,16 +47,25 @@ pass in object that has constraint node
 */
 global proc string[] rig_returnConstrainers(string $obj)
 {
-
 	string $con[] = `listRelatives -typ "constraint" $obj`;
-	string $constrainers[] = `listAttr -ud ($con[0])`;
-	
+
 	string $return[] = {};
-	for ($c in $constrainers)
+	if (size($con) > 0)
 	{
-		string $target = substring ($c,1,(size($c) - 2));
-		$return[size($return)] = $target;
+		string $constrainers[] = `listAttr -ud ($con[0])`;
+		
+		for ($c in $constrainers)
+		{
+			string $target = substring ($c,1,(size($c) - 2));
+			$return[size($return)] = $target;
+		}
 	}
+	else{
+
+		warning ("No constrainers found."+"\n");
+
+	}
+
 	
 	return $return;
 }
@@ -67,3 +76,21 @@ global proc string rig_stringFirst(string $list[])
 	return $list[0];;
 }
 
+
+global proc string[] rig_stringToken(string $string, string $key)
+{
+	string $buffer[] = {};
+	$numTokens = `tokenize $string $key $buffer`;
+
+	for ($b in $buffer)
+	    print ($b+"\n");
+
+	return $buffer;
+}
+
+global proc string rig_nameGetSide(string $name)
+{
+	
+	return rig_stringFirst(rig_stringToken($name, "_"));
+
+}

@@ -5,7 +5,9 @@ aim two pistons to each other
 
 - pass in two locators with parentConstraint on each
 
-rig_makePiston("", "", "l_upperArmPiston");
+string $sel[] = `ls -sl`;
+rig_makePiston($sel[0], $sel[1], "l_upperArmPiston");
+
 
 */
 global proc rig_makePiston(string $obj1, string $obj2, string $name)
@@ -23,6 +25,8 @@ global proc rig_makePiston(string $obj1, string $obj2, string $name)
 
 		// get parent objects that are constraining
 		string $parents[] = rig_returnConstrainers($o);
+		if (size($parents) == 0)
+			error ("Please constrain objects to know parent constrainer.");
 		string $parentCon = $parents[0];
 		print ("parentCon = "+$parentCon+"\n");
 		$parentCons[size($parentCons)] = $parentCon;
@@ -78,3 +82,39 @@ global proc rig_makePiston(string $obj1, string $obj2, string $name)
 }
 
 
+global proc rig_makePistonMirror(string $obj1, string $obj2)
+{
+	string $side = rig_nameGetSide($obj1);
+
+	string $otherSide = "";
+	if ($side == "l")
+		$otherSide = "r";
+	else
+		$otherSide = "l";
+	
+	string $locators[] = {};
+	for ($o in {$obj1, $obj2})
+	{
+		string $tokens[] = rig_stringToken($o, "_");
+		string $name = $otherSide;
+		for ($i = 1; $i < size($tokens) ; $i++)
+			$name += ("_"+$tokens[$i]);
+		string $loc = rig_stringFirst(`spaceLocator -n $name`);
+		delete`parentConstraint $o $loc`;
+		$locators[size($locators)] = $loc;
+	}
+
+	string $grp = `group -em`;
+	parent $locators $grp;
+	setAttr ($grp+".sx") -1; 
+	parent -w $locators;
+
+	for ($at in {"sx", "sy","sz"})
+	{
+		setAttr ($locators[0]+"."+$at) 1 ;
+		setAttr ($locators[1]+"."+$at) 1 ;
+	}
+
+	delete $grp;
+
+}

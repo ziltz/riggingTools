@@ -1,137 +1,109 @@
 __author__ = 'Jerry'
 
 
-
+import sys
 import maya.cmds as mc
 import pymel.core as pm
 
-
-
-def defaultReturn(defaultVar, userVar, param):
-	if param.get(userVar) == None:
-		return defaultVar
-	else:
-		return param.get(userVar)
-
-class rig_object(object):
-
-	def __init__(self, object, **kwds):
-		self.object = object
-		try:
-			self.type = pm.nodeType(object)
-		except RuntimeError:
-			print "Unknown Object"
-
-	def getType(self):
-		self.type = pm.nodeType(self.object)
-		print "objectType = "+self.type+"\n"
-		return self.type
-
-
-class rig_transform(rig_object):
-	def __init__(self, object, **kwds):
-		self.name = defaultReturn('rig_transform_GRP','name', param=kwds)
-		if mc.objExists(object):
-			self.object = object
-		else:
-			self.object =  mc.group(em=True, n=self.name)
-		self.targetObj = defaultReturn('','targetObj', param=kwds)
-		self.parent = defaultReturn('','parent', param=kwds)
-		self.translate = (0,0,0)
-		self.rotation = (0,0,0)
-		self.scale = (1,1,1)
-
-		if mc.objExists(self.targetObj):
-			self.moveTo()
-
-		if mc.objExists(self.parent):
-			mc.parent(self.object, self.parent)
-
-		super(rig_transform, self).__init__(self.object, **kwds)
-
-	def setTranslate(self, translate):
-		self.translate = translate
-		mc.setAttr(self.object  +".translateX", self.translate[0])
-		mc.setAttr(self.object + ".translateY", self.translate[1])
-		mc.setAttr(self.object + ".translateZ", self.translate[2])
-
-	def setRotation (self, rotation):
-		self.rotation = rotation
-		mc.setAttr( ( "%s" +".rotateX") % self.object, self.rotation[0])
-		mc.setAttr(self.object + ".rotateY", self.rotation[1])
-		mc.setAttr(self.object + ".rotateZ", self.rotation[2])
-
-	def setScale (self, scale):
-		self.scale = scale
-		mc.setAttr(self.object+".scaleX", self.scale[0])
-		mc.setAttr(self.object + ".scaleY", self.scale[1])
-		mc.setAttr(self.object + ".scaleZ", self.scale[2])
-
-	def getTranslate(self):
-		self.translate = mc.getAttr(self.object+".translate")[0]
-		return self.translate
-
-	def getRotation (self):
-		self.rotation = mc.getAttr(self.object + ".rotate")[0]
-		return self.rotation
-
-	def getScale (self):
-		self.scale = mc.getAttr(self.object + ".scale")[0]
-		return self.scale
-
-	def moveTo(self):
-		if mc.objExists(self.targetObj):
-			mc.delete(mc.parentConstraint(self.targetObj, self.object))
-		else:
-			mc.warning(self.targetObj+" doesn't exist")
-
-	def group(self, origin=0, name='rig_transformOffset_GRP'):
-		null = mc.group(em=True, n=name)
-		if origin == 0:
-			mc.delete(mc.parentConstraint(self.object, null))
-		mc.parent(self.object, null)
-		return null
+from rig_utils import defaultReturn, defaultAppendReturn
+from rig_transform import rig_transform
+reload(sys.modules['rig_transform'])
+from rig_transform import rig_transform
 
 class rig_control(rig_transform):
 
 	def __init__(self, **kwds):
-		self.name = defaultReturn('rig_CTRL','name', param=kwds)
-		self.lockHideAttrs = defaultReturn(['sx','sy','sz','v'],'lockHideAttrs', param=kwds)
+		self.name = defaultReturn('rigControl','name', param=kwds)
+		self.lockHideAttrs = defaultAppendReturn(['sx','sy','sz','v'],'lockHideAttrs', param=kwds)
 		self.showAttrs = defaultReturn([],'showAttrs', param=kwds)
-		self.gimbal = 0
-		self.pivot = 0
-		self.con = ''
-		self.offset = ''
+		self.gimbal = defaultReturn(0,'gimbal', param=kwds)
+		self.pivot = defaultReturn(1,'pivot', param=kwds)
+		self.con = defaultReturn(1,'con', param=kwds)
+		self.offset = defaultReturn(1,'offset', param=kwds)
 		self.modify = defaultReturn(0,'modify', param=kwds)
-		self.shape = 'circle'
-		self.targetObj = defaultReturn('','targetObj', param=kwds)
-		self.object = mc.circle(name = self.name)[0]
+		self.shape = defaultReturn('circle','shape', param=kwds)
+		self.parentOffset = defaultReturn('','parentOffset', param=kwds)
+		self.targetOffset = defaultReturn('','targetOffset', param=kwds)
+		self.object = pm.PyNode(mc.circle(name = self.name+'_CTRL')[0])
+		self.parent = ''
 
-		self.setDefaultSettings()
+		self.constrain = defaultReturn(0,'constrain', param=kwds)
+		self.offsetConstrain = defaultReturn('','constrainOffset', param=kwds)
 
-		super(rig_control, self).__init__(self.offset,**kwds)
+		self._setDefaultSettings()
 
+		super(rig_control, self).__init__(self.object, parent=self.parent ,**kwds)
 
-	def setDefaultSettings(self):
-		for attr in self.lockHideAttrs:
-			mc.setAttr(self.object+"."+attr, lock=True, keyable=False, channelBox=False)
+		if pm.objExists(self.offsetConstrain):
+			pm.parentConstraint(self.offsetConstrain, self.offset, mo=True)
 
-		for attr in self.showAttrs:
-			mc.setAttr(self.object + "." + attr, lock=False, keyable=True, channelBox=True)
+		if self.constrain:
+			constrainList = self.constrain
+			if type(self.constrain) == str:
+				constrainList = [self.constrain]
+			for con in constrainList:
+				pm.parentConstraint( self.con, con, mo=True )
 
-		self.con = rig_transform(0, name=self.name.replace('_CTRL', 'Con_GRP'), parent=self.object ).object
+	def _setDefaultSettings(self):
 
-		self.offset = rig_transform(0, name=self.name.replace('_CTRL', 'Offset_GRP') ).object
-		mc.parent(self.object, self.offset)
+		if self.con > 0:
+			self.con = rig_transform(0, name=self.name+'Con', parent=self.object ).object
+
+		if self.offset > 0:
+			self.offset = rig_transform(0, name=self.name+'Offset', parent=self.parentOffset, target=self.targetOffset, child=self.object ).object
+			self.parent = self.offset
+			print 'Created offset group 1 '+self.offset
 
 		mods = []
 		if self.modify > 0:
+			modParent = ''
 			for i in range(1, self.modify+1):
-				mods.append(rig_transform(self.object).group(origin=1, name=self.name.replace('_CTRL', 'Modify'+str(i)+'_GRP') ))
+				modParent = rig_transform(0, name=self.name+'Modify'+str(i),target=self.offset, parent=modParent).object
+				mods.append(modParent)
 
-			for i in range((len(mods)-1), 0, -1):
-				mc.parent(mods[i], mods[i-1])
+			if len(mods) == 1:
+				self.modify = mods[0]
+			else:
+				self.modify = mods
 
-			self.modify = mods
+			pm.parent(mods[0], self.offset)
 
-			mc.parent(mods[0], self.offset)
+			lastMod = mods[-1:][0]
+			self.parent = lastMod
+
+
+		if self.pivot > 0:
+			pivot = rig_control(name=self.name+'Pivot', parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, lockHideAttrs=['rx','ry','rz'] )
+			print 'Created offset group 3 ' + self.offset
+			self.pivot = pivot.object
+			pm.connectAttr(  self.pivot.translate, self.object.rotatePivot, f=True)
+			pm.connectAttr(  self.pivot.scale, self.object.scalePivot, f=True)
+			pm.addAttr(self.object, longName='pivotVis', type='long', k=False)
+			self.object.pivotVis.set(cb=True)
+			print 'offset group = '+str(pivot.offset)
+			pm.connectAttr( self.object.pivotVis,  pivot.offset.visibility )
+
+		if self.gimbal > 0:
+			gimbal = rig_control( name=self.name+"Gimbal", parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, child=self.con )
+			self.gimbal = gimbal.object
+			pm.addAttr(self.object, longName='gimbalVis', type='long', k=False)
+			self.object.gimbalVis.set(cb=True)
+			pm.connectAttr(self.object.gimbalVis, gimbal.offset.visibility)
+
+		for at in self.lockHideAttrs:
+			self.object.attr(at).setKeyable(False)
+			self.object.attr(at).setLocked(True)
+
+		for at in self.showAttrs:
+			self.object.attr(at).setKeyable(True)
+			self.object.attr(at).setLocked(False)
+
+
+	def constrainModify(self, multipleConstraint=[]):
+		pm.parentConstraint(multipleConstraint, self.modify[0], mo=True)
+
+
+
+
+
+

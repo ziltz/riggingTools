@@ -22,3 +22,19 @@ def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):
 		print("Sourcing "+file+" ....")
 		mm.eval('source "'+dir+file+'";')
 
+
+def defaultReturn(defaultVar, userVar, param):
+	if param.get(userVar) == None:
+		return defaultVar
+	else:
+		return param.get(userVar)
+
+def defaultAppendReturn(defaultVar, userVar, param):
+	if param.get(userVar) == None:
+		return defaultVar
+	else:
+		var = param.get(userVar)
+		if type(var) == str:
+			var = [var]
+		list = defaultVar + var
+		return list

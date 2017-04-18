@@ -98,9 +98,70 @@ class rig_control(rig_transform):
 			self.object.attr(at).setKeyable(True)
 			self.object.attr(at).setLocked(False)
 
+'''
 
-	def constrainModify(self, multipleConstraint=[]):
-		pm.parentConstraint(multipleConstraint, self.modify[0], mo=True)
+if multiple objects passed in to constrain then add space switch
+if not just normal constrain
+
+# constrain single
+constrainObject('l_armOffset_GRP', 'target1_GRP')
+constrainObject('l_armOffset_GRP', 'target1_GRP', mo=False)
+
+# constrain multiple
+constrainObject('l_armOffset_GRP', ['target1_GRP', 'target2_GRP','target3_GRP', 'target4_GRP'], 'l_arm_CTRL',  ['world', 'local', 'target', 'spacing'])
+
+'''
+def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
+
+	maintainOffset = defaultReturn(True,'mo', param=kwds)
+
+	doSpace = 1
+	if type(multipleConstrainer) is str:
+		doSpace = 0
+
+	obj = pm.PyNode(obj)
+
+	if pm.objExists(obj):
+		try:
+			con = pm.parentConstraint(multipleConstrainer, obj, mo=maintainOffset)
+
+			if doSpace:
+				ctrl = pm.PyNode(ctrl)
+				if len(multipleConstrainer) is len(enumName):
+					targets = con.getWeightAliasList()
+
+					enumList = enumName[0]
+					for i in range (1, len(enumName)):
+						enumList += ':'+enumName[i]
+
+					if not ctrl.hasAttr('space'):
+						pm.addAttr(ctrl, ln='space', at='enum', enumName=enumList, k=True)
+
+					valueDict = {}
+					for t in targets:
+						list = []
+						for ta in targets:
+							if ta is t:
+								print 'target 1 '+ta
+								list.append(1)
+								valueDict[t] = list
+							else:
+								print 'target 0 '+ta
+								list.append(0)
+								valueDict[t] = list
+
+					for v in valueDict:
+						for i in range (0,len(valueDict)):
+							pm.setDrivenKeyframe( v, cd=ctrl.space, dv=i, v=(valueDict[v])[i])
+
+				else:
+					pm.error(' Unequal amount of constrainer to enum names ')
+
+		except pm.MayaNodeError:
+			for m in multipleConstrainer:
+				print m + ' does not exist'+'\n'
+	else:
+		print obj+' does not exist'+'\n'
 
 
 

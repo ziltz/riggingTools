@@ -8,6 +8,8 @@ aim two pistons to each other
 string $sel[] = `ls -sl`;
 rig_makePiston($sel[0], $sel[1], "l_upperArmPiston");
 
+// mirror piston group
+rig_makePistonMirror("r_upperArmPiston_GRP");
 
 */
 global proc rig_makePiston(string $obj1, string $obj2, string $name)
@@ -82,15 +84,41 @@ global proc rig_makePiston(string $obj1, string $obj2, string $name)
 }
 
 
-global proc rig_makePistonMirror(string $obj1, string $obj2)
+global proc rig_makePistonMirror(string $pistonGrp)
 {
-	string $side = rig_nameGetSide($obj1);
+	string $transforms[] = `listRelatives -typ "transform" $pistonGrp`;
+
+	string $side = rig_nameGetSide($pistonGrp);
 
 	string $otherSide = "";
 	if ($side == "l")
 		$otherSide = "r";
 	else
 		$otherSide = "l";
+
+	// find locs in group
+	string $locs[] = {};
+	string $constrainer[] = {};
+	for ($l in $transforms)
+	{
+	    if (`gmatch $l "*_LOC"`)
+			$locs[size($locs)] = $l;
+		if (`gmatch $l "*Offset"`)
+		{
+			string $driver = rig_stringFirst(rig_returnConstrainers($l));
+			string $tokens[] = rig_stringToken( $driver, "_" );
+			string $driverName = $otherSide;
+			for ($i = 1; $i < size($tokens) ; $i++)
+			{
+				$driverName += ("_"+$tokens[$i]);
+			}
+			
+			$constrainer[size($constrainer)] = $driverName;
+		}
+	}
+
+	string $obj1 = $locs[0];
+	string $obj2 = $locs[1];
 	
 	string $locators[] = {};
 	for ($o in {$obj1, $obj2})
@@ -99,6 +127,9 @@ global proc rig_makePistonMirror(string $obj1, string $obj2)
 		string $name = $otherSide;
 		for ($i = 1; $i < size($tokens) ; $i++)
 			$name += ("_"+$tokens[$i]);
+
+		if (`objExists $name`)
+			error ($name+ " already exists... Check conflicting naming");
 		string $loc = rig_stringFirst(`spaceLocator -n $name`);
 		delete`parentConstraint $o $loc`;
 		$locators[size($locators)] = $loc;
@@ -116,5 +147,11 @@ global proc rig_makePistonMirror(string $obj1, string $obj2)
 	}
 
 	delete $grp;
+
+
+	parentConstraint -mo $constrainer[0] $locators[0];
+	parentConstraint -mo $constrainer[1] $locators[1];
+	string $name = `substitute "_GRP" $pistonGrp ""`;
+	rig_makePiston($locators[0], $locators[1], $name);
 
 }

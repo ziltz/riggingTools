@@ -17,7 +17,7 @@ class rig_control(rig_transform):
 		self.lockHideAttrs = defaultAppendReturn(['sx','sy','sz','v'],'lockHideAttrs', param=kwds)
 		self.showAttrs = defaultReturn([],'showAttrs', param=kwds)
 		self.gimbal = defaultReturn(0,'gimbal', param=kwds)
-		self.pivot = defaultReturn(1,'pivot', param=kwds)
+		self.pivot = defaultReturn(0,'pivot', param=kwds)
 		self.con = defaultReturn(1,'con', param=kwds)
 		self.offset = defaultReturn(1,'offset', param=kwds)
 		self.modify = defaultReturn(0,'modify', param=kwds)

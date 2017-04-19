@@ -35,7 +35,7 @@ class rig_transform(rig_object):
 			pm.parent(self.object, offset)
 			pm.delete(pm.parentConstraint(self.target, offset))
 
-		try :#:
+		try :
 			print self.object +' parent to '+self.parent+'\n'
 			pm.parent(self.object, self.parent)
 		except:
@@ -62,13 +62,19 @@ class rig_transform(rig_object):
 				if t is _type:
 					obj = (typeDict[_type])[0]
 				else:
-					mc.delete( (typeDict[t])[0] )
+					try:
+						mc.delete( (typeDict[t])[0] )
+					except:
+						pm.warning(typeDict[t][0]+' does not exist')
 
 		except KeyError:
 			print 'No such type object in dictionary, making default group'
 			for t in typeDict:
 				if t is not 'group':
-					mc.delete( (typeDict[t])[0] )
+					try:
+						mc.delete( (typeDict[t])[0] )
+					except:
+						pm.warning(typeDict[t][0]+' does not exist')
 
 		return pm.PyNode(obj)
 

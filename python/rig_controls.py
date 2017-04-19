@@ -142,13 +142,10 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 						list = []
 						for ta in targets:
 							if ta is t:
-								print 'target 1 '+ta
 								list.append(1)
-								valueDict[t] = list
 							else:
-								print 'target 0 '+ta
 								list.append(0)
-								valueDict[t] = list
+						valueDict[t] = list
 
 					for v in valueDict:
 						for i in range (0,len(valueDict)):

@@ -49,6 +49,14 @@ global proc rig_makePiston(string $obj1, string $obj2, string $name)
 		setAttr ($upLoc+".translateY") 5;
 		setAttr ($upLoc+".translateZ") 0;
 		$upLocs[size($upLocs)] = $upLoc;
+
+		// create joints under locator
+		string $jntName = `substitute "_LOC" $o "_JNT"`;
+		select -cl;
+		string $jnt = `joint -n $jntName`;
+		delete`parentConstraint $o $jnt`;
+		makeIdentity -a 1 -r 1 $jnt;
+		parent $jnt $o;
 		
 	}
 
@@ -96,6 +104,9 @@ global proc rig_makePistonMirror(string $pistonGrp)
 	else
 		$otherSide = "l";
 
+	string $grpName = `substitute ($side+"_") $pistonGrp ($otherSide+"_")`;
+	$grpName = `substitute ("_GRP") $grpName ("")`;
+
 	// find locs in group
 	string $locs[] = {};
 	string $constrainer[] = {};
@@ -105,14 +116,22 @@ global proc rig_makePistonMirror(string $pistonGrp)
 			$locs[size($locs)] = $l;
 		if (`gmatch $l "*Offset"`)
 		{
+			print ("offset = "+$l+"\n");
 			string $driver = rig_stringFirst(rig_returnConstrainers($l));
-			string $tokens[] = rig_stringToken( $driver, "_" );
+			string $side = rig_nameGetSide($driver);
 			string $driverName = $otherSide;
-			for ($i = 1; $i < size($tokens) ; $i++)
-			{
-				$driverName += ("_"+$tokens[$i]);
+			if ($side == "")
+				$driverName = $driver;
+			else{
+				string $tokens[] = rig_stringToken( $driver, "_" );
+				//$driverName = $otherSide;
+				for ($i = 1; $i < size($tokens) ; $i++)
+				{
+					$driverName += ("_"+$tokens[$i]);
+				}
 			}
-			
+			print ("driver = "+$driver+"\n");
+			print ("driverName = "+$driverName+"\n");
 			$constrainer[size($constrainer)] = $driverName;
 		}
 	}
@@ -148,10 +167,8 @@ global proc rig_makePistonMirror(string $pistonGrp)
 
 	delete $grp;
 
-
 	parentConstraint -mo $constrainer[0] $locators[0];
 	parentConstraint -mo $constrainer[1] $locators[1];
-	string $name = `substitute "_GRP" $pistonGrp ""`;
-	rig_makePiston($locators[0], $locators[1], $name);
+	rig_makePiston($locators[0], $locators[1], $grpName);
 
 }

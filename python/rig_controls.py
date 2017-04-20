@@ -3,6 +3,7 @@ __author__ = 'Jerry'
 
 import sys
 import maya.cmds as mc
+import maya.mel as mm
 import pymel.core as pm
 
 from rig_utils import defaultReturn, defaultAppendReturn
@@ -10,6 +11,11 @@ from rig_transform import rig_transform
 reload(sys.modules['rig_transform'])
 from rig_transform import rig_transform
 
+'''
+
+shapes: pointer, pyramid, circle, arrows
+
+'''
 class rig_control(rig_transform):
 
 	def __init__(self, **kwds):
@@ -24,7 +30,8 @@ class rig_control(rig_transform):
 		self.shape = defaultReturn('circle','shape', param=kwds)
 		self.parentOffset = defaultReturn('','parentOffset', param=kwds)
 		self.targetOffset = defaultReturn('','targetOffset', param=kwds)
-		self.object = pm.PyNode(mc.circle(name = self.name+'_CTRL')[0])
+		#self.object = pm.PyNode(mc.circle(name = self.name+'_CTRL', ch=False, nr=[ 0, 1, 0])[0])
+		self.object = self._returnShape(self.shape)
 		self.parent = ''
 
 		self.constrain = defaultReturn(0,'constrain', param=kwds)
@@ -73,22 +80,18 @@ class rig_control(rig_transform):
 
 
 		if self.pivot > 0:
-			pivot = rig_control(name=self.name+'Pivot', parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, lockHideAttrs=['rx','ry','rz'] )
-			print 'Created offset group 3 ' + self.offset
-			self.pivot = pivot.object
+			self.pivot = rig_control(name=self.name+'Pivot', parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, lockHideAttrs=['rx','ry','rz'] ).object
 			pm.connectAttr(  self.pivot.translate, self.object.rotatePivot, f=True)
 			pm.connectAttr(  self.pivot.scale, self.object.scalePivot, f=True)
-			pm.addAttr(self.object, longName='pivotVis', type='long', k=False)
+			pm.addAttr(self.object, longName='pivotVis', at='long', k=False, min=0, max=1)
 			self.object.pivotVis.set(cb=True)
-			print 'offset group = '+str(pivot.offset)
-			pm.connectAttr( self.object.pivotVis,  pivot.offset.visibility )
+			pm.connectAttr( self.object.pivotVis,  self.pivot.getShape().visibility )
 
 		if self.gimbal > 0:
-			gimbal = rig_control( name=self.name+"Gimbal", parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, child=self.con )
-			self.gimbal = gimbal.object
-			pm.addAttr(self.object, longName='gimbalVis', type='long', k=False)
+			self.gimbal = rig_control( name=self.name+"Gimbal", parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, child=self.con ).object
+			pm.addAttr(self.object, longName='gimbalVis', at='long', k=False, min=0, max=1)
 			self.object.gimbalVis.set(cb=True)
-			pm.connectAttr(self.object.gimbalVis, gimbal.offset.visibility)
+			pm.connectAttr(self.object.gimbalVis, self.gimbal.getShape().visibility)
 
 		for at in self.lockHideAttrs:
 			self.object.attr(at).setKeyable(False)
@@ -97,6 +100,63 @@ class rig_control(rig_transform):
 		for at in self.showAttrs:
 			self.object.attr(at).setKeyable(True)
 			self.object.attr(at).setLocked(False)
+
+
+
+
+	def _returnShape(self, shape):
+		func = getattr(self, shape)
+		return pm.PyNode(func())
+
+	def pointer(self):
+		ctrl = mc.curve(n=self.name+'_CTRL', d=1,
+		                  p=[(0, 0, 1), (0, 0, -1), (0, 2, 0), (0, -2, 0), (0, 0, -1), (2, 0, 0), (-2, 0, 0),
+		                     (0, 0, -1)], k=[0, 1, 2, 3, 4, 5, 6, 7])
+		#mc.rotate(0, -90, 0, r=True, os=True)
+		mc.setAttr(ctrl+'.scaleZ', 5)
+		mc.makeIdentity(ctrl, apply=True, t=1, r=1, s=1, n=0)
+		return ctrl
+
+	def circle(self):
+		return mc.circle(name=self.name + '_CTRL', ch=False, nr=[0, 1, 0])[0]
+
+	def pyramid(self):
+		ctrl = mc.curve(n=self.name + '_CTRL', d=1,
+		                  p=[(0, 2, 0), (1, 0, -1), (-1, 0, -1), (0, 2, 0), (-1, 0, 1), (1, 0, 1), (0, 2, 0),
+		                     (1, 0, -1), (1, 0, 1), (-1, 0, 1),
+		                     (-1, 0, -1)], k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+		mc.makeIdentity(ctrl,apply=True, t=1, r=1, s=1, n=0)
+		return ctrl
+
+	def arrows(self):
+		ctrl = mc.curve(n= self.name+"_CTRL", d=1,
+		                        p=[(-1.8975, 0, 0), (-1.4025, 0, 0.37125), (-1.4025, 0, 0.12375), (-0.380966, 0, 0.157801),
+		                           (-1.079222, 0, 0.904213), (-1.254231, 0, 0.729204), (-1.341735, 0, 1.341735),
+		                           (-0.729204, 0, 1.254231), (-0.904213, 0, 1.079222), (-0.157801, 0, 0.380966),
+		                           (-0.12375, 0, 1.4025), (-0.37125, 0, 1.4025), (0, 0, 1.8975), (0.37125, 0, 1.4025),
+		                           (0.12375, 0, 1.4025), (0.157801, 0, 0.380966), (0.904213, 0, 1.079222),
+		                           (0.729204, 0, 1.254231), (1.341735, 0, 1.341735), (1.254231, 0, 0.729204),
+		                           (1.079222, 0, 0.904213), (0.380966, 0, 0.157801), (1.4025, 0, 0.12375),
+		                           (1.4025, 0, 0.37125), (1.8975, 0, 0), (1.4025, 0, -0.37125), (1.4025, 0, -0.12375),
+		                           (0.380966, 0, -0.157801), (1.079222, 0, -0.904213), (1.254231, 0, -0.729204),
+		                           (1.341735, 0, -1.341735), (0.729204, 0, -1.254231), (0.904213, 0, -1.079222),
+		                           (0.157801, 0, -0.380966), (0.12375, 0, -1.4025), (0.37125, 0, -1.4025), (0, 0, -1.8975),
+		                           (-0.37125, 0, -1.4025), (-0.12375, 0, -1.4025), (-0.157801, 0, -0.380966),
+		                           (-0.904213, 0, -1.079222), (-0.729204, 0, -1.254231), (-1.341735, 0, -1.341735),
+		                           (-1.254231, 0, -0.729204), (-1.079222, 0, -0.904213), (-0.380966, 0, -0.157801),
+		                           (-1.4025, 0, -0.12375), (-1.4025, 0, -0.37125), (-1.8975, 0, 0)],
+		                        k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+		                           25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+		                           47, 48])
+		mc.makeIdentity(ctrl,apply=True, t=1, r=1, s=1, n=0)
+		return ctrl
+
+	def box(self):
+
+		ctrlName = self.name+'_CTRL'
+		ctrl = mm.eval('curve -n ' + ctrlName + ' -d 1 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p 0.5 -0.5 0.5 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 ;')
+		return ctrl
 
 '''
 

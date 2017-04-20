@@ -50,9 +50,12 @@ class rig_transform(rig_object):
 		super(rig_transform, self).__init__(self.object, **kwds)
 
 	def _createTransform(self, _type):
+		mc.select(cl=True)
+
 		typeDict = {
 			'group' : (mc.group(em=True, n=self.name+"_GRP"), "GRP" ) ,
-			'locator' : ( mc.spaceLocator( n=self.name+"_LOC" )[0], "LOC" )
+			'locator' : ( mc.spaceLocator( n=self.name+"_LOC" )[0], "LOC" ),
+			'joint': ( mc.joint(n=self.name + "_JNT"), "JNT" )
 		}
 
 		obj = (typeDict['group'])[0]

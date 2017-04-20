@@ -58,7 +58,10 @@ def rig_skinClusterTransforms(group=None):
 		try:
 			skinCluster = pm.PyNode(mm.eval('findRelatedSkinCluster "' + g + '";'))
 			if skinCluster.exists:
+				print 'Found skinCluster on '+ g
 				pm.setAttr(g + '.inheritsTransform', 0)
 
 		except pm.MayaNodeError:
-			print 'No skinCluster on '+ g
+			pass
+
+	print 'Done turning off inherit transforms on skinned geos'

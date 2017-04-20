@@ -12,14 +12,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya.mel as mm
 
-'''
 
-import rig_puppet as rp
-reload(rp)
-rp.puppet('kiddo_v001', character='kiddo')
-
-
-'''
 class puppet(rig_object):
 	
 	def __init__(self, rigBound=None, **kwds):

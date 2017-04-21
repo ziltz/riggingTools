@@ -1,10 +1,12 @@
 __author__ = 'Jerry'
 
-import glob, os, platform
+import glob, os, platform, math
 
 import maya.cmds as mc
 import maya.mel as mm
 import pymel.core as pm
+
+from rig_transform import rig_transform
 
 
 def rig_utilsOpenMayaPort():
@@ -65,3 +67,44 @@ def rig_skinClusterTransforms(group=None):
 			pass
 
 	print 'Done turning off inherit transforms on skinned geos'
+
+
+def lengthVector( posA, posB):
+	dx = posA[0] - posB[0]
+	dy = posA[1] - posB[1]
+	dz = posA[2] - posB[2]
+	return math.sqrt( dx*dx + dy*dy + dz*dz )
+
+
+def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):
+	pm.addAttr(ctrl, longName=attrName, at='long', k=True, min=0, max=1, dv=defaultValue)
+	#ctrl.attrName.set(cb=True)
+	pm.connectAttr(ctrl+'.'+attrName, obj.visibility)
+
+class rig_createModule(object):
+
+	def __init__(self, name):
+		self.top = rig_transform(0, name=name+'Module').object
+
+		self.controls = rig_transform(0, name=name+'Controls', parent=self.top).object
+		self.skeleton = rig_transform(0, name=name+'Skeleton', parent=self.top).object
+		self.parts = rig_transform(0, name=name+'Parts', parent=self.top).object
+
+		self.controlsList = []
+		self.skeletonList = []
+		self.partsList = []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

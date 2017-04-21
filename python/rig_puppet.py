@@ -3,7 +3,7 @@ __author__ = 'Jerry'
 
 import importlib
 
-from rig_utils import defaultReturn, defaultAppendReturn
+from rig_utils import *
 from rig_controls import rig_control
 from rig_transform import rig_transform
 from rig_object import rig_object
@@ -64,10 +64,31 @@ class puppet(rig_object):
 		except:
 			self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
 
+		# create attributes on global ctrl
+		pm.addAttr(self.globalCtrl.ctrl, ln='puppetSettings', at='enum',
+		           enumName='___________',
+		           k=True)
+		self.globalCtrl.ctrl.puppetSettings.setLocked(True)
+
+		# model and skeleton vis
+		connectAttrToVisObj(self.globalCtrl.ctrl, 'modelVis', self.model,
+		                    defaultValue=1)
+		pm.addAttr(self.globalCtrl.ctrl, longName='skeletonVis', at='long',
+		           k=True, min=0,
+		           max=1, defaultVaue=1)
+		self.globalCtrl.ctrl.skeletonVis.set(cb=True)
+
+		# ik fk switches
+		pm.addAttr(self.globalCtrl.ctrl, ln='ikFkSwitch', at='enum',
+		           enumName='___________',
+		           k=True)
+		self.globalCtrl.ctrl.ikFkSwitch.setLocked(True)
+
+
 		# scale global control
 		bbox = self.model.boundingBox()
 		width = bbox.width() * 0.3
-		cvsGlobal = pm.PyNode(self.globalCtrl.object + '.cv[:]')
+		cvsGlobal = pm.PyNode(self.globalCtrl.ctrl + '.cv[:]')
 		cvsGimbal = pm.PyNode(self.globalCtrl.gimbal + '.cv[:]')
 		pm.scale(cvsGlobal, width, width, width )
 		pm.scale(cvsGimbal, width/1.5, width/1.5, width/1.5)
@@ -81,7 +102,8 @@ class puppet(rig_object):
 
 		self.finishRig()
 
-		super(puppet, self).__init__(self.topNode, **kwds)
+		self.sup = super(puppet, self)
+		self.sup.__init__(self.topNode, **kwds)
 
 	def prepareRig(self):
 		print 'Prepare core rig'

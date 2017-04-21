@@ -6,10 +6,10 @@ import maya.cmds as mc
 import maya.mel as mm
 import pymel.core as pm
 
-from rig_utils import defaultReturn, defaultAppendReturn
+from rig_utils import *
 from rig_transform import rig_transform
-reload(sys.modules['rig_transform'])
-from rig_transform import rig_transform
+#reload(sys.modules['rig_transform'])
+#from rig_transform import rig_transform
 
 '''
 
@@ -30,8 +30,7 @@ class rig_control(rig_transform):
 		self.shape = defaultReturn('circle','shape', param=kwds)
 		self.parentOffset = defaultReturn('','parentOffset', param=kwds)
 		self.targetOffset = defaultReturn('','targetOffset', param=kwds)
-		#self.object = pm.PyNode(mc.circle(name = self.name+'_CTRL', ch=False, nr=[ 0, 1, 0])[0])
-		self.object = self._returnShape(self.shape)
+		self.ctrl = self._returnShape(self.shape)
 		self.parent = ''
 
 		self.constrain = defaultReturn(0,'constrain', param=kwds)
@@ -39,27 +38,29 @@ class rig_control(rig_transform):
 
 		self._setDefaultSettings()
 
-		super(rig_control, self).__init__(self.object, parent=self.parent ,**kwds)
+		self.sup = super(rig_control, self)
+		self.sup.__init__(self.ctrl, parent=self.parent ,**kwds)
 
 		if pm.objExists(self.offsetConstrain):
 			pm.parentConstraint(self.offsetConstrain, self.offset, mo=True)
 
 		if self.constrain:
 			constrainList = self.constrain
-			if type(self.constrain) == str:
+			if type(self.constrain) is str:
 				constrainList = [self.constrain]
 			for con in constrainList:
+				print 'self.con = '+self.con
+				print 'con = ' + con
 				pm.parentConstraint( self.con, con, mo=True )
 
 	def _setDefaultSettings(self):
 
 		if self.con > 0:
-			self.con = rig_transform(0, name=self.name+'Con', parent=self.object ).object
+			self.con = rig_transform(0, name=self.name+'Con', parent=self.ctrl ).object
 
 		if self.offset > 0:
-			self.offset = rig_transform(0, name=self.name+'Offset', parent=self.parentOffset, target=self.targetOffset, child=self.object ).object
+			self.offset = rig_transform(0, name=self.name+'Offset', parent=self.parentOffset, target=self.targetOffset, child=self.ctrl ).object
 			self.parent = self.offset
-			print 'Created offset group 1 '+self.offset
 
 		mods = []
 		if self.modify > 0:
@@ -73,33 +74,35 @@ class rig_control(rig_transform):
 			else:
 				self.modify = mods
 
-			pm.parent(mods[0], self.offset)
+			mc.parent(mods[0], self.offset)
 
 			lastMod = mods[-1:][0]
 			self.parent = lastMod
 
 
 		if self.pivot > 0:
-			self.pivot = rig_control(name=self.name+'Pivot', parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, lockHideAttrs=['rx','ry','rz'] ).object
-			pm.connectAttr(  self.pivot.translate, self.object.rotatePivot, f=True)
-			pm.connectAttr(  self.pivot.scale, self.object.scalePivot, f=True)
-			pm.addAttr(self.object, longName='pivotVis', at='long', k=False, min=0, max=1)
-			self.object.pivotVis.set(cb=True)
-			pm.connectAttr( self.object.pivotVis,  self.pivot.getShape().visibility )
+			self.pivot = rig_control(name=self.name+'Pivot', parentOffset=self.ctrl, targetOffset=self.ctrl, con=0, pivot=0, lockHideAttrs=['rx','ry','rz'] ).object
+			pm.connectAttr(  self.pivot.translate, self.ctrl.rotatePivot, f=True)
+			pm.connectAttr(  self.pivot.scale, self.ctrl.scalePivot, f=True)
+			connectAttrToVisObj( self.ctrl, 'pivotVis', self.pivot.getShape() )
+			#pm.addAttr(self.ctrl, longName='pivotVis', at='long', k=False, min=0,
+			#  max=1)
+			#self.ctrl.pivotVis.set(cb=True)
+			#pm.connectAttr( self.ctrl.pivotVis,  self.pivot.getShape().visibility )
 
 		if self.gimbal > 0:
-			self.gimbal = rig_control( name=self.name+"Gimbal", parentOffset=self.object, targetOffset=self.object, con=0, pivot=0, child=self.con ).object
-			pm.addAttr(self.object, longName='gimbalVis', at='long', k=False, min=0, max=1)
-			self.object.gimbalVis.set(cb=True)
-			pm.connectAttr(self.object.gimbalVis, self.gimbal.getShape().visibility)
+			self.gimbal = rig_control( name=self.name+"Gimbal", parentOffset=self.ctrl, targetOffset=self.ctrl, con=0, pivot=0, child=self.con ).ctrl
+			pm.addAttr(self.ctrl, longName='gimbalVis', at='long', k=False, min=0, max=1)
+			self.ctrl.gimbalVis.set(cb=True)
+			pm.connectAttr(self.ctrl.gimbalVis, self.gimbal.getShape().visibility)
 
 		for at in self.lockHideAttrs:
-			self.object.attr(at).setKeyable(False)
-			self.object.attr(at).setLocked(True)
+			self.ctrl.attr(at).setKeyable(False)
+			self.ctrl.attr(at).setLocked(True)
 
 		for at in self.showAttrs:
-			self.object.attr(at).setKeyable(True)
-			self.object.attr(at).setLocked(False)
+			self.ctrl.attr(at).setKeyable(True)
+			self.ctrl.attr(at).setLocked(False)
 
 
 
@@ -223,5 +226,24 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 
 
+def fkControlChain( jointChain, modify=1):
 
+	controls = []
+
+	i = 0
+	for jnt in jointChain:
+		constrainOffset = 0
+		if i > 0:
+			constrainOffset = controls[i-1].con
+
+		ctrlName = jnt.replace('JNT', '')
+		fkCtrl = rig_control( name=ctrlName, shape='box', modify=modify,
+		                      lockHideAttrs=['tx','ty','tz'], targetOffset=jnt,
+		                      constrain=jnt, constrainOffset=constrainOffset )
+
+		controls.append(fkCtrl)
+		i += 1
+
+
+	return controls
 

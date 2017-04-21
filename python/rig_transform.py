@@ -8,12 +8,13 @@ import pymel.core as pm
 from rig_utils import defaultReturn
 from rig_object import rig_object
 
-class rig_transform(rig_object):
+class rig_transform(object):
 	def __init__(self, object, **kwds):
 		self.name = defaultReturn('rig_transform','name', param=kwds)
 		self.type = defaultReturn('group', 'type', param=kwds)
 
 		self.suffix = defaultReturn('GRP', 'suffix', param=kwds)
+
 		if pm.objExists(object):
 			self.object = object
 		else:
@@ -28,14 +29,22 @@ class rig_transform(rig_object):
 
 
 		offset = ''
-		if pm.objExists(self.target):
-			offset = rig_transform(0).object
+		try:
+			if pm.objExists(self.target):
+				#offset = rig_transform(0, name='offsetTemp').object
+				offset = mc.group(em=True, n="offsetTemp")
+				pm.parent(self.object, offset)
+				pm.delete(pm.parentConstraint(self.target, offset))
+		except TypeError:
+			offset = mc.group(em=True, n="offsetTemp")
 			pm.parent(self.object, offset)
 			pm.delete(pm.parentConstraint(self.target, offset))
 
 		try :
+			mc.parent(self.object, self.parent)
+		except TypeError:
 			pm.parent(self.object, self.parent)
-		except:
+		except ValueError:
 			pm.parent(self.object, w=True)
 		finally:
 			if pm.objExists(offset):
@@ -43,10 +52,13 @@ class rig_transform(rig_object):
 			else:
 				offset = None
 
-		super(rig_transform, self).__init__(self.object, **kwds)
+		#print 'object = ' + self.object
+		#rig_object.__init__(self, self.object)
+		#self.sup = super(rig_transform, self)
+		#self.sup.__init__(self.object, **kwds)
 
 	def _createTransform(self, _type):
-		mc.select(cl=True)
+		pm.select(cl=True)
 
 		typeDict = {
 			'group' : ( self._getTransform('_group') , "GRP" ) ,

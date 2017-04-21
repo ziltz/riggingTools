@@ -9,6 +9,7 @@ from rig_transform import rig_transform
 from rig_ik import rig_ik
 from rig_chain import *
 from rig_controls import *
+from rig_modules import rig_module
 
 '''
 
@@ -79,8 +80,9 @@ class rig_biped(object):
 	def arm (self, side):
 		name = side+'_arm'
 
-		module = rig_createModule(name)
-
+		module = rig_module(name)
+		self.armModule = module
+		
 		arm = self.armName
 		elbow = self.elbowName
 		hand = self.handName
@@ -153,7 +155,7 @@ class rig_biped(object):
 
 		# create fk
 
-		fkCtrls = fkControlChain(['l_armFK_JNT', 'l_elbowFK_JNT', 'l_handFK_JNT'])
+		fkCtrls = fkControlChain(chainFK)
 		for fk in fkCtrls:
 			pm.parent(fk.offset, module.controls)
 

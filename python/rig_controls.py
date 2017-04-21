@@ -236,7 +236,7 @@ def fkControlChain( jointChain, modify=1):
 		if i > 0:
 			constrainOffset = controls[i-1].con
 
-		ctrlName = jnt.replace('JNT', '')
+		ctrlName = jnt.replace('_JNT', '')
 		fkCtrl = rig_control( name=ctrlName, shape='box', modify=modify,
 		                      lockHideAttrs=['tx','ty','tz'], targetOffset=jnt,
 		                      constrain=jnt, constrainOffset=constrainOffset )

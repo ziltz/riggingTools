@@ -75,7 +75,7 @@ class puppet(rig_object):
 		                    defaultValue=1)
 		pm.addAttr(self.globalCtrl.ctrl, longName='skeletonVis', at='long',
 		           k=True, min=0,
-		           max=1, defaultVaue=1)
+		           max=1, defaultValue=1)
 		self.globalCtrl.ctrl.skeletonVis.set(cb=True)
 
 		# ik fk switches

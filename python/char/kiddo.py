@@ -2,10 +2,16 @@ __author__ = 'Jerry'
 
 import maya.cmds as mc
 
-from create.rig_puppet import puppet
-from create.rig_biped import rig_biped
-from utils.rig_modules import rig_module
-from make.rig_controls import rig_control
+try:
+	from create.rig_puppet import puppet
+	from create.rig_biped import rig_biped
+	from utils.rig_modules import rig_module
+	from make.rig_controls import rig_control
+except ImportError:
+	from rig_puppet import puppet
+	from rig_biped import rig_biped
+	from rig_modules import rig_module
+	from rig_controls import rig_control
 
 '''
 

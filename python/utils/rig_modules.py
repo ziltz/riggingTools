@@ -1,4 +1,10 @@
-from utils.rig_transform import rig_transform
+
+
+try:
+	from utils.rig_transform import rig_transform
+except ImportError:
+	from rig_transform import rig_transform
+
 
 
 class rig_module(object):

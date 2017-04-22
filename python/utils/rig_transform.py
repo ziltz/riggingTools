@@ -4,7 +4,10 @@ import maya.cmds as mc
 
 import pymel.core as pm
 
-from utils.rig_utils import defaultReturn
+try:
+	from utils.rig_utils import defaultReturn
+except ImportError:
+	from rig_utils import defaultReturn
 
 
 class rig_transform(object):

@@ -23,33 +23,26 @@ def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):
 	for file in glob.glob(ext):
 		print("- "+file+" ....")
 		mm.eval('source "'+dir+file+'";')
-
-
+		
+		
 def rig_sourcePythonFiles(dir='C:/dev/riggingTools/python/', ext='*.py'):
 	print("Sourcing all python files")
 	if platform.system() == 'Darwin':
 		dir = '/Users/Jerry/Documents/dev/riggingTools/python/'
-	'''
-	os.chdir(dir)
-	for file in glob.glob(ext):
-		print("- " + file[:-3] + ".py ....")
-		mod = importlib.import_module(file[:-3])
-		reload(mod)
-	'''
 
+	print 'Using directory = '+ dir
 	for root, dirs, files in os.walk(dir):
 		currentDir = root.replace(dir, '')
 		if dirs is not 'other':
 			for file in files:
 				if file.endswith(".py"):
-					path = currentDir + '.' + file[:-3]
+					path = 'python.' +currentDir + '.' + file[:-3]
 					if not currentDir:
 						path = file[:-3]
 					if file[:-3] not in '__init__':
-						mod = importlib.import_module(path, package='python')
+						mod = importlib.import_module(path, package='riggingTools')
 						print path
 						reload(mod)
-					#print str(root)+'/'+file[:-3]
 
 
 def defaultReturn(defaultVar, userVar, param):

@@ -1,9 +1,17 @@
 
-from make.rig_ik import rig_ik
-from utils.rig_chain import *
-from make.rig_controls import *
-from utils.rig_modules import rig_module
-from utils.rig_transform import rig_transform
+
+try:
+	from make.rig_ik import rig_ik
+	from utils.rig_chain import *
+	from make.rig_controls import *
+	from utils.rig_modules import rig_module
+	from utils.rig_transform import rig_transform
+except ImportError:
+	from rig_ik import rig_ik
+	from rig_chain import *
+	from rig_controls import *
+	from rig_modules import rig_module
+	from rig_transform import rig_transform
 
 '''
 

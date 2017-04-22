@@ -1,12 +1,18 @@
 __author__ = 'Jerry'
 
 
-from utils.rig_object import rig_object
-from utils.rig_utils import *
-from other.webcolors import name_to_rgb
-from utils.rig_transform import rig_transform
+try:
+	from utils.rig_object import rig_object
+	from utils.rig_utils import *
+	from other.webcolors import name_to_rgb
+	from utils.rig_transform import rig_transform
 #reload(sys.modules['rig_transform'])
 #from rig_transform import rig_transform
+except ImportError:
+	from rig_object import rig_object
+	from rig_utils import *
+	from webcolors import name_to_rgb
+	from rig_transform import rig_transform
 
 import pymel.core as pm
 import maya.cmds as mc

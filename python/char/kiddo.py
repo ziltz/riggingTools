@@ -1,21 +1,15 @@
 __author__ = 'Jerry'
 
-
-
-
-import pymel.core as pm
 import maya.cmds as mc
-import maya.mel as mm
 
-from rig_puppet import puppet
-from rig_biped import rig_biped
-from rig_modules import rig_module
-from rig_controls import rig_control
+from create.rig_puppet import puppet
+from create.rig_biped import rig_biped
+from utils.rig_modules import rig_module
+from make.rig_controls import rig_control
 
 '''
 
 import char.kiddo as char
-reload(char)
 char.kiddoPuppet()
 
 '''
@@ -37,7 +31,9 @@ def kiddoRigModules():
 	
 	bodyModule = rig_module('body')
 	
-	main = rig_control(name='main', shape='box', gimbal=1, targetOffset='mainJA_JNT' )
+	main = rig_control(name='main', shape='box', gimbal=1,
+	                   targetOffset='mainJA_JNT', constrain='mainJA_JNT',
+	                   scale=(35,20,50) )
 	
 	upperBody = rig_control(name='upperBody', shape='box' )
 	

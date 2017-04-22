@@ -1,12 +1,11 @@
 __author__ = 'Jerry'
 
-
 import maya.cmds as mc
+
 import pymel.core as pm
 
+from utils.rig_utils import defaultReturn
 
-from rig_utils import defaultReturn
-from rig_object import rig_object
 
 class rig_transform(object):
 	def __init__(self, object, **kwds):

@@ -1,11 +1,12 @@
+
+
 __author__ = 'Jerry'
 
 
 import pymel.core as pm
 import maya.cmds as mc
 
-from rig_object import rig_object
-
+from utils.rig_object import rig_object
 
 
 class rig_chain(rig_object):

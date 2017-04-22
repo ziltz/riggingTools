@@ -1,7 +1,4 @@
-
-
-
-from rig_transform import rig_transform
+from utils.rig_transform import rig_transform
 
 
 class rig_module(object):

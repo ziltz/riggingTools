@@ -1,16 +1,13 @@
 __author__ = 'Jerry'
 
 
-import importlib
-
-from rig_utils import *
-from rig_controls import rig_control
-from rig_transform import rig_transform
-from rig_object import rig_object
+from utils.rig_object import rig_object
+from utils.rig_utils import *
+from make.rig_controls import rig_control
+from utils.rig_transform import rig_transform
 
 import pymel.core as pm
 import maya.cmds as cmds
-import maya.mel as mm
 
 
 class puppet(rig_object):
@@ -40,7 +37,9 @@ class puppet(rig_object):
 		# unparent skeleton
 		skeleton = pm.parent(pm.listRelatives('skeleton_GRP', typ='joint'), w=True)
 
-		self.globalCtrl = rig_control(name='global', shape='arrows', con=0, gimbal=1, showAttrs=['sx', 'sy','sz'])
+		self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
+		                              con=0,
+		                              gimbal=1, showAttrs=['sx', 'sy','sz'])
 
 		self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
 

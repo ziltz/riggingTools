@@ -1,15 +1,9 @@
 
-
-import sys
-import pymel.core as pm
-import maya.cmds as mc
-
-from rig_utils import *
-from rig_transform import rig_transform
-from rig_ik import rig_ik
-from rig_chain import *
-from rig_controls import *
-from rig_modules import rig_module
+from make.rig_ik import rig_ik
+from utils.rig_chain import *
+from make.rig_controls import *
+from utils.rig_modules import rig_module
+from utils.rig_transform import rig_transform
 
 '''
 
@@ -128,7 +122,8 @@ class rig_biped(object):
 		ik = rig_ik(name, armIK, handIK, 'ikRPsolver')
 		pm.parent(ik.handle, module.parts)
 
-		poleVector = rig_control(name=side+'_armPV', shape='pointer', modify=1, lockHideAttrs=['rx','ry','rz'],
+		poleVector = rig_control(side=side, name='armPV', shape='pointer',
+		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
 		                         parentOffset=module.controls )
 
@@ -146,7 +141,7 @@ class rig_biped(object):
 		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
 
 		print 'ik handle '+ik.handle
-		handControl = rig_control(name=side+'_hand', shape='box', modify=2,
+		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
 		                          targetOffset=hand,
 		                          parentOffset=module.controls, constrain=
 			str(ik.handle))
@@ -164,6 +159,9 @@ class rig_biped(object):
 		if not pm.objExists(switchLoc):
 			switchLoc = rig_transform(0, type='locator', name='ikFkSwitch',
 			                    parent=module.parts).object
+			pm.addAttr(switchLoc, longName=name, at='float', k=True, min=0,
+			           max=1)
+		else:
 			pm.addAttr(switchLoc, longName=name, at='float', k=True, min=0,
 			           max=1)
 

@@ -1,6 +1,6 @@
 __author__ = 'Jerry'
 
-import glob, os, platform, math, importlib
+import glob, os, platform, math, importlib, sys
 
 import maya.cmds as mc
 import maya.mel as mm
@@ -13,6 +13,29 @@ def rig_utilsOpenMayaPort():
 	mc.commandPort(name=":7002", sourceType="mel")
 
 
+
+def rig_sourceAll( riggingDir='C:/dev/riggingTools/' ):
+	print("Sourcing all rig files")
+	
+	devPath = riggingDir+'python/'
+	if platform.system() == 'Darwin':
+		riggingDir = '/Users/Jerry/Documents/dev/riggingTools/'
+		devPath = riggingDir +'python/'
+
+	if devPath not in sys.path:
+		sys.path.append(devPath)
+	if riggingDir not in sys.path:
+		sys.path.append(riggingDir)
+	
+	for root, dirs, files in os.walk(devPath):
+		for d in dirs:
+			folderPath = devPath + d
+			if folderPath not in sys.path:
+				print folderPath
+				sys.path.append(folderPath)
+
+	rig_sourceMelFiles()
+	rig_sourcePythonFiles()
 
 
 def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):

@@ -1,17 +1,12 @@
 
 
-try:
-	from make.rig_ik import rig_ik
-	from utils.rig_chain import *
-	from make.rig_controls import *
-	from utils.rig_modules import rig_module
-	from utils.rig_transform import rig_transform
-except ImportError:
-	from rig_ik import rig_ik
-	from rig_chain import *
-	from rig_controls import *
-	from rig_modules import rig_module
-	from rig_transform import rig_transform
+
+from make.rig_ik import rig_ik
+from rutils.rig_chain import *
+from make.rig_controls import *
+from rutils.rig_modules import rig_module
+from rutils.rig_transform import rig_transform
+
 
 '''
 
@@ -106,6 +101,7 @@ class rig_biped(object):
 		chainResult = [armResult, elbowResult, handResult]
 
 		chainParent(chainResult)
+		chainResult.reverse()
 		pm.parent(armResult, module.skeleton)
 
 		# chain FK
@@ -115,6 +111,7 @@ class rig_biped(object):
 		chainFK = [ armFK, elbowFK, handFK ]
 
 		chainParent(chainFK)
+		chainFK.reverse()
 		pm.parent(armFK, module.skeleton)
 
 		# chain IK
@@ -124,6 +121,7 @@ class rig_biped(object):
 		chainIK = [ armIK, elbowIK, handIK ]
 
 		chainParent(chainIK)
+		chainIK.reverse()
 		pm.parent(armIK, module.skeleton)
 
 		# create ik
@@ -157,7 +155,7 @@ class rig_biped(object):
 		pm.orientConstraint(handControl.con, handIK, mo=True )
 
 		# create fk
-
+		print 'fk chain '+ str(chainFK)
 		fkCtrls = fkControlChain(chainFK)
 		for fk in fkCtrls:
 			pm.parent(fk.offset, module.controls)

@@ -1,9 +1,7 @@
 
 
-try:
-	from utils.rig_transform import rig_transform
-except ImportError:
-	from rig_transform import rig_transform
+
+from rig_transform import rig_transform
 
 
 

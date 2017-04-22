@@ -1,16 +1,12 @@
 __author__ = 'Jerry'
 
 
-try:
-	from utils.rig_object import rig_object
-	from utils.rig_utils import *
-	from make.rig_controls import rig_control
-	from utils.rig_transform import rig_transform
-except ImportError:
-	from rig_object import rig_object
-	from rig_utils import *
-	from rig_controls import rig_control
-	from rig_transform import rig_transform
+
+from rutils.rig_object import rig_object
+from rutils.rig_utils import *
+from make.rig_controls import rig_control
+from rutils.rig_transform import rig_transform
+
 
 import pymel.core as pm
 import maya.cmds as cmds

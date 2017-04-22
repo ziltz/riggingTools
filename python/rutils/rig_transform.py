@@ -4,10 +4,9 @@ import maya.cmds as mc
 
 import pymel.core as pm
 
-try:
-	from utils.rig_utils import defaultReturn
-except ImportError:
-	from rig_utils import defaultReturn
+
+from rig_utils import defaultReturn
+
 
 
 class rig_transform(object):
@@ -29,7 +28,7 @@ class rig_transform(object):
 		if pm.objExists(self.child):
 			pm.parent(self.child, self.object)
 
-
+		print 'LIFE FOR LOL SOURCING'
 		offset = ''
 		try:
 			if pm.objExists(self.target):

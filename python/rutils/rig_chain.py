@@ -6,10 +6,8 @@ __author__ = 'Jerry'
 import pymel.core as pm
 import maya.cmds as mc
 
-try:
-	from utils.rig_object import rig_object
-except ImportError:
-	from rig_object import rig_object
+
+from rig_object import rig_object
 
 class rig_chain(rig_object):
 

@@ -1,11 +1,11 @@
 __author__ = 'Jerry'
 
-
+'''
 try:
-	from utils.rig_object import rig_object
-	from utils.rig_utils import *
+	from rutils.rig_object import rig_object
+	from rutils.rig_utils import *
 	from other.webcolors import name_to_rgb
-	from utils.rig_transform import rig_transform
+	from rutils.rig_transform import rig_transform
 #reload(sys.modules['rig_transform'])
 #from rig_transform import rig_transform
 except ImportError:
@@ -13,6 +13,14 @@ except ImportError:
 	from rig_utils import *
 	from webcolors import name_to_rgb
 	from rig_transform import rig_transform
+
+'''
+
+from rutils.rig_object import rig_object
+from rutils.rig_utils import *
+from other.webcolors import name_to_rgb
+from rutils.rig_transform import rig_transform
+
 
 import pymel.core as pm
 import maya.cmds as mc
@@ -65,7 +73,7 @@ class rig_control(object):
 			pm.parentConstraint(self.offsetConstrain, self.offset, mo=True)
 
 		print 'self.constrain = ' +str(self.constrain)
-		if self.constrain:
+		if self.constrain is not 0:
 			if type(self.constrain) is str:
 				print 'single obj constrain'
 				if pm.objExists(self.constrain):

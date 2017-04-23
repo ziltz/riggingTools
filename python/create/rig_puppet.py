@@ -4,7 +4,7 @@ __author__ = 'Jerry'
 
 from rutils.rig_object import rig_object
 from rutils.rig_utils import *
-from make.rig_controls import rig_control
+from make.rig_controls import *
 from rutils.rig_transform import rig_transform
 
 
@@ -32,16 +32,25 @@ class puppet(rig_object):
 		print 'rigBound file path = '+self.rigBound
 		# import rigBound file
 		try:
-			filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True, typ="mayaAscii", o=True)
+			#filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True,
+			# typ="mayaAscii", o=True)
+			filePath = cmds.file(self.rigBound, i=True, ignoreVersion=True,
+			                     ra = False, mergeNamespacesOnClash =False,
+			                     typ="mayaAscii", loadReferenceDepth='none')
+
 		except RuntimeError:
 			print self.rigBound + ' file not found'
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		# unparent skeleton
 		skeleton = pm.parent(pm.listRelatives('skeleton_GRP', typ='joint'), w=True)
 
 		self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
-		                              con=0,
-		                              gimbal=1, showAttrs=['sx', 'sy','sz'])
+		                              con=0, showAttrs=['sx', 'sy','sz'])
+
+		self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl )
 
 		self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
 
@@ -109,15 +118,26 @@ class puppet(rig_object):
 	def prepareRig(self):
 		print 'Prepare core rig'
 
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
+
 		func = getattr(self.charModule, self.character+'PrepareRig')()
 
 	def createRigModules(self):
 		print 'Creating core rig modules'
 
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
+
 		func = getattr(self.charModule, self.character + 'RigModules')()
 
 	def finishRig(self):
 		print 'Finishing core rig'
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
 
 		func = getattr(self.charModule, self.character + 'Finish')()
 

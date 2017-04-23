@@ -3,7 +3,7 @@
 
 from rig_transform import rig_transform
 
-
+import pymel.core as pm
 
 class rig_module(object):
 
@@ -17,3 +17,6 @@ class rig_module(object):
 		self.controlsList = []
 		self.skeletonList = []
 		self.partsList = []
+
+		if pm.objExists('rigModule_GRP'):
+			pm.parent(self.top, 'rigModule_GRP')

@@ -26,9 +26,11 @@ class rig_transform(object):
 		self.child = defaultReturn('', 'child', param=kwds)
 
 		if pm.objExists(self.child):
+			print 'PARENT THE CHILD UNDER OBJECT'
+			print 'child '+self.child+ ' under '+ self.object
 			pm.parent(self.child, self.object)
 
-		print 'LIFE FOR LOL SOURCING'
+		print 'YOLO2'
 		offset = ''
 		try:
 			if pm.objExists(self.target):

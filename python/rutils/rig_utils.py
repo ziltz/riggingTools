@@ -63,8 +63,9 @@ def lengthVector( posA, posB):
 
 
 def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):
-	pm.addAttr(ctrl, longName=attrName, at='long', k=True, min=0, max=1, dv=defaultValue)
+	pm.addAttr(ctrl, longName=attrName, at='long', k=False, min=0, max=1, dv=defaultValue)
 	#ctrl.attrName.set(cb=True)
+	pm.setAttr(ctrl+'.'+attrName, cb=True)
 	pm.connectAttr(ctrl+'.'+attrName, obj.visibility)
 
 

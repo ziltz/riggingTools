@@ -6,7 +6,9 @@ from rutils.rig_chain import *
 from make.rig_controls import *
 from rutils.rig_modules import rig_module
 from rutils.rig_transform import rig_transform
+from rutils.rig_nodes import blendColors
 
+import pymel.core as pm
 
 '''
 
@@ -21,15 +23,23 @@ biped.arm('l')
 '''
 class rig_biped(object):
 	
-	def __init__(self, **kwds):
+	def __init__(self):
 
 		self.globalCtrl = pm.PyNode('global_CTRL')
+
+		self.switchLoc = 'ikFkSwitch_LOC'
 
 		self.clavicleName = 'clavicleJA_JNT'
 
 		self.armName = 'armJA_JNT'
 		self.elbowName = 'elbowJA_JNT'
 		self.handName = 'handJA_JNT'
+
+		self.armJoints = []
+
+		# values : poleVector, hand, fk
+		self.armControls = {}
+		self.shoulderControl = ''
 
 		self.spineModule = ''
 		self.neckModule = ''
@@ -48,17 +58,57 @@ class rig_biped(object):
 		self.head()
 		
 		for s in ['l', 'r']:
-			self.shoulder(s)
 			self.arm(s)
 			self.leg(s)
+			self.shoulder(s)
 
-		self.hip()
+		self.pelvis()
 		
 					
 		return
-	
 
-	
+	'''
+	chains[0] = result
+	chains[1] = ik
+	chains[2] = fk
+	'''
+	def connectIkFkSwitch(self, chains, name=None, parent=None ):
+		# switch
+
+		switchParent = parent
+		if pm.objExists('rig_GRP'):
+			switchParent = 'rig_GRP'
+		if not pm.objExists(self.switchLoc):
+			self.switchLoc = rig_transform(0, type='locator', name='ikFkSwitch',
+			                               parent=switchParent).object
+			pm.addAttr(self.switchLoc, longName=name, at='float', k=True, min=0,
+			           max=1)
+		else:
+			pm.addAttr(self.switchLoc, longName=name, at='float', k=True, min=0,
+			           max=1)
+
+		# blend joints together
+
+		print 'chain[0] '+ str(chains[0])
+		print 'chain[1] ' + str(chains[1])
+		print 'chain[2] ' + str(chains[2])
+
+		for i in range(0, len(chains[0])):
+
+			blendColors(chains[1][i], chains[2][i], chains[0][i], name=name+str(i),
+			            driverAttr=self.switchLoc+'.'+name,
+			            attribute='rotate')
+
+			'''
+
+			# IK = 0, FK = 10 on switch
+			# IK bldColors = 1, FK bldColors = 0
+			# driver name, driver attribute, driven name, driven attribute
+			# driver first and second values, driven first and second values
+			# createSDK(_ikfkName, _switchAttrNme, bldName, 'blender',
+			#         0, 10, 1, 0)
+			'''
+
 	def spine(self):
 		return
 		
@@ -68,14 +118,53 @@ class rig_biped(object):
 	def head(self):
 		return
 
-	def shoulder (self, side ):
+	def shoulder (self, side='', ctrlSize=1 ):
+		name = side + '_shoulder'
+		if side == '':
+			name = 'shoulder'
+
+		module = self.armModule
+
+		if self.armModule == '':
+			module = rig_module(name)
+
+		self.shoulderModule = module
+
+		shoulder = self.clavicleName
+		pm.parent(shoulder, module.skeleton)
+
+		if side != '':
+			shoulder = side+ '_' + shoulder
+
+		print 'shoulder ' + shoulder
+
+		ctrlSizeHalf = (ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0)
+		ctrlSize = (ctrlSize, ctrlSize, ctrlSize)
+
+		shoulderCtrl = rig_control( side=side, name='shoulder', shape='pyramid',
+		                            targetOffset=shoulder, modify=1,
+		                            parentOffset=module.controls,lockHideAttrs=[
+				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize )
+
+		self.shoulderControl= shoulderCtrl
+
+		return module
+
+	def connectArmShoulder(self):
+
+		fkCtrls = self.armControls['fk']
+		handCtrl = self.armControls['hand']
+
+		pm.parentConstraint( self.shoulderControl.con , fkCtrls[0].offset, mo=True )
+
+		pm.pointConstraint(self.shoulderControl.con, handCtrl )
+
 		return
 
-	def hip (self):
-		return
-
-	def arm (self, side):
+	def arm (self, side='', ctrlSize=1.0):
 		name = side+'_arm'
+		if side == '':
+			name = 'arm'
 
 		module = rig_module(name)
 		self.armModule = module
@@ -84,15 +173,20 @@ class rig_biped(object):
 		elbow = self.elbowName
 		hand = self.handName
 
-		arm = side + '_' + arm
-		elbow = side + '_' + elbow
-		hand = side + '_' + hand
+		if side != '':
+			arm = side + '_' + arm
+			elbow = side + '_' + elbow
+			hand = side + '_' + hand
 
 		chain = [arm, elbow, hand]
 
 		print 'arm '+arm
 		print 'elbow '+elbow
 		print 'hand '+hand
+
+		ctrlSizeHalf = (ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0)
+		ctrlSize = (ctrlSize,ctrlSize,ctrlSize)
+
 
 		# chain result
 		armResult = rig_transform(0, name=side + '_armResult', type='joint', target=arm).object
@@ -128,10 +222,13 @@ class rig_biped(object):
 		ik = rig_ik(name, armIK, handIK, 'ikRPsolver')
 		pm.parent(ik.handle, module.parts)
 
+
 		poleVector = rig_control(side=side, name='armPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
-		                         parentOffset=module.controls )
+		                         parentOffset=module.controls, scale=ctrlSizeHalf )
+
+		self.armControls['poleVector'] = poleVector
 
 		pm.delete(pm.aimConstraint(elbow, poleVector.offset, mo=False))
 
@@ -149,54 +246,40 @@ class rig_biped(object):
 		print 'ik handle '+ik.handle
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
 		                          targetOffset=hand,
-		                          parentOffset=module.controls, constrain=
-			str(ik.handle))
+		                          parentOffset=module.controls, constrain= str(
+				ik.handle), size=ctrlSize)
+
+		self.armControls['hand'] = handControl
 
 		pm.orientConstraint(handControl.con, handIK, mo=True )
 
+
+
 		# create fk
 		print 'fk chain '+ str(chainFK)
-		fkCtrls = fkControlChain(chainFK)
+		fkCtrls = fkControlChain(chainFK, scale=ctrlSize)
 		for fk in fkCtrls:
 			pm.parent(fk.offset, module.controls)
 
-		# switch
-		switchLoc = 'ikFkSwitch_LOC'
-		if not pm.objExists(switchLoc):
-			switchLoc = rig_transform(0, type='locator', name='ikFkSwitch',
-			                    parent=module.parts).object
-			pm.addAttr(switchLoc, longName=name, at='float', k=True, min=0,
-			           max=1)
-		else:
-			pm.addAttr(switchLoc, longName=name, at='float', k=True, min=0,
-			           max=1)
 
-		# blend joints together
-		for i in range(0, len(chainResult)):
-			# bldColor for rotation
-			bldColor = pm.shadingNode('blendColors', asUtility=True,
-			                          name=name+str(i)+'_blendColor')
+		self.armControls['fk'] = fkCtrls
 
-			"Select ik, fk then bind joints in this order"
-			pm.connectAttr(chainIK[i] + '.rotate', bldColor + '.color1',
-			                 f=True)  # connect ik jnt to color1
-			pm.connectAttr(chainFK[i] + '.rotate', bldColor + '.color2',
-			                 f=True)  # connect fk jnt to color2
-			pm.connectAttr(bldColor + '.output', chainResult[i] + '.rotate',
-			                 f=True)  # connect bldColor output to bind jnt
 
-			pm.connectAttr( switchLoc+'.'+name, bldColor.blender )
-			# IK = 0, FK = 10 on switch
-			# IK bldColors = 1, FK bldColors = 0
-			# driver name, driver attribute, driven name, driven attribute
-			# driver first and second values, driven first and second values
-			#createSDK(_ikfkName, _switchAttrNme, bldName, 'blender',
-			 #         0, 10, 1, 0)
+		self.connectIkFkSwitch(chains=[   chainResult, chainIK, chainFK ],
+		                                name=name, parent=module.parts  )
+
+
+		if pm.objExists('rigModule_GRP'):
+			pm.parent(module.top, 'rigModule_GRP')
+
 
 
 		return module
 
-	def leg (self, side, leg, knee, foot):
+	def pelvis (self):
+		return
+
+	def leg (self, side):
 		return
 		
 

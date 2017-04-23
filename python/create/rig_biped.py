@@ -138,8 +138,8 @@ class rig_biped(object):
 
 		print 'shoulder ' + shoulder
 
-		ctrlSizeHalf = (ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0)
-		ctrlSize = (ctrlSize, ctrlSize, ctrlSize)
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
 		shoulderCtrl = rig_control( side=side, name='shoulder', shape='pyramid',
 		                            targetOffset=shoulder, modify=1,
@@ -184,8 +184,8 @@ class rig_biped(object):
 		print 'elbow '+elbow
 		print 'hand '+hand
 
-		ctrlSizeHalf = (ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0)
-		ctrlSize = (ctrlSize,ctrlSize,ctrlSize)
+		ctrlSizeHalf = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize,ctrlSize,ctrlSize]
 
 
 		# chain result

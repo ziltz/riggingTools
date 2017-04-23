@@ -329,7 +329,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 
 
-def fkControlChain( jointChain, modify=1, scale=(1,1,1)):
+def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
 
 	controls = []
 

@@ -67,7 +67,7 @@ def kiddoRigModules():
 	
 	biped = rig_biped()
 	for side in ['l', 'r']:
-		armModule = biped.arm(side, ctrlSize=10)
+		armModule = biped.arm(side, ctrlSize=14)
 
 		shoulderModule = biped.shoulder(side, ctrlSize = 12)
 		shoulderCtrl = biped.shoulderControl

@@ -105,10 +105,10 @@ class puppet(rig_object):
 		# referencing and selecting
 		pm.addAttr(self.globalCtrl.ctrl, ln='model', at='enum',
 		           enumName='Selectable:Reference',
-		           k=True)
+		           k=True, defaultValue = 1)
 		pm.addAttr(self.globalCtrl.ctrl, ln='skeleton', at='enum',
 		           enumName='Selectable:Reference',
-		           k=True)
+		           k=True, defaultValue = 1)
 
 		# scale global control
 		bbox = self.model.boundingBox()

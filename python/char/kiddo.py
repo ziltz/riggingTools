@@ -56,11 +56,11 @@ def kiddoRigModules():
 	                [upperBody.offset, 'worldSpace_GRP'],
 	                upperBody.ctrl, ['main', 'world'], type='orientConstraint')
 
-	pm.move(upperBody.ctrl.cv, [0, 5, 0], relative=True, objectSpace=True)
+	pm.move(upperBody.ctrl.cv, [0, 10, 0], relative=True, objectSpace=True)
 
-	pm.connectAttr( upperBody.ctrl.translateX, 'upperWaistX_JA_JNT.translateX' )
-	pm.connectAttr( upperBody.ctrl.translateY, 'upperWaistY_JA_JNT.translateY' )
-	pm.connectAttr( upperBody.ctrl.translateZ, 'upperWaistZ_JA_JNT.translateZ' )
+	pm.connectAttr( upperBody.ctrl.rotateX, 'upperWaistX_JA_JNT.rotateX' )
+	pm.connectAttr( upperBody.ctrl.rotateY, 'upperWaistY_JA_JNT.rotateY' )
+	pm.connectAttr( upperBody.ctrl.rotateZ, 'upperWaistZ_JA_JNT.rotateZ' )
 
 	lowerBody = rig_control(name='lowerBody', shape='box', modify=1,
 	                        targetOffset='lowerBodyJA_JNT',

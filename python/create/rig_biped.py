@@ -141,14 +141,13 @@ class rig_biped(object):
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
-		self.shoulderCtrl = rig_control( side=side, name='shoulder', shape='pyramid',
+		self.shoulderControl = rig_control( side=side, name='shoulder', shape='pyramid',
 		                            targetOffset=shoulder, modify=1,
 		                            parentOffset=module.controls,lockHideAttrs=[
 				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize )
 
-
 		if pm.objExists(self.spineConnection):
-			pm.parentConstraint(self.spineConnection, self.shoulderCtrl.offset, mo=True)
+			pm.parentConstraint(self.spineConnection, self.shoulderControl.offset, mo=True)
 
 
 		if pm.objExists('rigModules_GRP'):
@@ -158,16 +157,17 @@ class rig_biped(object):
 
 	def connectArmShoulder(self, side=''):
 
-		side = side+'_'
+		if side != '':
+			side = side+'_'
 
 		fkCtrls = self.armControls['fk']
-		handCtrl = self.armControls['hand']
+		hand = self.armControls['hand']
 
-		print 'self.shoulderControl '+str(self.shoulderCtrl.con)
-		pm.parentConstraint( self.shoulderCtrl.con , fkCtrls[0].offset,
+		print 'self.shoulderControl '+str(self.shoulderControl.ctrl)
+		pm.parentConstraint( self.shoulderControl.con , fkCtrls[0].offset,
 		                     mo=True )
 
-		pm.parentConstraint( self.shoulderCtrl.con, self.armTop,
+		pm.parentConstraint( self.shoulderControl.con, self.armTop,
 		                     mo=True )
 
 		handAim = rig_transform(0, name=side + 'handAim', type='locator',
@@ -175,20 +175,36 @@ class rig_biped(object):
 		shoulderAim = rig_transform(0, name=side + 'shoulderAim', type='locator',
 		                        parent=self.armModule.parts).object
 
-		pm.pointConstraint( handCtrl, handAim )
-		pm.pointConstraint( self.shoulderCtrl, shoulderAim )
+		pm.pointConstraint( hand.con, handAim )
+		pm.pointConstraint( self.shoulderControl.con, shoulderAim )
 
-		pistonTop = mm.eval('rig_makePiston("'+handAim+'", "'+shoulderAim+'", '
-		                                       '"l_shoulderAim");')
+		pistonTop = mm.eval('rig_makePiston("'+handAim+'", "'+shoulderAim+'", "'+side+'shoulderAim");')
 
-		pm.parent(pistonTop, self.armModule.parts)
 
 		pistonChildren = pm.listRelatives( pistonTop, type='transform', c=True)
-
-		#for child in pistonChildren:
-		#	if 'LOCAimOffset' in child:
-
-
+		
+		for child in pistonChildren:
+			if 'shoulderAim_LOCAimOffset' in repr(child):
+				pm.delete(pm.listRelatives(child, type='constraint'))
+				pm.parentConstraint(self.spineConnection, child, mo=True )
+			if 'shoulderAim_LOC' in repr(child):
+				con = pm.parentConstraint([self.shoulderControl.offset, child], self.shoulderControl.modify,
+				                          mo=True)
+				childConAttr = con.getWeightAliasList()[1]
+				pm.addAttr(self.shoulderControl.ctrl, longName='aim', at='float', k=True, min=0,
+				           max=10, defaultValue=5)
+				pm.setDrivenKeyframe(childConAttr,
+				                     cd=self.shoulderControl.ctrl.aim,
+				                     dv=0,
+				                     v=0)
+				pm.setDrivenKeyframe(childConAttr,
+				                     cd=self.shoulderControl.ctrl.aim,
+				                     dv=10,
+				                     v=1)
+				
+				
+		pm.parent(pistonTop, self.armModule.parts)
+		
 		return
 
 	def arm (self, side='', ctrlSize=1.0):

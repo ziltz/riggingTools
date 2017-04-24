@@ -122,7 +122,7 @@ class rig_control(object):
 			else:
 				self.modify = mods
 
-			mc.parent(mods[0], self.offset)
+			pm.parent(mods[0], self.offset)
 
 			lastMod = mods[-1:][0]
 			self.parent = lastMod
@@ -225,43 +225,51 @@ class rig_control(object):
 		return ctrl
 
 
-def createCtrlPivot( ctrlClass ):
+def createCtrlPivot( ctrlClass, overrideScale=None  ):
 
 	side = getattr( ctrlClass, 'side')
 	base = getattr( ctrlClass, 'base')
 	ctrl = getattr( ctrlClass, 'ctrl')
-	scale = getattr( ctrlClass, 'scale')
+
+	scale = getattr(ctrlClass, 'scale')
+	if overrideScale is not None:
+		scale = overrideScale
 
 	pivot = rig_control(side=side, name=base + 'Pivot',
 	                         shape='sphere',
 	                         parentOffset=ctrl,
 	                         targetOffset=ctrl, con=0, pivot=0,
-	                         lockHideAttrs=['rx', 'ry', 'rz']).ctrl
-	pm.scale(pivot.cv, 0.1, 0.1, 0.1)
-	pm.scale(pivot.cv, scale[0], scale[1], scale[2])
-	pm.connectAttr(pivot.translate, ctrl.rotatePivot, f=True)
-	pm.connectAttr(pivot.scale, ctrl.scalePivot, f=True)
-	connectAttrToVisObj(ctrl, 'pivotVis', pivot.getShape())
+	                         lockHideAttrs=['rx', 'ry', 'rz'])
+	pm.scale(pivot.ctrl.cv, 0.1, 0.1, 0.1)
+	pm.scale(pivot.ctrl.cv, scale[0], scale[1], scale[2])
+	pm.connectAttr(pivot.ctrl.translate, ctrl.rotatePivot, f=True)
+	pm.connectAttr(pivot.ctrl.scale, ctrl.scalePivot, f=True)
+	connectAttrToVisObj(ctrl, 'pivotVis', pivot.ctrl.getShape())
 
 	return pivot
 
-def createCtrlGimbal( ctrlClass ):
+def createCtrlGimbal( ctrlClass, overrideScale=None ):
 
 	side = getattr(ctrlClass, 'side')
 	base = getattr(ctrlClass, 'base')
 	ctrl = getattr(ctrlClass, 'ctrl')
-	scale = getattr(ctrlClass, 'scale')
 	con = getattr(ctrlClass, 'con')
+
+	scale = getattr(ctrlClass, 'scale')
+	if overrideScale is not None:
+		scale = overrideScale
 
 	gimbal = rig_control(side=side, name=base + "Gimbal",
 	                          parentOffset=ctrl, targetOffset=ctrl,
-	                          con=0, pivot=0, child=con).ctrl
-	pm.scale(gimbal.cv, 0.75, 0.75, 0.75)
-	pm.scale(gimbal.cv, scale[0], scale[1], scale[2])
+	                          con=0, pivot=0, child=con)
+	pm.scale(gimbal.ctrl.cv, 0.75, 0.75, 0.75)
+	pm.scale(gimbal.ctrl.cv, scale[0], scale[1], scale[2])
+	connectAttrToVisObj(ctrl, 'gimbalVis', gimbal.ctrl.getShape())
+	'''
 	pm.addAttr(ctrl, longName='gimbalVis', at='long', k=False, min=0, max=1)
 	ctrl.gimbalVis.set(cb=True)
-	pm.connectAttr(ctrl.gimbalVis, gimbal.getShape().visibility)
-
+	pm.connectAttr(ctrl.gimbalVis, gimbal.ctrl.getShape().visibility)
+	'''
 	return gimbal
 
 '''
@@ -280,16 +288,47 @@ constrainObject('l_armOffset_GRP', ['target1_GRP', 'target2_GRP','target3_GRP', 
 def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 	maintainOffset = defaultReturn(True,'mo', param=kwds)
+	constrainType = defaultReturn('parentConstraint', 'type', param=kwds)
+	skip = defaultReturn(None, 'skip', param=kwds)
 
 	doSpace = 1
 	if type(multipleConstrainer) is str:
 		doSpace = 0
 
+	print 'object to constrain ' + obj
+
+	print 'constrainers ' + str(multipleConstrainer)
+
+	print 'maintainOffset ='+str(maintainOffset)
+
 	obj = pm.PyNode(obj)
 
 	if pm.objExists(obj):
 		try:
-			con = pm.parentConstraint(multipleConstrainer, obj, mo=maintainOffset)
+			con = ''
+			if constrainType is 'parentConstraint':
+				if skip is None:
+					con = pm.parentConstraint(multipleConstrainer, obj,
+					                          mo=maintainOffset)
+				else:
+					con = pm.parentConstraint(multipleConstrainer, obj,
+				                          mo=maintainOffset, skip=skip)
+
+			if constrainType is 'orientConstraint':
+				if skip is None:
+					con = pm.orientConstraint(multipleConstrainer, obj,
+					                          mo=maintainOffset)
+				else:
+					con = pm.orientConstraint(multipleConstrainer, obj,
+				                          mo=maintainOffset, skip=skip)
+
+			if constrainType is 'pointConstraint':
+				if skip is None:
+					con = pm.pointConstraint(multipleConstrainer, obj,
+					                          mo=maintainOffset)
+				else:
+					con = pm.pointConstraint(multipleConstrainer, obj,
+				                          mo=maintainOffset, skip=skip)
 
 			if doSpace:
 				ctrl = pm.PyNode(ctrl)

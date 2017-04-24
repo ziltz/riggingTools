@@ -32,7 +32,6 @@ class rig_chain(rig_object):
 
 
 def chainParent( list, reverse=0 ):
-	print 'chain '+str(list)
 	chain = list
 	if reverse == 0:
 		chain.reverse()

@@ -9,6 +9,7 @@ from rutils.rig_transform import rig_transform
 from rutils.rig_nodes import blendColors
 
 import pymel.core as pm
+import maya.mel as mm
 
 '''
 
@@ -39,7 +40,11 @@ class rig_biped(object):
 
 		# values : poleVector, hand, fk
 		self.armControls = {}
-		self.shoulderControl = ''
+		self.armTop = ''
+		self.shoulderControl = None
+
+		self.spineConnection = 'spineJF_JNT'
+		self.pelvisConnection = 'pelvisJA_JNT'
 
 		self.spineModule = ''
 		self.neckModule = ''
@@ -72,20 +77,20 @@ class rig_biped(object):
 	chains[1] = ik
 	chains[2] = fk
 	'''
-	def connectIkFkSwitch(self, chains, name=None, parent=None ):
+	def connectIkFkSwitch(self, chains, module, name='rigSwitch' ):
 		# switch
 
-		switchParent = parent
+		switchParent = module.parts
 		if pm.objExists('rig_GRP'):
 			switchParent = 'rig_GRP'
+
 		if not pm.objExists(self.switchLoc):
-			self.switchLoc = rig_transform(0, type='locator', name='ikFkSwitch',
-			                               parent=switchParent).object
-			pm.addAttr(self.switchLoc, longName=name, at='float', k=True, min=0,
-			           max=1)
-		else:
-			pm.addAttr(self.switchLoc, longName=name, at='float', k=True, min=0,
-			           max=1)
+			self.switchLoc = pm.PyNode(rig_transform(0, type='locator',
+			                                     name='ikFkSwitch',
+			                               parent=switchParent).object)
+
+		pm.addAttr(self.switchLoc, longName=name, at='float', k=True, min=0,
+		           max=1)
 
 		# blend joints together
 
@@ -99,15 +104,9 @@ class rig_biped(object):
 			            driverAttr=self.switchLoc+'.'+name,
 			            attribute='rotate')
 
-			'''
+		switchAttr = getattr(self.switchLoc, name)
+		pm.connectAttr( switchAttr, module.top.ikFkSwitch  )
 
-			# IK = 0, FK = 10 on switch
-			# IK bldColors = 1, FK bldColors = 0
-			# driver name, driver attribute, driven name, driven attribute
-			# driver first and second values, driven first and second values
-			# createSDK(_ikfkName, _switchAttrNme, bldName, 'blender',
-			#         0, 10, 1, 0)
-			'''
 
 	def spine(self):
 		return
@@ -131,33 +130,64 @@ class rig_biped(object):
 		self.shoulderModule = module
 
 		shoulder = self.clavicleName
-		pm.parent(shoulder, module.skeleton)
 
 		if side != '':
 			shoulder = side+ '_' + shoulder
+
+		pm.parent(shoulder, module.skeleton)
 
 		print 'shoulder ' + shoulder
 
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
-		shoulderCtrl = rig_control( side=side, name='shoulder', shape='pyramid',
+		self.shoulderCtrl = rig_control( side=side, name='shoulder', shape='pyramid',
 		                            targetOffset=shoulder, modify=1,
 		                            parentOffset=module.controls,lockHideAttrs=[
 				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize )
 
-		self.shoulderControl= shoulderCtrl
+
+		if pm.objExists(self.spineConnection):
+			pm.parentConstraint(self.spineConnection, self.shoulderCtrl.offset, mo=True)
+
+
+		if pm.objExists('rigModules_GRP'):
+			pm.parent(module.top, 'rigModules_GRP')
 
 		return module
 
-	def connectArmShoulder(self):
+	def connectArmShoulder(self, side=''):
+
+		side = side+'_'
 
 		fkCtrls = self.armControls['fk']
 		handCtrl = self.armControls['hand']
 
-		pm.parentConstraint( self.shoulderControl.con , fkCtrls[0].offset, mo=True )
+		print 'self.shoulderControl '+str(self.shoulderCtrl.con)
+		pm.parentConstraint( self.shoulderCtrl.con , fkCtrls[0].offset,
+		                     mo=True )
 
-		pm.pointConstraint(self.shoulderControl.con, handCtrl )
+		pm.parentConstraint( self.shoulderCtrl.con, self.armTop,
+		                     mo=True )
+
+		handAim = rig_transform(0, name=side + 'handAim', type='locator',
+		                            parent=self.armModule.parts).object
+		shoulderAim = rig_transform(0, name=side + 'shoulderAim', type='locator',
+		                        parent=self.armModule.parts).object
+
+		pm.pointConstraint( handCtrl, handAim )
+		pm.pointConstraint( self.shoulderCtrl, shoulderAim )
+
+		pistonTop = mm.eval('rig_makePiston("'+handAim+'", "'+shoulderAim+'", '
+		                                       '"l_shoulderAim");')
+
+		pm.parent(pistonTop, self.armModule.parts)
+
+		pistonChildren = pm.listRelatives( pistonTop, type='transform', c=True)
+
+		#for child in pistonChildren:
+		#	if 'LOCAimOffset' in child:
+
 
 		return
 
@@ -180,6 +210,8 @@ class rig_biped(object):
 
 		chain = [arm, elbow, hand]
 
+		pm.parent(arm, module.skeleton)
+
 		print 'arm '+arm
 		print 'elbow '+elbow
 		print 'hand '+hand
@@ -187,36 +219,39 @@ class rig_biped(object):
 		ctrlSizeHalf = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
 		ctrlSize = [ctrlSize,ctrlSize,ctrlSize]
 
+		self.armTop = rig_transform(0, name=side + '_armTop',
+		              target=arm, parent=module.parts).object
+
+		armSkeletonParts = rig_transform(0, name=side + '_armSkeletonParts',
+		                                 parent=self.armTop).object
 
 		# chain result
-		armResult = rig_transform(0, name=side + '_armResult', type='joint', target=arm).object
+		armResult = rig_transform(0, name=side + '_armResult', type='joint',
+		                          target=arm, parent=armSkeletonParts).object
 		elbowResult = rig_transform(0, name=side + '_elbowResult', type='joint', target=elbow).object
 		handResult = rig_transform(0, name=side + '_handResult', type='joint', target=hand).object
 		chainResult = [armResult, elbowResult, handResult]
 
 		chainParent(chainResult)
 		chainResult.reverse()
-		pm.parent(armResult, module.skeleton)
 
 		# chain FK
-		armFK = rig_transform(0, name=side+'_armFK', type='joint', target=arm).object
+		armFK = rig_transform(0, name=side+'_armFK', type='joint', target=arm, parent=armSkeletonParts).object
 		elbowFK = rig_transform(0, name=side+'_elbowFK', type='joint', target=elbow).object
 		handFK = rig_transform(0, name=side+'_handFK', type='joint', target=hand).object
 		chainFK = [ armFK, elbowFK, handFK ]
 
 		chainParent(chainFK)
 		chainFK.reverse()
-		pm.parent(armFK, module.skeleton)
 
 		# chain IK
-		armIK = rig_transform(0, name=side+'_armIK', type='joint', target=arm).object
+		armIK = rig_transform(0, name=side+'_armIK', type='joint', target=arm,parent=armSkeletonParts).object
 		elbowIK = rig_transform(0, name=side+'_elbowIK', type='joint', target=elbow).object
 		handIK = rig_transform(0, name=side+'_handIK', type='joint', target=hand).object
 		chainIK = [ armIK, elbowIK, handIK ]
 
 		chainParent(chainIK)
 		chainIK.reverse()
-		pm.parent(armIK, module.skeleton)
 
 		# create ik
 		ik = rig_ik(name, armIK, handIK, 'ikRPsolver')
@@ -227,6 +262,8 @@ class rig_biped(object):
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
 		                         parentOffset=module.controls, scale=ctrlSizeHalf )
+
+		pm.connectAttr(module.top.ikFkSwitch, poleVector.offset+'.visibility' )
 
 		self.armControls['poleVector'] = poleVector
 
@@ -247,7 +284,12 @@ class rig_biped(object):
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
 		                          targetOffset=hand,
 		                          parentOffset=module.controls, constrain= str(
-				ik.handle), size=ctrlSize)
+				ik.handle), scale=ctrlSize)
+
+		handControl.gimbal = createCtrlGimbal( handControl )
+		handControl.pivot = createCtrlPivot( handControl )
+
+		pm.connectAttr(module.top.ikFkSwitch, handControl.offset+'.visibility' )
 
 		self.armControls['hand'] = handControl
 
@@ -260,17 +302,28 @@ class rig_biped(object):
 		fkCtrls = fkControlChain(chainFK, scale=ctrlSize)
 		for fk in fkCtrls:
 			pm.parent(fk.offset, module.controls)
-
+			pm.setDrivenKeyframe( fk.offset+'.visibility' ,
+			                     cd=module.top.ikFkSwitch,
+			                     dv=1,
+			                     v=0)
+			pm.setDrivenKeyframe( fk.offset+'.visibility' ,
+			                     cd=module.top.ikFkSwitch,
+			                     dv=0,
+			                     v=1)
+		elbowFk = fkCtrls[1]
+		for at in ['ry','rz']:
+			elbowFk.ctrl.attr(at).setKeyable(False)
+			elbowFk.ctrl.attr(at).setLocked(True)
 
 		self.armControls['fk'] = fkCtrls
 
 
-		self.connectIkFkSwitch(chains=[   chainResult, chainIK, chainFK ],
-		                                name=name, parent=module.parts  )
+		self.connectIkFkSwitch(chains=[ chainResult, chainIK, chainFK ],
+		                       module = module ,name=name  )
 
-
-		if pm.objExists('rigModule_GRP'):
-			pm.parent(module.top, 'rigModule_GRP')
+		# constrain result to skeleton
+		for i in range(0, len(chain)):
+			pm.parentConstraint( chainResult[i], chain [i], mo=True)
 
 
 

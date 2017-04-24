@@ -12,7 +12,7 @@ rig_makePiston($sel[0], $sel[1], "l_upperArmPiston");
 rig_makePistonMirror("r_upperArmPiston_GRP");
 
 */
-global proc rig_makePiston(string $obj1, string $obj2, string $name)
+global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 {
 	// create transform setup
 	string $parentCons[] = {};
@@ -89,6 +89,8 @@ global proc rig_makePiston(string $obj1, string $obj2, string $name)
 
 	string $group = `group -em -n ($name+"_GRP")`;
 	parent $offsets $obj1 $obj2 $group;
+
+	return $group;
 }
 
 

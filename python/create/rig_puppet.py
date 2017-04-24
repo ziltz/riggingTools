@@ -23,6 +23,7 @@ class puppet(rig_object):
 
 		#cmds.file(f=True, new=True)
 		pm.newFile(f=True)
+		pm.evaluationManager(mode='serial')
 
 		pm.workspace(update=True)
 		projectRoot = pm.workspace(q=True, rd=True) +'/release/rigBound/'
@@ -50,19 +51,22 @@ class puppet(rig_object):
 		self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
 		                              con=0, showAttrs=['sx', 'sy','sz'])
 
-		self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl )
+		self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl ).ctrl
 
 		self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
 
 		try:
 			self.rigGrp = pm.parent('rig_GRP', self.globalCtrl.gimbal)[0]
 		except:
-			self.rigGrp = rig_transform(0, name='rig', parent=self.globalCtrl.gimbal).object
+			self.rigGrp = rig_transform(0, name='rig',
+			                            parent=self.globalCtrl.gimbal).object
 
 		try:
-			self.rigModule = pm.parent('rigModule_GRP', self.globalCtrl.gimbal)[0]
+			self.rigModule = pm.parent('rigModules_GRP',
+			                           self.globalCtrl.gimbal)[0]
 		except:
-			self.rigModule = rig_transform(0, name='rigModule', parent=self.globalCtrl.gimbal).object
+			self.rigModule = rig_transform(0, name='rigModules',
+			                               parent=self.globalCtrl.gimbal).object
 
 		try:
 			self.model = pm.parent('model_GRP', self.topNode)[0]
@@ -74,6 +78,9 @@ class puppet(rig_object):
 		except:
 			self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
 
+		self.worldSpace = rig_transform(0, name= 'worldSpace',
+		                                parent=self.globalCtrl.gimbal).object
+
 		# create attributes on global ctrl
 		pm.addAttr(self.globalCtrl.ctrl, ln='puppetSettings', at='enum',
 		           enumName='___________',
@@ -81,19 +88,27 @@ class puppet(rig_object):
 		self.globalCtrl.ctrl.puppetSettings.setLocked(True)
 
 		# model and skeleton vis
+		# model
 		connectAttrToVisObj(self.globalCtrl.ctrl, 'modelVis', self.model,
 		                    defaultValue=1)
+		# skeleton
 		pm.addAttr(self.globalCtrl.ctrl, longName='skeletonVis', at='long',
 		           k=True, min=0,
-		           max=1, defaultValue=1)
+		           max=1, defaultValue=0)
 		self.globalCtrl.ctrl.skeletonVis.set(cb=True)
+		# controls
+		pm.addAttr(self.globalCtrl.ctrl, longName='controlsVis', at='long',
+		           k=True, min=0,
+		           max=1, defaultValue=1)
+		self.globalCtrl.ctrl.controlsVis.set(cb=True)
 
-		# ik fk switches
-		pm.addAttr(self.globalCtrl.ctrl, ln='ikFkSwitch', at='enum',
-		           enumName='___________',
+		# referencing and selecting
+		pm.addAttr(self.globalCtrl.ctrl, ln='model', at='enum',
+		           enumName='Selectable:Reference',
 		           k=True)
-		self.globalCtrl.ctrl.ikFkSwitch.setLocked(True)
-
+		pm.addAttr(self.globalCtrl.ctrl, ln='skeleton', at='enum',
+		           enumName='Selectable:Reference',
+		           k=True)
 
 		# scale global control
 		bbox = self.model.boundingBox()
@@ -115,6 +130,9 @@ class puppet(rig_object):
 		self.sup = super(puppet, self)
 		self.sup.__init__(self.topNode, **kwds)
 
+		pm.evaluationManager(mode='parallel')
+
+
 	def prepareRig(self):
 		print 'Prepare core rig'
 
@@ -135,8 +153,52 @@ class puppet(rig_object):
 
 	def finishRig(self):
 		print 'Finishing core rig'
+
 		cmds.dgdirty(allPlugs=True)
 		cmds.refresh()
+
+
+		# ik fk switches
+		# FK = 0, IK = 10 on switch
+		try:
+			pm.addAttr(self.globalCtrl.ctrl, ln='ikFkSwitch', at='enum',
+			           enumName='___________',
+			           k=True)
+			self.globalCtrl.ctrl.ikFkSwitch.setLocked(True)
+
+			switchLoc = pm.PyNode('ikFkSwitch_LOC')
+			attrs = pm.listAttr(switchLoc, ud=True)
+
+			for a in attrs:
+				locAttr = getattr(switchLoc, a)
+
+				pm.addAttr(self.globalCtrl.ctrl, longName=a, at='float', k=True,
+				           min=0,
+				           max=10)
+
+				globalCtrlAttr = getattr(self.globalCtrl.ctrl, a )
+				pm.setDrivenKeyframe(locAttr, cd=globalCtrlAttr, dv=10,v=1)
+				pm.setDrivenKeyframe(locAttr, cd=globalCtrlAttr, dv=0, v=0)
+
+				pm.setAttr(globalCtrlAttr, 10)
+
+		except pm.MayaNodeError:
+			print 'ikFkSwitch_LOC does not exists !'
+
+
+		# make skeleton and model reference
+		if pm.objExists('model_GRP'):
+			#geoList = rig_geoUnderGroupHierarchy('model_GRP')
+			#for g in geoList:
+			#	obj = pm.PyNode(g)
+			#	pm.setAttr( obj.overrideEnabled, 1 )
+			obj = pm.PyNode(self.model)
+			pm.setAttr(obj.overrideEnabled, 1)
+			pm.setDrivenKeyframe(obj.overrideDisplayType,
+			                     cd=self.globalCtrl.ctrl.model, dv=0, v=0)
+			pm.setDrivenKeyframe(obj.overrideDisplayType,
+			                     cd=self.globalCtrl.ctrl.model, dv=1, v=2)
+
 
 
 		func = getattr(self.charModule, self.character + 'Finish')()

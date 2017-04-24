@@ -28,7 +28,7 @@ def defaultAppendReturn(defaultVar, userVar, param):
 		return list
 
 
-def rig_geometryGroupHierarchy(group=None):
+def rig_geoUnderGroupHierarchy(group=None):
 	if group is None:
 		group = pm.ls(sl=True)[0]
 	geos = pm.listRelatives(group, ad=True, typ="mesh", ni=True)
@@ -41,7 +41,7 @@ def rig_geometryGroupHierarchy(group=None):
 
 # turn off inherit transforms on skincluster geometry under hierarchy
 def rig_skinClusterTransforms(group=None):
-	geos = rig_geometryGroupHierarchy(group)
+	geos = rig_geoUnderGroupHierarchy(group)
 	for g in geos:
 		try:
 			skinCluster = pm.PyNode(mm.eval('findRelatedSkinCluster "' + g + '";'))

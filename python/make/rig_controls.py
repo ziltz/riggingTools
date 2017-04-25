@@ -53,6 +53,7 @@ class rig_control(object):
 		self.targetOffset = defaultReturn('','targetOffset', param=kwds)
 		self.child = defaultReturn('', 'child', param=kwds)
 		self.ctrl = self._returnShape(self.shape)
+		self.rotateOrder = defaultReturn(2,'rotateOrder', param=kwds)
 		self.colour = defaultReturn('yellow','colour', param=kwds)
 		print ('control colour 1 = ' + self.colour)
 		print ('control side = ' + self.side)
@@ -130,6 +131,10 @@ class rig_control(object):
 
 		# parent ctrl to obj above, either offset or modify
 		pm.parent(self.ctrl, self.parent)
+
+		# set rotate order
+		self.ctrl.rotateOrder.set(k=True)
+		pm.setAttr(self.ctrl.rotateOrder, self.rotateOrder)
 
 		# set scale
 		pm.scale(self.ctrl.cv, self.scale[0], self.scale[1], self.scale[2])

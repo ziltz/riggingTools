@@ -50,7 +50,9 @@ def kiddoRigModules():
 	                        targetOffset='mainJA_JNT',
 	                        constrainOffset=main.con, scale=(35,15,40),
 	                        colour='yellow', parentOffset=bodyModule.controls,
-	                        lockHideAttrs=['tx','ty','tz']  )
+	                        lockHideAttrs=['tx','ty','tz'] )
+
+	#pm.setAttr(upperBody.ctrl.rotateOrder, 2)
 
 	constrainObject(upperBody.modify,
 	                [upperBody.offset, 'worldSpace_GRP'],
@@ -81,15 +83,15 @@ def kiddoRigModules():
 	biped = rig_biped()
 	biped.spineConnection = 'upperWaistX_JA_JNT'
 	biped.pelvisConnection = 'lowerBodyJA_JNT'
+	biped.centerConnection = 'mainJA_JNT'
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=14)
 
 		# arm setup
-		poleVector = biped.armControls['poleVector']
-		pm.move(poleVector.offset, [0, -40, 0], relative=True, objectSpace=True)
+		#poleVector = biped.armControls['poleVector']
+		#pm.move(poleVector.offset, [0, -40, 0], relative=True, objectSpace=True)
 
 		shoulderModule = biped.shoulder(side, ctrlSize = 12)
-		shoulderCtrl = biped.shoulderControl
 
 		biped.connectArmShoulder(side)
 

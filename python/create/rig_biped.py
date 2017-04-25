@@ -44,6 +44,7 @@ class rig_biped(object):
 		self.shoulderControl = None
 
 		self.spineConnection = 'spineJF_JNT'
+		self.centerConnection = 'spineJA_JNT'
 		self.pelvisConnection = 'pelvisJA_JNT'
 
 		self.spineModule = ''
@@ -182,26 +183,33 @@ class rig_biped(object):
 
 
 		pistonChildren = pm.listRelatives( pistonTop, type='transform', c=True)
-		
+
+		pm.parentConstraint(self.spineConnection, pistonTop, mo=True)
+
 		for child in pistonChildren:
-			if 'shoulderAim_LOCAimOffset' in repr(child):
+			if child.stripNamespace().endswith('shoulderAim_LOCAimOffset'):
 				pm.delete(pm.listRelatives(child, type='constraint'))
 				pm.parentConstraint(self.spineConnection, child, mo=True )
-			if 'shoulderAim_LOC' in repr(child):
-				con = pm.parentConstraint([self.shoulderControl.offset, child], self.shoulderControl.modify,
+			if child.stripNamespace().endswith('shoulderAim_LOC'):
+				con = pm.parentConstraint( self.shoulderControl.offset, child,
+				                           self.shoulderControl.modify,
 				                          mo=True)
+				pm.setAttr(con.interpType, 0)
 				childConAttr = con.getWeightAliasList()[1]
-				pm.addAttr(self.shoulderControl.ctrl, longName='aim', at='float', k=True, min=0,
+				pm.addAttr(self.shoulderControl.ctrl, longName='followArm',
+				           at='float', k=True, min=0,
 				           max=10, defaultValue=5)
 				pm.setDrivenKeyframe(childConAttr,
-				                     cd=self.shoulderControl.ctrl.aim,
+				                     cd=self.shoulderControl.ctrl.followArm,
 				                     dv=0,
 				                     v=0)
 				pm.setDrivenKeyframe(childConAttr,
-				                     cd=self.shoulderControl.ctrl.aim,
+				                     cd=self.shoulderControl.ctrl.followArm,
 				                     dv=10,
 				                     v=1)
-				
+			if child.stripNamespace().endswith('handAim_LOCAimOffset'):
+				pm.delete(pm.listRelatives(child, type='constraint'))
+				pm.pointConstraint(hand.con, child, mo=True)
 				
 		pm.parent(pistonTop, self.armModule.parts)
 		
@@ -243,27 +251,36 @@ class rig_biped(object):
 
 		# chain result
 		armResult = rig_transform(0, name=side + '_armResult', type='joint',
-		                          target=arm, parent=armSkeletonParts).object
-		elbowResult = rig_transform(0, name=side + '_elbowResult', type='joint', target=elbow).object
-		handResult = rig_transform(0, name=side + '_handResult', type='joint', target=hand).object
+		                          target=arm, parent=armSkeletonParts,
+		                          rotateOrder=2).object
+		elbowResult = rig_transform(0, name=side + '_elbowResult', type='joint',
+		                            target=elbow, rotateOrder=2).object
+		handResult = rig_transform(0, name=side + '_handResult', type='joint',
+		                           target=hand, rotateOrder=2).object
 		chainResult = [armResult, elbowResult, handResult]
 
 		chainParent(chainResult)
 		chainResult.reverse()
 
 		# chain FK
-		armFK = rig_transform(0, name=side+'_armFK', type='joint', target=arm, parent=armSkeletonParts).object
-		elbowFK = rig_transform(0, name=side+'_elbowFK', type='joint', target=elbow).object
-		handFK = rig_transform(0, name=side+'_handFK', type='joint', target=hand).object
+		armFK = rig_transform(0, name=side+'_armFK', type='joint', target=arm,
+		                      parent=armSkeletonParts, rotateOrder=2).object
+		elbowFK = rig_transform(0, name=side+'_elbowFK', type='joint',
+		                        target=elbow, rotateOrder=2).object
+		handFK = rig_transform(0, name=side+'_handFK', type='joint', target=hand, rotateOrder=2
+		                       ).object
 		chainFK = [ armFK, elbowFK, handFK ]
 
 		chainParent(chainFK)
 		chainFK.reverse()
 
 		# chain IK
-		armIK = rig_transform(0, name=side+'_armIK', type='joint', target=arm,parent=armSkeletonParts).object
-		elbowIK = rig_transform(0, name=side+'_elbowIK', type='joint', target=elbow).object
-		handIK = rig_transform(0, name=side+'_handIK', type='joint', target=hand).object
+		armIK = rig_transform(0, name=side+'_armIK', type='joint', target=arm,
+		                      parent=armSkeletonParts,rotateOrder=2).object
+		elbowIK = rig_transform(0, name=side+'_elbowIK', type='joint',
+		                        target=elbow, rotateOrder=2).object
+		handIK = rig_transform(0, name=side+'_handIK', type='joint', target=hand, rotateOrder=2
+		                       ).object
 		chainIK = [ armIK, elbowIK, handIK ]
 
 		chainParent(chainIK)
@@ -278,6 +295,11 @@ class rig_biped(object):
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
 		                         parentOffset=module.controls, scale=ctrlSizeHalf )
+
+		if side == 'r':
+			pm.rotate(poleVector.ctrl.cv, 90, 0, 0, r=True, os=True)
+		else:
+			pm.rotate(poleVector.ctrl.cv, -90, 0, 0, r=True, os=True)
 
 		pm.connectAttr(module.top.ikFkSwitch, poleVector.offset+'.visibility' )
 
@@ -296,20 +318,53 @@ class rig_biped(object):
 
 		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
 
+		pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
+		        objectSpace=True)
+
 		print 'ik handle '+ik.handle
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
-		                          targetOffset=hand,
-		                          parentOffset=module.controls, constrain= str(
-				ik.handle), scale=ctrlSize)
+		                          parentOffset=module.controls, scale=ctrlSize)
+
+		pm.delete(pm.pointConstraint(hand, handControl.offset))
+		pm.parentConstraint( handControl.con, ik.handle, mo=True )
 
 		handControl.gimbal = createCtrlGimbal( handControl )
 		handControl.pivot = createCtrlPivot( handControl )
 
-		pm.connectAttr(module.top.ikFkSwitch, handControl.offset+'.visibility' )
+		constrainObject(handControl.offset,
+		                [self.spineConnection, self.centerConnection ,
+		                 'worldSpace_GRP'],
+		                handControl.ctrl, ['spine','main','world'],
+		                type='parentConstraint')
+
+		pm.addAttr(handControl.ctrl, longName='twist', at='float', k=True)
+		pm.connectAttr(handControl.ctrl.twist, ik.handle.twist)
+
+		pm.connectAttr(module.top.ikFkSwitch, handControl.offset + '.visibility')
 
 		self.armControls['hand'] = handControl
 
-		pm.orientConstraint(handControl.con, handIK, mo=True )
+		pm.orientConstraint(handControl.con, handIK, mo=True)
+
+
+		# auto pole vector
+		autoPVOffset = rig_transform(0, name=side+'_autoPVOffset',
+		                             parent=module.parts, target = poleVector.con
+		).object
+		autoPVLoc = rig_transform(0, name=side+'_autoPV' ,type='locator',
+		                          parent=autoPVOffset,target=autoPVOffset ).object
+
+		pm.parentConstraint( self.spineConnection, autoPVOffset, mo=True )
+		pm.pointConstraint( self.spineConnection, handControl.con,autoPVLoc , mo=True)
+
+		constrainObject(poleVector.offset,
+		                [autoPVLoc, self.spineConnection,self.centerConnection,
+		                 'worldSpace_GRP'],
+		                poleVector.ctrl, ['auto', 'spine', 'main', 'world'],
+		                type='parentConstraint')
+
+
+
 
 
 

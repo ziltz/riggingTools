@@ -94,6 +94,9 @@ def kiddoRigModules():
 		shoulderModule = biped.shoulder(side, ctrlSize = 12)
 
 		biped.connectArmShoulder(side)
+		
+		
+		
 
 def kiddoFinish():
 	print 'Finishing kiddo'

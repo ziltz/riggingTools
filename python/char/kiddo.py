@@ -9,7 +9,8 @@ from create.rig_biped import rig_biped
 from rutils.rig_modules import rig_module
 from make.rig_controls import *
 from rutils.rig_utils import *
-
+from rutils.rig_chain import *
+from make.rig_ik import rig_ik
 
 '''
 
@@ -127,7 +128,7 @@ def kiddoRigModules():
 
 		# create ik
 		ik = rig_ik(legName, legJntIK, footJntIK, 'ikSpringSolver')
-		pm.parent(ik.handle, module.parts)
+		pm.parent(ik.handle, legModule.parts)
 
 		# pole vector
 		legPoleVector = rig_control(side=side, name='legPV', shape='pointer',
@@ -135,7 +136,6 @@ def kiddoRigModules():
 		                         targetOffset=[legJnt, footJnt],
 		                         parentOffset=legModule.controls, scale=(4,4,4))
 
-		pm.parentConstraint(biped.centerConnection, legPoleVector.offset, mo=True)
 		pm.delete(pm.aimConstraint(kneeJnt, legPoleVector.offset, mo=False))
 
 		kneePos = pm.xform(kneeJnt, translation=True, query=True, ws=True)
@@ -148,6 +148,8 @@ def kiddoRigModules():
 		         r=True)
 
 		pm.poleVectorConstraint(legPoleVector.con, ik.handle)  # create pv
+		
+		pm.parentConstraint(biped.centerConnection, legPoleVector.offset, mo=True)
 
 		# create foot control
 		foot = rig_control(side=side, name='foot', shape='box', modify=1,
@@ -172,35 +174,51 @@ def kiddoRigModules():
 		pm.connectAttr(foot.ctrl.twist, ik.handle.twist)
 
 		# create hip aims
-		hipAimZ_loc = rig_transform(0, name=side + 'hipAimZ', type='locator',
-		                        parent=legModule.parts).object
-		footAimZ_loc = rig_transform(0, name=side + 'footAimZ', type='locator',
+		hipAimZ_loc = rig_transform(0, name=side + '_hipAimZ', type='locator',
+		                        parent=legModule.parts, target=hipZJnt).object
+		footAimZ_loc = rig_transform(0, name=side + '_footAimZ', type='locator',
 		                            parent=legModule.parts).object
 
-		pm.pointConstraint(biped.pelvisConnection, hipAimZ_loc)
-		pm.pointConstraint(foot.con, footAimZ_loc)
+		pm.pointConstraint(biped.pelvisConnection, hipAimZ_loc, mo=True)
+		pm.parentConstraint(foot.con, footAimZ_loc)
 
 		hipAimZ = mm.eval(
 			'rig_makePiston("' + footAimZ_loc + '", "' + hipAimZ_loc + '", "' + side +
 			'_hipAimZ");')
-
+		
+		pm.orientConstraint( hipAimZ_loc,  hipZJnt, mo=True, skip=('x','y') )
 
 		# y rotation
 
-		hipAimY_loc = rig_transform(0, name=side + 'hipAimY', type='locator',
-		                            parent=legModule.parts).object
-		footAimY_loc = rig_transform(0, name=side + 'footAimY', type='locator',
+		hipAimY_loc = rig_transform(0, name=side + '_hipAimY', type='locator',
+		                            parent=legModule.parts,target=hipYJnt).object
+		footAimY_loc = rig_transform(0, name=side + '_footAimY', type='locator',
 		                             parent=legModule.parts).object
 
-		pm.pointConstraint(biped.pelvisConnection, hipAimY_loc)
-		pm.pointConstraint(foot.con, footAimY_loc)
+		pm.pointConstraint(hipZJnt, hipAimY_loc,mo=True)
+		pm.parentConstraint(foot.con, footAimY_loc)
 
 		hipAimY = mm.eval(
 			'rig_makePiston("' + footAimY_loc + '", "' + hipAimY_loc + '", '
 			                                                           '"' + side +
 			'_hipAimY");')
+	
+		pm.orientConstraint(hipAimY_loc, hipYJnt, mo=True, skip=('x', 'z'))
 
 		# constrain shizzle
+		
+		legTop = rig_transform(0, name=side + '_legTop',
+		                            target=legJnt, parent=legModule.parts).object
+		
+		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
+		                                 parent=legTop).object
+		
+		pm.parent( legJntIK, legSkeletonParts )
+		pm.parentConstraint( hipYJnt, legTop, mo=True )
+		
+		pm.orientConstraint( legJntIK, legJnt, mo=True )
+		pm.orientConstraint( kneeJntIK, kneeJnt, mo=True )
+		pm.orientConstraint( ankleJntIK, ankleJnt, mo=True )
 
 
 def kiddoFinish():

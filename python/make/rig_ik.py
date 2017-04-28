@@ -1,7 +1,7 @@
 __author__ = 'Jerry'
 
 import pymel.core as pm
-
+import maya.mel as mm
 
 '''
 
@@ -20,6 +20,9 @@ class rig_ik(object):
 		self.end = end
 		self.solver = solver
 
+		if self.solver == 'ikSpringSolver':
+			mm.eval("ikSpringSolver;")
+		
 		ikData = pm.ikHandle(n=self.name+'_ikHandle', sj=self.start, ee=self.end, solver=self.solver)
 		self.handle = ikData[0]
 		self.effector = ikData[1]

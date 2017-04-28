@@ -8,6 +8,8 @@ import pymel.core as pm
 
 rig_ik( l_arm ,'l_armJA_JNT', 'l_handJA_JNT', 'ikRPsolver' )
 
+ikSpringSolver
+
 '''
 class rig_ik(object):
 
@@ -23,6 +25,8 @@ class rig_ik(object):
 		self.effector = ikData[1]
 
 
+	def poleVectorConstraint(self):
+		return
 
 
 

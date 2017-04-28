@@ -1,5 +1,32 @@
 
 
+/*
+	
+	// expression
+	float $distAC = `getAttr "distanceDimensionShape1.distance"`;
+	float $totalLen = `getAttr "null_CTRL.totalLength"`;
+	float $midLen = `getAttr "null_CTRL.midLength"`;
+
+	float $angle = ( pow($distAC,2)+pow($totalLen, 2)-pow($midLen,2) ) / (2*$distAC*$totalLen);
+
+	print $angle;
+	float $cosAngle;
+	if (($angle > -1 ) && ($angle < 1 ))
+	{
+		$cosAngle = acosd($angle);
+	}
+	else
+	{
+		$cosAngle = 0;
+	}
+
+	
+aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "vector" -worldUpVector 0 1 0;
+aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject hipUp_LOC;
+
+
+*/
+
 
 /*
 
@@ -41,7 +68,6 @@ global proc string rig_objOffset(string $obj)
 }
 
 /*
-
 pass in object that has constraint node
 
 */

@@ -53,7 +53,7 @@ class rig_control(object):
 		self.targetOffset = defaultReturn('','targetOffset', param=kwds)
 		self.child = defaultReturn('', 'child', param=kwds)
 		self.ctrl = self._returnShape(self.shape)
-		self.rotateOrder = defaultReturn(2,'rotateOrder', param=kwds)
+		self.rotateOrder = defaultReturn(0,'rotateOrder', param=kwds)
 		self.colour = defaultReturn('yellow','colour', param=kwds)
 		print ('control colour 1 = ' + self.colour)
 		print ('control side = ' + self.side)
@@ -103,12 +103,15 @@ class rig_control(object):
 		if self.con > 0:
 			self.con = rig_transform(0, name=self.name+'Con', parent=self.ctrl
 			).object
+			pm.setAttr(self.con + ".rotateOrder", self.rotateOrder)
 			lastParent = self.con
 
 		if self.offset > 0:
 			self.offset = rig_transform(0, name=self.name+'Offset',
 			                            parent=self.parentOffset, target=self.targetOffset, child=self.ctrl ).object
+			pm.setAttr(self.offset+".rotateOrder", self.rotateOrder)
 			self.parent = self.offset
+
 
 		mods = []
 		if self.modify > 0:
@@ -116,6 +119,7 @@ class rig_control(object):
 			for i in range(1, self.modify+1):
 				modParent = rig_transform(0, name=self.name+'Modify'+str(i),
 				                          target=self.offset, parent=modParent).object
+				pm.setAttr(modParent + ".rotateOrder", self.rotateOrder)
 				mods.append(modParent)
 
 			if len(mods) == 1:

@@ -145,7 +145,7 @@ class rig_biped(object):
 		self.shoulderControl = rig_control( side=side, name='shoulder', shape='pyramid',
 		                            targetOffset=shoulder, modify=1,
 		                            parentOffset=module.controls,lockHideAttrs=[
-				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize )
+				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize, rotateOrder=0 )
 
 		if pm.objExists(self.spineConnection):
 			pm.parentConstraint(self.spineConnection, self.shoulderControl.offset, mo=True)

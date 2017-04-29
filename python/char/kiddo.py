@@ -26,14 +26,12 @@ def kiddoPuppet():
 def kiddoPrepareRig():
 	print 'Prepare kiddo'
 
-	mc.parent('l_clavicleJA_JNT', w=True)
-	mc.parent('r_clavicleJA_JNT', w=True)
-	mc.parent('l_armJA_JNT', w=True)
-	mc.parent('r_armJA_JNT', w=True)
-	
-	#mc.parent( 'l_legJA_JNT', w=True )
-	#mc.parent( 'r_legJA_JNT', w=True )
-	
+	for side in ('l_', 'r_'):
+		mc.parent(side+'clavicleJA_JNT', w=True)
+		mc.parent(side+'armJA_JNT', w=True)
+		mc.parent(side+'legJA_JNT', w=True )
+		mc.parent(side+'hipZ_JA_JNT', w=True  )
+		mc.parent(side+'hipY_JA_JNT', w=True)
 
 def kiddoRigModules():
 	print 'Create kiddo rig modules'
@@ -53,7 +51,7 @@ def kiddoRigModules():
 	                        targetOffset='mainJA_JNT',
 	                        constrainOffset=main.con, scale=(35,15,40),
 	                        colour='yellow', parentOffset=bodyModule.controls,
-	                        lockHideAttrs=['tx','ty','tz'] )
+	                        lockHideAttrs=['tx','ty','tz'],rotateOrder=2 )
 
 	#pm.setAttr(upperBody.ctrl.rotateOrder, 2)
 
@@ -71,7 +69,7 @@ def kiddoRigModules():
 	                        targetOffset='lowerBodyJA_JNT',
 	                        constrainOffset=main.con, scale=(40, 20, 30),
 	                        colour='green',  parentOffset=bodyModule.controls,
-	                        lockHideAttrs=['tx','ty','tz', 'rx','rz'] )
+	                        lockHideAttrs=['tx','ty','tz', 'rx','rz'], rotateOrder=2 )
 
 	constrainObject(lowerBody.modify,
 	                [lowerBody.offset, 'worldSpace_GRP'],
@@ -134,9 +132,9 @@ def kiddoRigModules():
 		legPoleVector = rig_control(side=side, name='legPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
 		                         targetOffset=[legJnt, footJnt],
-		                         parentOffset=legModule.controls, scale=(4,4,4))
+		                         parentOffset=legModule.controls, scale=(2,2,2))
 
-		pm.delete(pm.aimConstraint(kneeJnt, legPoleVector.offset, mo=False))
+		pm.delete(pm.aimConstraint(ankleJnt, legPoleVector.offset, mo=False))
 
 		kneePos = pm.xform(kneeJnt, translation=True, query=True, ws=True)
 		poleVectorPos = pm.xform(legPoleVector.con, translation=True, query=True,
@@ -144,12 +142,18 @@ def kiddoRigModules():
 
 		pvDistance = lengthVector(kneePos, poleVectorPos)
 
-		pm.xform(legPoleVector.offset, translation=[pvDistance, 0, 0], os=True,
+		pm.xform(legPoleVector.offset, translation=[-25, 0, 0], os=True,
 		         r=True)
 
 		pm.poleVectorConstraint(legPoleVector.con, ik.handle)  # create pv
 		
-		pm.parentConstraint(biped.centerConnection, legPoleVector.offset, mo=True)
+		#pm.parentConstraint(biped.centerConnection, legPoleVector.offset, mo=True)
+		pm.parentConstraint(hipYJnt, legPoleVector.offset, mo=True)
+
+		if side == 'r':
+			pm.rotate(legPoleVector.ctrl.cv, 0, -90, 0, r=True, os=True)
+		else:
+			pm.rotate(legPoleVector.ctrl.cv, 0, 90, 0, r=True, os=True)
 
 		# create foot control
 		foot = rig_control(side=side, name='foot', shape='box', modify=1,
@@ -159,7 +163,14 @@ def kiddoRigModules():
 
 		pm.delete(pm.pointConstraint(footJnt, foot.offset))
 		pm.parentConstraint(foot.con, ik.handle, mo=True)
-		pm.pointConstraint( foot.con, legPoleVector.modify, mo=True )
+		#pm.pointConstraint( foot.con, legPoleVector.modify, mo=True )
+
+		'''
+		setAttr "l_leg_ikHandle.springAngleBias[0].springAngleBias_FloatValue" 0;
+		setAttr "l_leg_ikHandle.springAngleBias[1].springAngleBias_FloatValue" 0.5;
+		spring bias
+
+		'''
 
 		foot.gimbal = createCtrlGimbal(foot)
 		foot.pivot = createCtrlPivot(foot)
@@ -169,6 +180,8 @@ def kiddoRigModules():
 		                 'worldSpace_GRP'],
 		                foot.ctrl, ['pelvis', 'main', 'world'],
 		                type='parentConstraint')
+
+		pm.setAttr(foot.ctrl.space, 2)
 
 		pm.addAttr(foot.ctrl, longName='twist', at='float', k=True)
 		pm.connectAttr(foot.ctrl.twist, ik.handle.twist)
@@ -182,11 +195,30 @@ def kiddoRigModules():
 		pm.pointConstraint(biped.pelvisConnection, hipAimZ_loc, mo=True)
 		pm.parentConstraint(foot.con, footAimZ_loc)
 
+		# z rotation
+
 		hipAimZ = mm.eval(
 			'rig_makePiston("' + footAimZ_loc + '", "' + hipAimZ_loc + '", "' + side +
 			'_hipAimZ");')
-		
-		pm.orientConstraint( hipAimZ_loc,  hipZJnt, mo=True, skip=('x','y') )
+
+		hipZ = rig_control(side=side, name='hipRoll', shape='sphere', modify=1,
+		                   scale=(5, 5, 7),
+		                   parentOffset=legModule.controls, targetOffset=hipZJnt,
+		                   lockHideAttrs=['tx','ty','tz','rx', 'ry'],
+		                   rotateOrder=0)
+
+		pm.parentConstraint(hipZ.con, hipZJnt, mo=True)
+		pm.parentConstraint( lowerBody.con, hipZ.offset, mo=True )
+		#rotCon = pm.parentConstraint(hipAimZ_loc, hipZ.modify, mo=True,
+		#                             skipTranslate=('x', 'y', 'z'),
+		#                             skipRotate=('x', 'y'))
+		rotCon = pm.orientConstraint(hipAimZ_loc, hipZ.modify, mo=True, skip=('x',
+		                                                                      'y'))
+		target = rotCon.getWeightAliasList()[0]
+		pm.addAttr(hipZ.ctrl, longName='aim', at='long', k=True, min=0, max=1, dv=1)
+		pm.connectAttr ( hipZ.ctrl.aim, target )
+
+
 
 		# y rotation
 
@@ -202,8 +234,27 @@ def kiddoRigModules():
 			'rig_makePiston("' + footAimY_loc + '", "' + hipAimY_loc + '", '
 			                                                           '"' + side +
 			'_hipAimY");')
-	
-		pm.orientConstraint(hipAimY_loc, hipYJnt, mo=True, skip=('x', 'z'))
+
+		pm.setAttr( side+'_hipAimZ_LOC.rotateOrder', 4 )
+
+		hipY = rig_control(side=side, name='hipYaw', shape='sphere', modify=1,
+		                   scale=(5, 7, 5),
+		                   parentOffset=legModule.controls, targetOffset=hipYJnt,
+		                   lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'],
+		                   rotateOrder=2)
+
+		pm.parentConstraint(hipY.con, hipYJnt, mo=True)
+		pm.parentConstraint(hipZ.con, hipY.offset, mo=True)
+		#rotCon = pm.parentConstraint(hipAimY_loc, hipY.modify, mo=True,
+		#                             skipTranslate=('x', 'y', 'z'),
+		#                             skipRotate=('x', 'z'))
+		rotCon = pm.orientConstraint(hipAimY_loc, hipY.modify, mo=True, skip=('x',
+		                                                                      'z'))
+		target = rotCon.getWeightAliasList()[0]
+		pm.addAttr(hipY.ctrl, longName='aim', at='long', k=True, min=0, max=1, dv=1)
+		pm.connectAttr(hipY.ctrl.aim, target)
+
+
 
 		# constrain shizzle
 		
@@ -212,17 +263,26 @@ def kiddoRigModules():
 		
 		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
 		                                 parent=legTop).object
-		
-		pm.parent( legJntIK, legSkeletonParts )
-		pm.parentConstraint( hipYJnt, legTop, mo=True )
-		
-		pm.orientConstraint( legJntIK, legJnt, mo=True )
-		pm.orientConstraint( kneeJntIK, kneeJnt, mo=True )
-		pm.orientConstraint( ankleJntIK, ankleJnt, mo=True )
+
+		pm.parent( hipAimY, hipAimZ, legModule.parts )
+		pm.parent( legJntIK,legJnt, legSkeletonParts )
+		pm.parentConstraint( hipYJnt, legTop, mo=True, skipRotate=('x','y','z') )
+
+		pm.connectAttr(legJntIK+'.rotate', legJnt+'.rotate')
+		pm.connectAttr(kneeJntIK+'.rotate', kneeJnt+'.rotate')
+		pm.connectAttr(ankleJntIK+'.rotate', ankleJnt+'.rotate')
+
+		pm.parent(hipZJnt, legModule.skeleton)
+		pm.parent(hipYJnt, legModule.skeleton)
+
+
+
 
 
 def kiddoFinish():
 	print 'Finishing kiddo'
+
+
 
 
 

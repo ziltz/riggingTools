@@ -11,6 +11,7 @@ from make.rig_controls import *
 from rutils.rig_utils import *
 from rutils.rig_chain import *
 from make.rig_ik import rig_ik
+from rutils.rig_nodes import *
 
 '''
 
@@ -20,7 +21,7 @@ char.kiddoPuppet()
 '''
 
 def kiddoPuppet():
-	puppet('kiddo_v001', character='kiddo')
+	puppet( character='kiddo' )
 
 
 def kiddoPrepareRig():
@@ -165,13 +166,6 @@ def kiddoRigModules():
 		pm.parentConstraint(foot.con, ik.handle, mo=True)
 		#pm.pointConstraint( foot.con, legPoleVector.modify, mo=True )
 
-		'''
-		setAttr "l_leg_ikHandle.springAngleBias[0].springAngleBias_FloatValue" 0;
-		setAttr "l_leg_ikHandle.springAngleBias[1].springAngleBias_FloatValue" 0.5;
-		spring bias
-
-		'''
-
 		foot.gimbal = createCtrlGimbal(foot)
 		foot.pivot = createCtrlPivot(foot)
 
@@ -184,7 +178,19 @@ def kiddoRigModules():
 		pm.setAttr(foot.ctrl.space, 2)
 
 		pm.addAttr(foot.ctrl, longName='twist', at='float', k=True)
+		pm.addAttr(foot.ctrl, longName='springBiasBottom', at='float',min=0,max=1,
+		           k=True, dv=0)
+		pm.addAttr(foot.ctrl, longName='springBiasTop', at='float', min=0, max=1,
+		           k=True, dv=0.5)
 		pm.connectAttr(foot.ctrl.twist, ik.handle.twist)
+
+		pm.connectAttr(foot.ctrl.springBiasBottom,
+		               ik.handle+'.springAngleBias[0].springAngleBias_FloatValue',
+		               f=True)
+		pm.connectAttr(foot.ctrl.springBiasTop,
+		               ik.handle + '.springAngleBias[1].springAngleBias_FloatValue',
+		               f=True)
+
 
 		# create hip aims
 		hipAimZ_loc = rig_transform(0, name=side + '_hipAimZ', type='locator',
@@ -212,11 +218,12 @@ def kiddoRigModules():
 		#rotCon = pm.parentConstraint(hipAimZ_loc, hipZ.modify, mo=True,
 		#                             skipTranslate=('x', 'y', 'z'),
 		#                             skipRotate=('x', 'y'))
-		rotCon = pm.orientConstraint(hipAimZ_loc, hipZ.modify, mo=True, skip=('x',
-		                                                                      'y'))
-		target = rotCon.getWeightAliasList()[0]
-		pm.addAttr(hipZ.ctrl, longName='aim', at='long', k=True, min=0, max=1, dv=1)
-		pm.connectAttr ( hipZ.ctrl.aim, target )
+		rotCon = pm.orientConstraint(hipZ.offset, hipAimZ_loc, hipZ.modify, mo=True,
+		                             skip=('x','y'))
+		targetZ = rotCon.getWeightAliasList()
+		#pm.addAttr(hipZ.ctrl, longName='aim', at='float', k=True, min=0, max=1,
+		# dv=1)
+		#pm.connectAttr ( hipZ.ctrl.aim, target )
 
 
 
@@ -248,13 +255,14 @@ def kiddoRigModules():
 		#rotCon = pm.parentConstraint(hipAimY_loc, hipY.modify, mo=True,
 		#                             skipTranslate=('x', 'y', 'z'),
 		#                             skipRotate=('x', 'z'))
-		rotCon = pm.orientConstraint(hipAimY_loc, hipY.modify, mo=True, skip=('x',
-		                                                                      'z'))
-		target = rotCon.getWeightAliasList()[0]
-		pm.addAttr(hipY.ctrl, longName='aim', at='long', k=True, min=0, max=1, dv=1)
-		pm.connectAttr(hipY.ctrl.aim, target)
-
-
+		rotCon = pm.orientConstraint(hipY.offset, hipAimY_loc, hipY.modify,
+		                             mo=True, skip=('x','z'))
+		targetY = rotCon.getWeightAliasList()
+		pm.addAttr(hipY.ctrl, longName='aim', at='float', k=True, min=0, max=1, dv=1)
+		pm.connectAttr(hipY.ctrl.aim, targetY[1])
+		pm.connectAttr(hipY.ctrl.aim, targetZ[1])
+		connectReverse( name=side+'_leg',input=(hipY.ctrl.aim, hipY.ctrl.aim,0),
+		                output=(targetY[0], targetZ[0],0) )
 
 		# constrain shizzle
 		
@@ -268,15 +276,26 @@ def kiddoRigModules():
 		pm.parent( legJntIK,legJnt, legSkeletonParts )
 		pm.parentConstraint( hipYJnt, legTop, mo=True, skipRotate=('x','y','z') )
 
-		pm.connectAttr(legJntIK+'.rotate', legJnt+'.rotate')
+		#pm.connectAttr(legJntIK+'.rotate', legJnt+'.rotate')
 		pm.connectAttr(kneeJntIK+'.rotate', kneeJnt+'.rotate')
 		pm.connectAttr(ankleJntIK+'.rotate', ankleJnt+'.rotate')
+
+		multiplyDivideNode('legRotate', 'multiply', input1=[legJntIK+'.rotateX',
+		                                                    legJntIK+'.rotateY',
+		                                                    legJntIK + '.rotateZ'],
+		                   input2=[1, hipY.ctrl.aim, hipY.ctrl.aim],
+		                   output=[legJnt + '.rotateX',
+		                           legJnt + '.rotateY',
+		                           legJnt + '.rotateZ'])
 
 		pm.parent(hipZJnt, legModule.skeleton)
 		pm.parent(hipYJnt, legModule.skeleton)
 
+		footJnts = [side+'_heelRotY_JA_JNT', side+'_footRotX_JA_JNT',
+		            side+'_footRotY_JA_JNT', side+'_footRotZ_JA_JNT']
+		footControls = simpleControls( footJnts, modify=2 )
 
-
+		#footControls[side+'']
 
 
 def kiddoFinish():

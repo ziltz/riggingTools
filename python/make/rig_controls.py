@@ -234,6 +234,50 @@ class rig_control(object):
 		return ctrl
 
 
+
+'''
+
+'''
+def simpleControls(joints=None, **kwds ):
+
+	if type(joints) is str:
+		controls = [joints]
+
+	controlDict = {}
+	for jnt in joints:
+		parent = None
+		try:
+			parent = pm.listRelatives(jnt, type="joint", p=True)[0]
+			print parent + ' is parent'
+		except IndexError:
+			print 'No parent found'
+
+		side = ''
+		if jnt.startswith('l_'):
+			side = 'l'
+		if jnt.startswith('r_'):
+			side = 'r'
+
+		naming = jnt.replace('_JNT', '')
+		if jnt.endswith( 'JA_JNT' ):
+			naming = jnt.replace( 'JA_JNT', '' )
+		if jnt.endswith( '_JA_JNT' ):
+			naming = jnt.replace( '_JA_JNT', '' )
+
+		name = naming
+		if side:
+			name = naming.replace( side+'_', '' )
+
+		control = rig_control(side=side, name=name, shape='box',
+		                      targetOffset=jnt, constrainOffset=parent,
+		                      constrain=jnt,
+		                      **kwds)
+
+		controlDict[jnt] = control
+
+	return controlDict
+
+
 def createCtrlPivot( ctrlClass, overrideScale=None  ):
 
 	side = getattr( ctrlClass, 'side')

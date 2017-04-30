@@ -10,13 +10,14 @@ from rutils.rig_transform import rig_transform
 
 import pymel.core as pm
 import maya.cmds as cmds
-
+import glob, os
 
 class puppet(rig_object):
 	
-	def __init__(self, rigBound=None, **kwds):
+	def __init__(self,  **kwds):
 
 		self.character = defaultReturn('jerry', 'character', param=kwds)
+		self.rigBound = defaultReturn(None, 'rigBound', param=kwds)
 
 		self.charModule = importlib.import_module('char.' + self.character)
 		print self.charModule
@@ -26,9 +27,23 @@ class puppet(rig_object):
 		pm.evaluationManager(mode='serial')
 
 		pm.workspace(update=True)
-		projectRoot = pm.workspace(q=True, rd=True) +'/release/rigBound/'
+		projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'
+		print ' project root '+projectRoot+' found'
 
-		self.rigBound = projectRoot + rigBound + '.ma'
+		if self.rigBound is None:
+			#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
+			fileList = []
+			os.chdir(projectRoot)
+			for file in glob.glob("*.ma"):
+				print(file)
+				fileList.append(file)
+
+			fileList.sort()
+			latestFile = fileList[-1:][0]
+			print latestFile
+			self.rigBound = projectRoot + latestFile
+		else:
+			self.rigBound = projectRoot + self.rigBound + '.ma'
 
 		print 'rigBound file path = '+self.rigBound
 		# import rigBound file

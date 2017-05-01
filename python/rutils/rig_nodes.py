@@ -54,7 +54,10 @@ def multiplyDivideNode( name='multiplyDivide', operation='multiply', input1=(0,0
 		except RuntimeError:
 			pm.connectAttr(input2[i], mdNode + '.input2' + xyz[i], f=True)
 
-		pm.connectAttr( mdNode + '.output' + xyz[i],  output[i] ,f=True)
+		try:
+			pm.connectAttr( mdNode + '.output' + xyz[i],  output[i] ,f=True)
+		except IndexError:
+			pass
 
 	if operation == 'multiply':
 		pm.setAttr( mdNode+'.operation', 1 )
@@ -85,3 +88,12 @@ def connectReverse( name='reverseNode#', input=(0,0,0), output=(0,0,0) ):
 			print 'cannot find attribute ' + str(output[i])
 
 	return reverseNode
+
+
+def connectNegative( obj1, obj2, name='connectNegative#' ):
+
+	negativeNode = multiplyDivideNode(name, 'multiply', input1=[obj1, 0, 0],
+	                                input2=[-1, -1,-1],
+	                   output=[obj2])
+
+	return negativeNode

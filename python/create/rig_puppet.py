@@ -35,12 +35,10 @@ class puppet(rig_object):
 			fileList = []
 			os.chdir(projectRoot)
 			for file in glob.glob("*.ma"):
-				print(file)
 				fileList.append(file)
 
 			fileList.sort()
 			latestFile = fileList[-1:][0]
-			print latestFile
 			self.rigBound = projectRoot + latestFile
 		else:
 			self.rigBound = projectRoot + self.rigBound + '.ma'

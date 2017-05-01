@@ -37,7 +37,6 @@ class rig_control(object):
 		self.side = defaultReturn('', 'side', param=kwds)
 		self.name = defaultReturn('rigControl','name', param=kwds)
 		self.base = self.name
-		print ('control side = '+self.side)
 		if self.side:
 			self.name = self.side+'_'+self.name
 		self.ctrlName = self.name + '_CTRL'
@@ -54,15 +53,13 @@ class rig_control(object):
 		self.child = defaultReturn('', 'child', param=kwds)
 		self.ctrl = self._returnShape(self.shape)
 		self.rotateOrder = defaultReturn(0,'rotateOrder', param=kwds)
-		self.colour = defaultReturn('yellow','colour', param=kwds)
-		print ('control colour 1 = ' + self.colour)
-		print ('control side = ' + self.side)
-		if self.side == ('l'):
-			self.colour = 'blue'
-		if self.side == ('r'):
-			self.colour = 'red'
+		self.colour = defaultReturn('yellow', 'colour', param=kwds)
 
-		print ('control colour 2 = ' + self.colour)
+		if self.colour == 'yellow':
+			if self.side == ('l'):
+				self.colour = 'blue'
+			if self.side == ('r'):
+				self.colour = 'red'
 
 		self.scale = defaultReturn((1,1,1) ,'scale', param=kwds)
 
@@ -78,7 +75,6 @@ class rig_control(object):
 		if pm.objExists(self.offsetConstrain):
 			pm.parentConstraint(self.offsetConstrain, self.offset, mo=True)
 
-		print 'self.constrain = ' +str(self.constrain)
 		if self.constrain is not 0:
 			if type(self.constrain) is str: # single obj constrain
 				if pm.objExists(self.constrain):
@@ -166,8 +162,6 @@ class rig_control(object):
 			self.ctrl.attr(at).setLocked(False)
 
 		if pm.objExists(self.child):
-			print 'PARENT THE CHILD UNDER OBJECT'
-			print 'child ' + self.child + ' under ' + lastParent
 			pm.parent(self.child, lastParent)
 
 	def _returnShape(self, shape):
@@ -240,15 +234,18 @@ class rig_control(object):
 '''
 def simpleControls(joints=None, **kwds ):
 
-	if type(joints) is str:
-		controls = [joints]
+	print type(joints)
+	jointList = joints
+	if type(joints) is str or type(joints) is unicode:
+		jointList = [joints]
 
 	controlDict = {}
-	for jnt in joints:
+	for jnt in jointList:
 		parent = None
+
+		print 'joint ' + jnt
 		try:
 			parent = pm.listRelatives(jnt, type="joint", p=True)[0]
-			print parent + ' is parent'
 		except IndexError:
 			print 'No parent found'
 
@@ -348,12 +345,6 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	if type(multipleConstrainer) is str:
 		doSpace = 0
 
-	print 'object to constrain ' + obj
-
-	print 'constrainers ' + str(multipleConstrainer)
-
-	print 'maintainOffset ='+str(maintainOffset)
-
 	obj = pm.PyNode(obj)
 
 	if pm.objExists(obj):
@@ -431,9 +422,6 @@ def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
 		if i > 0:
 			constrainOffset = controls[i-1].con
 
-		print 'constraintOffset = '+str(constrainOffset)
-		print 'jnt = '+jnt
-
 		name = jnt.replace('_JNT', '')
 		side = ''
 		ctrlName = ''
@@ -442,10 +430,6 @@ def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
 			ctrlName = name[2:]
 		else:
 			ctrlName = name
-
-		print 'name = ' + name
-		print 'side = ' + side
-		print 'ctrlName = ' + ctrlName
 
 		scale[0] = scale[0] * 0.8
 		scale[2] = scale[2] * 0.8

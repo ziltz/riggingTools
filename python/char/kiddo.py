@@ -114,7 +114,7 @@ def kiddoRigModules():
 	biped.pelvisConnection = 'lowerBodyJA_JNT'
 	biped.centerConnection = 'mainJA_JNT'
 	for side in ['l', 'r']:
-		armModule = biped.arm(side, ctrlSize=12)
+		armModule = biped.arm(side, ctrlSize=10)
 
 		fingersModule = biped.hand( side, ctrlSize= 2.2 )
 
@@ -302,7 +302,7 @@ def kiddoRigModules():
 		                            target=legJnt, parent=legModule.skeleton).object
 
 		pm.setAttr( legTop+'.inheritsTransform', 0 )
-
+		pm.scaleConstraint( 'worldScale_GRP', legTop )
 		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
 		                                 parent=legTop).object
 
@@ -328,7 +328,7 @@ def kiddoRigModules():
 
 		footJnts = [side+'_heelRotY_JA_JNT', side+'_footRotX_JA_JNT',
 		            side+'_footRotY_JA_JNT', side+'_footRotZ_JA_JNT']
-		footControls = simpleControls( footJnts, modify=2, scale=(13,3,20),
+		footControls = simpleControls( footJnts, modify=2, scale=(11,3,20),
 		                               parentOffset=legModule.parts,
 		                               colour=secColour,
 		                               lockHideAttrs=['tx', 'ty', 'tz'])

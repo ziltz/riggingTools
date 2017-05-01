@@ -125,7 +125,7 @@ class puppet(rig_object):
 
 		# scale global control
 		bbox = self.model.boundingBox()
-		width = bbox.width() * 0.3
+		width = bbox.width() * 0.15
 		cvsGlobal = pm.PyNode(self.globalCtrl.ctrl + '.cv[:]')
 		cvsGimbal = pm.PyNode(self.globalCtrl.gimbal + '.cv[:]')
 		pm.scale(cvsGlobal, width, width, width )

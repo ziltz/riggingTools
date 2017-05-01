@@ -10,6 +10,7 @@ from rutils.rig_nodes import blendColors
 
 import pymel.core as pm
 import maya.mel as mm
+import string
 
 '''
 
@@ -36,6 +37,12 @@ class rig_biped(object):
 		self.elbowName = 'elbowJA_JNT'
 		self.handName = 'handJA_JNT'
 
+		self.thumb = 'thumbJA_JNT'
+		self.fngIndex = 'fngIndexJA_JNT'
+		self.fngMid = 'fngMidJA_JNT'
+		self.fngRing = 'fngRingJA_JNT'
+		self.fngPinky = 'fngPinkyJA_JNT'
+
 		self.armJoints = []
 
 		# values : poleVector, hand, fk
@@ -53,6 +60,7 @@ class rig_biped(object):
 		self.shoulderModule = ''
 		self.armModule = ''
 		self.legModule = ''
+		self.fingersModule = ''
 
 
 	def create(self):
@@ -323,7 +331,8 @@ class rig_biped(object):
 
 		print 'ik handle '+ik.handle
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
-		                          parentOffset=module.controls, scale=ctrlSize)
+		                          parentOffset=module.controls, scale=ctrlSize,
+		                          rotateOrder=2)
 
 		pm.delete(pm.pointConstraint(hand, handControl.offset))
 		pm.parentConstraint( handControl.con, ik.handle, mo=True )
@@ -344,7 +353,11 @@ class rig_biped(object):
 
 		self.armControls['hand'] = handControl
 
-		pm.orientConstraint(handControl.con, handIK, mo=True)
+		handIK_loc = rig_transform(0, name= side+'_handIKBuffer', type='locator',
+		                           target=handIK, parent = handControl.con).object
+		pm.hide(handIK_loc)
+		pm.parentConstraint(handIK_loc, handIK, mo=True, skipTranslate=(
+		'x','y','z'))
 
 
 		# auto pole vector
@@ -399,6 +412,64 @@ class rig_biped(object):
 
 
 		return module
+
+	def hand(self, side='', axis='rz',ctrlSize=1.0):
+		abc = list(string.ascii_lowercase)
+
+		name = side + '_fingers'
+		if side == '':
+			name = 'fingers'
+
+		module = rig_module(name)
+		self.fingersModule = module
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSize = [ctrlSize/1.5, ctrlSize, ctrlSize/1.5]
+
+
+
+		rotateAxis = ['rx','ry','rz']
+
+		rotateAxis.remove(axis)
+
+		skipAxis = rotateAxis + ['tx', 'ty','tz' ]
+
+		for finger in ( self.thumb, self.fngIndex, self.fngMid, self.fngRing,
+		                self.fngPinky ):
+
+			fng = finger
+
+			if side != '':
+				fng = side + '_' + fng
+
+			print 'finger is '+fng
+			if pm.objExists(fng):
+
+				chainFingers = rig_chain( fng )
+
+				childrenFngs = chainFingers.chainChildren
+
+				childrenFngs.pop(len(childrenFngs)-1)
+
+				simpleControls(fng,
+				               modify=2, scale=ctrlSize,
+				               parentOffset=module.controls,
+				               lockHideAttrs=['tx','ty','tz'])
+
+				simpleControls(childrenFngs,
+				               modify=2, scale=ctrlSize,
+				               parentOffset=module.controls,
+				               lockHideAttrs=skipAxis)
+
+			else:
+				print fng + ' does not exist...Skipping.'
+
+
+
+
+
+		return
+
 
 	def pelvis (self):
 		return

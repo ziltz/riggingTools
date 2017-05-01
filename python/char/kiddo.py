@@ -54,17 +54,45 @@ def kiddoRigModules():
 	                        colour='yellow', parentOffset=bodyModule.controls,
 	                        lockHideAttrs=['tx','ty','tz'],rotateOrder=2 )
 
-	#pm.setAttr(upperBody.ctrl.rotateOrder, 2)
+	pm.move(upperBody.ctrl.cv, [0, 10, 0], relative=True, objectSpace=True)
+
+
+	upperWaistXYZ = simpleControls(['upperWaistY_JA_JNT', 'upperWaistZ_JA_JNT',
+	                               'upperWaistX_JA_JNT'],
+	               modify=1, scale=(45,10,50),
+	               parentOffset=bodyModule.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz'])
+
+	upperWaistY = upperWaistXYZ['upperWaistY_JA_JNT']
+	upperWaistZ = upperWaistXYZ['upperWaistZ_JA_JNT']
+	upperWaistX = upperWaistXYZ['upperWaistX_JA_JNT']
+
+	pm.hide( upperWaistY.offset, upperWaistZ.offset, upperWaistX.offset )
 
 	constrainObject(upperBody.modify,
 	                [upperBody.offset, 'worldSpace_GRP'],
 	                upperBody.ctrl, ['main', 'world'], type='orientConstraint')
 
-	pm.move(upperBody.ctrl.cv, [0, 10, 0], relative=True, objectSpace=True)
+	constrainObject(upperWaistY.modify,
+	                [upperWaistY.offset, 'worldSpace_GRP'],
+	                upperBody.ctrl, ['main', 'world'], type='orientConstraint',
+	                skip=('x','z'))
 
-	pm.connectAttr( upperBody.ctrl.rotateX, 'upperWaistX_JA_JNT.rotateX' )
-	pm.connectAttr( upperBody.ctrl.rotateY, 'upperWaistY_JA_JNT.rotateY' )
-	pm.connectAttr( upperBody.ctrl.rotateZ, 'upperWaistZ_JA_JNT.rotateZ' )
+	constrainObject(upperWaistZ.modify,
+	                [upperWaistZ.offset, 'worldSpace_GRP'],
+	                upperBody.ctrl, ['main', 'world'], type='orientConstraint',
+	                skip=('x', 'y'))
+
+	constrainObject(upperWaistX.modify,
+	                [upperWaistX.offset, 'worldSpace_GRP'],
+	                upperBody.ctrl, ['main', 'world'], type='orientConstraint',
+	                skip=('z', 'y'))
+
+	pm.connectAttr( upperBody.ctrl.rotateX, upperWaistX.ctrl.rotateX )
+	pm.connectAttr( upperBody.ctrl.rotateY, upperWaistY.ctrl.rotateY )
+	pm.connectAttr( upperBody.ctrl.rotateZ, upperWaistZ.ctrl.rotateZ )
+
+
 
 	lowerBody = rig_control(name='lowerBody', shape='box', modify=1,
 	                        targetOffset='lowerBodyJA_JNT',
@@ -77,7 +105,7 @@ def kiddoRigModules():
 	                lowerBody.ctrl, ['main', 'world'], type='orientConstraint',
 	                skip=('x','z'))
 
-	pm.orientConstraint(lowerBody.con, 'lowerBodyJA_JNT', skip=('x', 'z'), mo=True)
+	pm.parentConstraint(lowerBody.con, 'lowerBodyJA_JNT', mo=True)
 
 	pm.move(lowerBody.ctrl.cv, [0, -10, 0], relative=True, objectSpace=True)
 
@@ -86,7 +114,9 @@ def kiddoRigModules():
 	biped.pelvisConnection = 'lowerBodyJA_JNT'
 	biped.centerConnection = 'mainJA_JNT'
 	for side in ['l', 'r']:
-		armModule = biped.arm(side, ctrlSize=14)
+		armModule = biped.arm(side, ctrlSize=12)
+
+		fingersModule = biped.hand( side, ctrlSize= 2.2 )
 
 		shoulderModule = biped.shoulder(side, ctrlSize = 12)
 
@@ -95,7 +125,7 @@ def kiddoRigModules():
 		
 		secColour = 'deepskyblue'
 		if side == 'r':
-			secColour = 'salmon'
+			secColour = 'magenta'
 
 
 		# make leg
@@ -134,7 +164,7 @@ def kiddoRigModules():
 		legPoleVector = rig_control(side=side, name='legPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
 		                         targetOffset=[legJnt, footJnt],
-		                         parentOffset=legModule.controls, scale=(2,2,2))
+		                         parentOffset=legModule.parts, scale=(2,2,2))
 
 		pm.delete(pm.aimConstraint(ankleJnt, legPoleVector.offset, mo=False))
 
@@ -159,7 +189,7 @@ def kiddoRigModules():
 
 		# create foot control
 		foot = rig_control(side=side, name='foot', shape='box', modify=1,
-		                   scale=(15, 15, 15),
+		                   scale=(13, 13, 13),
 		                   parentOffset=legModule.controls,
 		                   lockHideAttrs=['rx', 'ry', 'rz'])
 
@@ -210,15 +240,13 @@ def kiddoRigModules():
 
 		hipZ = rig_control(side=side, name='hipRoll', shape='sphere', modify=1,
 		                   scale=(5, 5, 7),
-		                   parentOffset=legModule.controls, targetOffset=hipZJnt,
+		                   parentOffset=legModule.parts, targetOffset=hipZJnt,
 		                   lockHideAttrs=['tx','ty','tz','rx', 'ry'],
 		                   rotateOrder=0)
 
 		pm.parentConstraint(hipZ.con, hipZJnt, mo=True)
 		pm.parentConstraint( lowerBody.con, hipZ.offset, mo=True )
-		#rotCon = pm.parentConstraint(hipAimZ_loc, hipZ.modify, mo=True,
-		#                             skipTranslate=('x', 'y', 'z'),
-		#                             skipRotate=('x', 'y'))
+
 		rotCon = pm.orientConstraint(hipZ.offset, hipAimZ_loc, hipZ.modify, mo=True,
 		                             skip=('x','y'))
 		targetZ = rotCon.getWeightAliasList()
@@ -265,13 +293,16 @@ def kiddoRigModules():
 		connectReverse( name=side+'_leg',input=(hipY.ctrl.aim, hipY.ctrl.aim,0),
 		                output=(targetY[0], targetZ[0],0) )
 
+		pm.setAttr( rotCon.interpType, 2 )
 		pm.transformLimits(hipY.modify, ry=(-30, 10), ery=(1, 1))
 
 		# constrain shizzle
 		
 		legTop = rig_transform(0, name=side + '_legTop',
 		                            target=legJnt, parent=legModule.skeleton).object
-		
+
+		pm.setAttr( legTop+'.inheritsTransform', 0 )
+
 		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
 		                                 parent=legTop).object
 
@@ -297,120 +328,153 @@ def kiddoRigModules():
 
 		footJnts = [side+'_heelRotY_JA_JNT', side+'_footRotX_JA_JNT',
 		            side+'_footRotY_JA_JNT', side+'_footRotZ_JA_JNT']
-		footControls = simpleControls( footJnts, modify=2, scale=(10,10,15),
-		                               parentOffset=legModule.parts )
+		footControls = simpleControls( footJnts, modify=2, scale=(13,3,20),
+		                               parentOffset=legModule.parts,
+		                               colour=secColour,
+		                               lockHideAttrs=['tx', 'ty', 'tz'])
 
 		#footControls[side+'']
 
-		toe = rig_control(side=side, name='toe', shape='box', modify=1,
-		                   scale=(10, 10, 10), colour=secColour,
+		ankle = rig_control(side=side, name='ankle', shape='box', modify=1,
+		                   scale=(10, 6, 8), colour=secColour,
 		                   parentOffset=legModule.controls,
 		                   targetOffset=side+'_footRotZ_JA_JNT',
-		                   lockHideAttrs=['tx', 'ty','tz'])
+		                   lockHideAttrs=['tx', 'ty','tz', 'ry'])
 
-		pm.parentConstraint( footJnt, toe.offset, mo=True )
+		pm.parentConstraint( footJnt, ankle.offset, mo=True )
 
 		heel = footControls[side+'_heelRotY_JA_JNT']
 		footRotX = footControls[side+'_footRotX_JA_JNT']
 		footRotY = footControls[side+'_footRotY_JA_JNT']
 		footRotZ = footControls[side+'_footRotZ_JA_JNT']
 
+		pm.parent( heel.offset, legModule.controls )
+		heel.ctrl.rotateX.setKeyable(False)
+		heel.ctrl.rotateX.setLocked(False)
+		heel.ctrl.rotateZ.setKeyable(False)
+		heel.ctrl.rotateZ.setLocked(False)
+
 		pm.parentConstraint( footRotY.con, heel.modify[0], mo=True )
 		pm.parentConstraint( footRotZ.con, footRotY.modify[0], mo=True)
 		pm.parentConstraint( footRotX.con, footRotZ.modify[0], mo=True)
 
+		footSpace = footJnt
+		if side == 'l':
+			footSpace = rig_transform( 0, name='l_footSpace', parent=legModule.parts,
+			                           target=footJnt).object
+			pm.setAttr( footSpace+'.rotateX', 0 )
+			pm.parentConstraint( footJnt, footSpace, mo=True)
 
 		toeSpaceList = ('lowerBody', 'foot','main', 'world')
 		constrainObject(heel.modify[1],
-		                [biped.pelvisConnection, footJnt, biped.centerConnection,
+		                [biped.pelvisConnection, footSpace, biped.centerConnection,
 		                 'worldSpace_GRP'],
 		                heel.ctrl, toeSpaceList,
 		                type='orientConstraint', skip=('x','z'))
 
 		constrainObject(footRotX.modify[0],
-		                [biped.pelvisConnection, footJnt, biped.centerConnection,
+		                [biped.pelvisConnection, footSpace, biped.centerConnection,
 		                 'worldSpace_GRP'],
 		                footRotX.ctrl, toeSpaceList,
 		                type='orientConstraint', skip=('y', 'z'))
 
-		if side == 'l':
-			pm.setAttr( side+'_footRotXModify1_GRP_orientConstraint1.offsetX', 180  )
-
 		constrainObject(footRotZ.modify[1],
-		                [biped.pelvisConnection, footJnt, biped.centerConnection,
+		                [biped.pelvisConnection, footSpace, biped.centerConnection,
 		                 'worldSpace_GRP'],
 		                footRotZ.ctrl, toeSpaceList,
 		                type='orientConstraint', skip=('x', 'y'))
 
-		pm.connectAttr( toe.ctrl.rotateX, footRotX.ctrl.rotateX )
-		#pm.connectAttr( toe.ctrl.rotateY, heel.ctrl.rotateY )
-		connectNegative(toe.ctrl.rotateY, heel.ctrl.rotateY)
-		pm.connectAttr( toe.ctrl.rotateZ, footRotZ.ctrl.rotateZ )
+		pm.connectAttr( ankle.ctrl.rotateX, footRotX.ctrl.rotateX )
+		#pm.connectAttr( ankle.ctrl.rotateY, heel.ctrl.rotateY )
+		#connectNegative(ankle.ctrl.rotateY, heel.ctrl.rotateY)
+		pm.connectAttr( ankle.ctrl.rotateZ, footRotZ.ctrl.rotateZ )
 
-		pm.addAttr(toe.ctrl, ln='SPACES', at='enum',
+		pm.addAttr(ankle.ctrl, ln='SPACES', at='enum',
 		           enumName='___________',
 		           k=True)
-		toe.ctrl.SPACES.setLocked(True)
-		pm.addAttr(toe.ctrl, ln='rollSpace', at='enum',
+		ankle.ctrl.SPACES.setLocked(True)
+		pm.addAttr(ankle.ctrl, ln='rollSpace', at='enum',
 		           enumName='lowerBody:foot:main:world', k=True)
-		pm.addAttr(toe.ctrl, ln='yawSpace', at='enum',
-		           enumName='lowerBody:foot:main:world', k=True)
-		pm.addAttr(toe.ctrl, ln='pitchSpace', at='enum',
+		#pm.addAttr(ankle.ctrl, ln='yawSpace', at='enum',
+		#           enumName='lowerBody:foot:main:world', k=True)
+		pm.addAttr(ankle.ctrl, ln='pitchSpace', at='enum',
 		           enumName='lowerBody:foot:main:world', k=True)
 
-		pm.connectAttr( toe.ctrl.rollSpace, footRotX.ctrl.space )
-		pm.connectAttr(toe.ctrl.yawSpace, heel.ctrl.space)
-		pm.connectAttr( toe.ctrl.pitchSpace, footRotZ.ctrl.space )
+		pm.connectAttr( ankle.ctrl.rollSpace, footRotX.ctrl.space )
+		#pm.connectAttr( ankle.ctrl.yawSpace, heel.ctrl.space)
+		pm.connectAttr( ankle.ctrl.pitchSpace, footRotZ.ctrl.space )
 
-		pm.addAttr(toe.ctrl, ln='MOTION', at='enum',
+		pm.addAttr(ankle.ctrl, ln='MOTION', at='enum',
 		           enumName='___________',
 		           k=True)
-		toe.ctrl.MOTION.setLocked(True)
+		ankle.ctrl.MOTION.setLocked(True)
 
-		pm.addAttr(toe.ctrl, longName='fangs', at='float', k=True, min=0, max=10,
+		pm.addAttr(ankle.ctrl, longName='fangs', at='float', k=True, min=0, max=10,
 		           dv=0)
 		fangsJnt = pm.PyNode(side+'_toeFangsJA_JNT')
 		fangsTranslate = fangsJnt.translate.get()
-		pm.setDrivenKeyframe(fangsJnt.translateX, cd=toe.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.fangs, dv=0,
 		                     v=fangsTranslate[0])
-		pm.setDrivenKeyframe(fangsJnt.translateY, cd=toe.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.fangs, dv=0,
 		                     v=fangsTranslate[1])
-		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=toe.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.fangs, dv=0,
 		                     v=fangsTranslate[2])
 		pm.move(0, 1.5, 0, fangsJnt, r=True, os=True)
 		fangsTranslate = fangsJnt.translate.get()
 		pm.move(0, -1.5, 0, fangsJnt, r=True, os=True)
-		pm.setDrivenKeyframe(fangsJnt.translateX, cd=toe.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.fangs, dv=10,
 		                     v=fangsTranslate[0])
-		pm.setDrivenKeyframe(fangsJnt.translateY, cd=toe.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.fangs, dv=10,
 		                     v=fangsTranslate[1])
-		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=toe.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.fangs, dv=10,
 		                     v=fangsTranslate[2])
 
-		pm.addAttr(toe.ctrl, longName='toeCapRotate', at='float', k=True, dv=0)
+		pm.addAttr(ankle.ctrl, longName='toeCapRotate', at='float', k=True, dv=0)
 		if side == 'l':
-			pm.connectAttr( toe.ctrl.toeCapRotate, 'l_footCapJA_JNT.rotateX', f=True)
+			pm.connectAttr( ankle.ctrl.toeCapRotate, 'l_footCapJA_JNT.rotateX', f=True)
 		else:
-			connectReverse( toe.ctrl.toeCapRotate, 'r_footCapJA_JNT.rotateX' )
+			connectReverse( ankle.ctrl.toeCapRotate, 'r_footCapJA_JNT.rotateX' )
 
 
 		# simple controls
 
 		simpleControls( side+'_kneeCapJA_JNT' , colour=secColour,
-		                               modify=1, scale=(10,10, 5),
+		                               modify=1, scale=(10,10, 3),
 		                              parentOffset=legModule.controls,
 		                              lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'] )
 
 		simpleControls(side + '_ballsJA_JNT', colour=secColour,
-		               modify=1, scale=(5, 6, 6),
+		               modify=1, scale=(3, 6, 6),
 		               parentOffset=legModule.controls,
 		               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
+		simpleControls(side + '_shoulderShieldJA_JNT', colour=secColour,
+		               modify=1, scale=(4, 4, 4),
+		               parentOffset=armModule.controls,
+		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+
+
+
+	# assymentrical controls
+	simpleControls('r_gunBarrelJA_JNT', colour=secColour, scale=(4, 4, 4),
+	               parentOffset=armModule.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+
+	simpleControls('missileJA_JNT', colour='white', scale=(8, 6, 8),
+	               parentOffset=bodyModule.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
 def kiddoFinish():
 	print 'Finishing kiddo'
 
+	# removing aim attribute temporary
+	for side in ('l', 'r'):
+		hip = pm.PyNode(side+'_hipYaw_CTRL')
+		hip.aim.set(k=False, cb=False)
 
+		# main space
+		#pm.setAttr(side+'_foot_CTRL.space', 1)
+		pm.setAttr(side + '_heelRotY_CTRL.space', 1)
 
 
 

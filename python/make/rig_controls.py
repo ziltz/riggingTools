@@ -265,6 +265,15 @@ def simpleControls(joints=None, **kwds ):
 		if side:
 			name = naming.replace( side+'_', '' )
 
+		'''
+		ctrlShape = 'box'
+		try:
+			ctrlShape = kwds['shape']
+			kwds.pop( 'shape', 0 )
+		except KeyError:
+			pass
+		'''
+
 		control = rig_control(side=side, name=name, shape='box',
 		                      targetOffset=jnt, constrainOffset=parent,
 		                      constrain=jnt,
@@ -334,12 +343,24 @@ constrainObject('l_armOffset_GRP', 'target1_GRP', mo=False)
 # constrain multiple
 constrainObject('l_armOffset_GRP', ['target1_GRP', 'target2_GRP','target3_GRP', 'target4_GRP'], 'l_arm_CTRL',  ['world', 'local', 'target', 'spacing'])
 
+# interpType
+0 = no flip
+1 = average
+2 = shortest
+3 = longest
+4 = cache
+
+TODO parentConstraint skip translate and rotation
+
 '''
 def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 	maintainOffset = defaultReturn(True,'mo', param=kwds)
 	constrainType = defaultReturn('parentConstraint', 'type', param=kwds)
 	skip = defaultReturn(None, 'skip', param=kwds)
+	#skipTranslate = defaultReturn(None, 'skipTranslate', param=kwds)
+	#skipRotate = defaultReturn(None, 'skipRotate', param=kwds)
+	interp = defaultReturn(0, 'interp', param=kwds)
 
 	doSpace = 1
 	if type(multipleConstrainer) is str:
@@ -373,6 +394,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 				else:
 					con = pm.pointConstraint(multipleConstrainer, obj,
 				                          mo=maintainOffset, skip=skip)
+
+			pm.setAttr(con.interpType, interp)
 
 			if doSpace:
 				ctrl = pm.PyNode(ctrl)

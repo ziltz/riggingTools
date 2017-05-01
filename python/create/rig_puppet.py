@@ -212,12 +212,16 @@ class puppet(rig_object):
 			pm.setDrivenKeyframe(obj.overrideDisplayType,
 			                     cd=self.globalCtrl.ctrl.model, dv=1, v=2)
 
-
+		# remove display layers
+		displayLayers = pm.ls( type='displayLayer' )
+		for layer in displayLayers:
+			if layer.stripNamespace() not in 'defaultLayer':
+				pm.delete(layer)
 
 		func = getattr(self.charModule, self.character + 'Finish')()
 
 
-
+# make default human puppet
 def defaultRigPuppet(self, rig_puppet):
 
 	defaultRig = rig_puppet()

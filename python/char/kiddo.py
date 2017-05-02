@@ -302,7 +302,7 @@ def kiddoRigModules():
 		                            target=legJnt, parent=legModule.skeleton).object
 
 		pm.setAttr( legTop+'.inheritsTransform', 0 )
-		pm.scaleConstraint( 'worldScale_GRP', legTop )
+		pm.scaleConstraint( 'worldSpace_GRP', legTop )
 		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
 		                                 parent=legTop).object
 
@@ -350,9 +350,9 @@ def kiddoRigModules():
 
 		pm.parent( heel.offset, legModule.controls )
 		heel.ctrl.rotateX.setKeyable(False)
-		heel.ctrl.rotateX.setLocked(False)
+		heel.ctrl.rotateX.setLocked(True)
 		heel.ctrl.rotateZ.setKeyable(False)
-		heel.ctrl.rotateZ.setLocked(False)
+		heel.ctrl.rotateZ.setLocked(True)
 
 		pm.parentConstraint( footRotY.con, heel.modify[0], mo=True )
 		pm.parentConstraint( footRotZ.con, footRotY.modify[0], mo=True)

@@ -123,3 +123,46 @@ global proc string rig_nameGetSide(string $name)
 	return $return;
 
 }
+
+
+global proc string[] rig_geoUnderGroupHierarchy(string $group)
+{
+	string $geos[] = `listRelatives -ad -ni -type "mesh" $group`;
+	string $parents[] = {};
+	for ($g in $geos)
+	{
+		$parents[size($parents)] = rig_stringFirst(`listRelatives -p $g`);
+		
+	}
+	select $parents;
+	return $parents;
+}
+
+
+global proc rig_constrainBlockGeometry()
+{
+
+	string $lowGeos[] = rig_geoUnderGroupHierarchy("lowLOD_GRP");
+
+	for ($geo in $lowGeos)
+	{
+		print ("geo = "+$geo+"\n");
+
+		string $jntName = `substitute "JNTBLOCK" $geo "JNT"`; 
+
+		if (`gmatch $geo "*JNTBLOCK"`)
+		{
+			if (`objExists $jntName`)
+			{
+				print ("jnt = "+$jntName+"\n");
+				parentConstraint -mo $jntName $geo;
+			}
+			else
+				print ($jntName +" does not exist"+"\n");
+		}
+		else{
+			print ($geo+" not constrained= "+"\n");
+		}
+	}
+
+}

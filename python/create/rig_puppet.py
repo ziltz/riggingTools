@@ -123,6 +123,56 @@ class puppet(rig_object):
 		           enumName='Selectable:Reference',
 		           k=True, defaultValue = 1)
 
+		# LOD vis
+		pm.addAttr(self.globalCtrl.ctrl, ln='lodSetting', at='enum',
+		           enumName='___________',
+		           k=True)
+		self.globalCtrl.ctrl.lodSetting.setLocked(True)
+		pm.addAttr(self.globalCtrl.ctrl, ln='lodDisplay', at='enum',
+		           enumName='Low:Mid:High',
+		           k=True, defaultValue=0)
+
+		lodModel = ['lowLOD_GRP', 'lowMidLOD_GRP', 'midLOD_GRP', 'midHighLOD_GRP',
+		            'highLOD_GRP']
+
+		for lod in lodModel:
+			if pm.objExists(lod):
+				lodGRP = pm.PyNode(lod)
+				if 'low' in lod:
+					pm.setDrivenKeyframe(lodGRP.visibility,
+					                     cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0,v=1)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=1, v=0)
+				if 'mid' in lod:
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0, v=0)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=1, v=1)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=2, v=0)
+				if 'high' in lod:
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0, v=0)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0, v=0)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=2, v=1)
+				if 'lowMid' in lod:
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0, v=1)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=1, v=1)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=2, v=0)
+				if 'midHigh' in lod:
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=0, v=0)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=1, v=1)
+					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+					                     dv=2, v=1)
+
 		# scale global control
 		bbox = self.model.boundingBox()
 		width = bbox.width() * 0.15
@@ -132,7 +182,7 @@ class puppet(rig_object):
 		pm.scale(cvsGimbal, width/1.5, width/1.5, width/1.5)
 
 		pm.delete( "|*RigBoundTop_GRP" )
-		pm.hide(self.rigGrp)
+		pm.hide(self.rigGrp, self.rigModel)
 
 		self.prepareRig()
 

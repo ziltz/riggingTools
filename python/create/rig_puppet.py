@@ -19,181 +19,196 @@ class puppet(rig_object):
 		self.character = defaultReturn('jerry', 'character', param=kwds)
 		self.rigBound = defaultReturn(None, 'rigBound', param=kwds)
 
-		self.charModule = importlib.import_module('char.' + self.character)
-		print self.charModule
-
-		#cmds.file(f=True, new=True)
 		pm.newFile(f=True)
+
+		print "START: rigPuppet build "+self.character
+		pm.timer(s=True)
+		pm.undoInfo(state=False)
 		pm.evaluationManager(mode='serial')
 
-		pm.workspace(update=True)
-		projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'
-		print ' project root '+projectRoot+' found'
-
-		if self.rigBound is None:
-			#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
-			fileList = []
-			os.chdir(projectRoot)
-			for file in glob.glob("*.ma"):
-				fileList.append(file)
-
-			fileList.sort()
-			latestFile = fileList[-1:][0]
-			self.rigBound = projectRoot + latestFile
-		else:
-			self.rigBound = projectRoot + self.rigBound + '.ma'
-
-		print 'rigBound file path = '+self.rigBound
-		# import rigBound file
 		try:
-			#filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True,
-			# typ="mayaAscii", o=True)
-			filePath = cmds.file(self.rigBound, i=True, ignoreVersion=True,
-			                     ra = False, mergeNamespacesOnClash =False,
-			                     typ="mayaAscii", loadReferenceDepth='none')
+			self.charModule = importlib.import_module('char.' + self.character)
+			print self.charModule
 
-		except RuntimeError:
-			print self.rigBound + ' file not found'
+			pm.workspace(update=True)
+			projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'
+			print ' project root '+projectRoot+' found'
 
-		cmds.dgdirty(allPlugs=True)
-		cmds.refresh()
+			if self.rigBound is None:
+				#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
+				fileList = []
+				os.chdir(projectRoot)
+				for file in glob.glob("*.ma"):
+					fileList.append(file)
 
-		# unparent skeleton
-		skeleton = pm.parent(pm.listRelatives('skeleton_GRP', typ='joint'), w=True)
+				fileList.sort()
+				latestFile = fileList[-1:][0]
+				self.rigBound = projectRoot + latestFile
+			else:
+				self.rigBound = projectRoot + self.rigBound + '.ma'
 
-		self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
-		                              con=0, showAttrs=['sx', 'sy','sz'])
+			print 'rigBound file path = '+self.rigBound
+			# import rigBound file
+			try:
+				#filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True,
+				# typ="mayaAscii", o=True)
+				filePath = cmds.file(self.rigBound, i=True, ignoreVersion=True,
+				                     ra = False, mergeNamespacesOnClash =False,
+				                     typ="mayaAscii", loadReferenceDepth='none')
 
-		self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl ).ctrl
+			except RuntimeError:
+				print self.rigBound + ' file not found'
 
-		self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
+			cmds.dgdirty(allPlugs=True)
+			cmds.refresh()
 
-		try:
-			self.rigGrp = pm.parent('rig_GRP', self.globalCtrl.gimbal)[0]
-		except:
-			self.rigGrp = rig_transform(0, name='rig',
-			                            parent=self.globalCtrl.gimbal).object
+			# unparent skeleton
+			skeleton = pm.parent(pm.listRelatives('skeleton_GRP', typ='joint'), w=True)
 
-		try:
-			self.rigModule = pm.parent('rigModules_GRP',
-			                           self.globalCtrl.gimbal)[0]
-		except:
-			self.rigModule = rig_transform(0, name='rigModules',
-			                               parent=self.globalCtrl.gimbal).object
+			self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
+			                              con=0, showAttrs=['sx', 'sy','sz'])
 
-		try:
-			self.model = pm.parent('model_GRP', self.topNode)[0]
-		except:
-			self.model = rig_transform(0, name='model', parent=self.topNode).object
+			self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl ).ctrl
 
-		try:
-			self.rigModel = pm.parent('rigModel_GRP', self.model)[0]
-		except:
-			self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
+			self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
 
-		self.worldSpace = rig_transform(0, name= 'worldSpace',
-		                                parent=self.globalCtrl.gimbal).object
+			try:
+				self.rigGrp = pm.parent('rig_GRP', self.globalCtrl.gimbal)[0]
+			except:
+				self.rigGrp = rig_transform(0, name='rig',
+				                            parent=self.globalCtrl.gimbal).object
 
-		# create attributes on global ctrl
-		pm.addAttr(self.globalCtrl.ctrl, ln='puppetSettings', at='enum',
-		           enumName='___________',
-		           k=True)
-		self.globalCtrl.ctrl.puppetSettings.setLocked(True)
+			try:
+				self.rigModule = pm.parent('rigModules_GRP',
+				                           self.globalCtrl.gimbal)[0]
+			except:
+				self.rigModule = rig_transform(0, name='rigModules',
+				                               parent=self.globalCtrl.gimbal).object
 
-		# model and skeleton vis
-		# model
-		connectAttrToVisObj(self.globalCtrl.ctrl, 'modelVis', self.model,
-		                    defaultValue=1)
-		# skeleton
-		pm.addAttr(self.globalCtrl.ctrl, longName='skeletonVis', at='long',
-		           k=True, min=0,
-		           max=1, defaultValue=0)
-		self.globalCtrl.ctrl.skeletonVis.set(cb=True)
-		# controls
-		pm.addAttr(self.globalCtrl.ctrl, longName='controlsVis', at='long',
-		           k=True, min=0,
-		           max=1, defaultValue=1)
-		self.globalCtrl.ctrl.controlsVis.set(cb=True)
+			try:
+				self.model = pm.parent('model_GRP', self.topNode)[0]
+			except:
+				self.model = rig_transform(0, name='model', parent=self.topNode).object
 
-		# referencing and selecting
-		pm.addAttr(self.globalCtrl.ctrl, ln='model', at='enum',
-		           enumName='Selectable:Reference',
-		           k=True, defaultValue = 1)
-		pm.addAttr(self.globalCtrl.ctrl, ln='skeleton', at='enum',
-		           enumName='Selectable:Reference',
-		           k=True, defaultValue = 1)
+			try:
+				self.rigModel = pm.parent('rigModel_GRP', self.model)[0]
+			except:
+				self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
 
-		# LOD vis
-		pm.addAttr(self.globalCtrl.ctrl, ln='lodSetting', at='enum',
-		           enumName='___________',
-		           k=True)
-		self.globalCtrl.ctrl.lodSetting.setLocked(True)
-		pm.addAttr(self.globalCtrl.ctrl, ln='lodDisplay', at='enum',
-		           enumName='Low:Mid:High',
-		           k=True, defaultValue=0)
+			self.worldSpace = rig_transform(0, name= 'worldSpace',
+			                                parent=self.globalCtrl.gimbal).object
 
-		lodModel = ['lowLOD_GRP', 'lowMidLOD_GRP', 'midLOD_GRP', 'midHighLOD_GRP',
-		            'highLOD_GRP']
+			# create attributes on global ctrl
+			pm.addAttr(self.globalCtrl.ctrl, ln='puppetSettings', at='enum',
+			           enumName='___________',
+			           k=True)
+			self.globalCtrl.ctrl.puppetSettings.setLocked(True)
 
-		for lod in lodModel:
-			if pm.objExists(lod):
-				lodGRP = pm.PyNode(lod)
-				if 'low' in lod:
-					pm.setDrivenKeyframe(lodGRP.visibility,
-					                     cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0,v=1)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=1, v=0)
-				if 'mid' in lod:
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0, v=0)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=1, v=1)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=2, v=0)
-				if 'high' in lod:
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0, v=0)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0, v=0)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=2, v=1)
-				if 'lowMid' in lod:
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0, v=1)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=1, v=1)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=2, v=0)
-				if 'midHigh' in lod:
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=0, v=0)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=1, v=1)
-					pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-					                     dv=2, v=1)
+			# model and skeleton vis
+			# model
+			connectAttrToVisObj(self.globalCtrl.ctrl, 'modelVis', self.model,
+			                    defaultValue=1)
+			# skeleton
+			pm.addAttr(self.globalCtrl.ctrl, longName='skeletonVis', at='long',
+			           k=True, min=0,
+			           max=1, defaultValue=0)
+			self.globalCtrl.ctrl.skeletonVis.set(cb=True)
+			# controls
+			pm.addAttr(self.globalCtrl.ctrl, longName='controlsVis', at='long',
+			           k=True, min=0,
+			           max=1, defaultValue=1)
+			self.globalCtrl.ctrl.controlsVis.set(cb=True)
 
-		# scale global control
-		bbox = self.model.boundingBox()
-		width = bbox.width() * 0.15
-		cvsGlobal = pm.PyNode(self.globalCtrl.ctrl + '.cv[:]')
-		cvsGimbal = pm.PyNode(self.globalCtrl.gimbal + '.cv[:]')
-		pm.scale(cvsGlobal, width, width, width )
-		pm.scale(cvsGimbal, width/1.5, width/1.5, width/1.5)
+			# referencing and selecting
+			pm.addAttr(self.globalCtrl.ctrl, ln='model', at='enum',
+			           enumName='Selectable:Reference',
+			           k=True, defaultValue = 1)
+			pm.addAttr(self.globalCtrl.ctrl, ln='skeleton', at='enum',
+			           enumName='Selectable:Reference',
+			           k=True, defaultValue = 1)
 
-		pm.delete( "|*RigBoundTop_GRP" )
-		pm.hide(self.rigGrp, self.rigModel)
+			# LOD vis
+			pm.addAttr(self.globalCtrl.ctrl, ln='lodSetting', at='enum',
+			           enumName='___________',
+			           k=True)
+			self.globalCtrl.ctrl.lodSetting.setLocked(True)
+			pm.addAttr(self.globalCtrl.ctrl, ln='lodDisplay', at='enum',
+			           enumName='Low:Mid:High',
+			           k=True, defaultValue=0)
 
-		self.prepareRig()
+			lodModel = ['lowLOD_GRP', 'lowMidLOD_GRP', 'midLOD_GRP', 'midHighLOD_GRP',
+			            'highLOD_GRP']
 
-		self.createRigModules()
+			for lod in lodModel:
+				if pm.objExists(lod):
+					lodGRP = pm.PyNode(lod)
+					if 'low' in lod:
+						pm.setDrivenKeyframe(lodGRP.visibility,
+						                     cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0,v=1)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=1, v=0)
+					if 'mid' in lod:
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0, v=0)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=1, v=1)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=2, v=0)
+					if 'high' in lod:
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0, v=0)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0, v=0)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=2, v=1)
+					if 'lowMid' in lod:
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0, v=1)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=1, v=1)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=2, v=0)
+					if 'midHigh' in lod:
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=0, v=0)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=1, v=1)
+						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
+						                     dv=2, v=1)
 
-		self.finishRig()
+			# scale global control
+			bbox = self.model.boundingBox()
+			width = bbox.width() * 0.15
+			cvsGlobal = pm.PyNode(self.globalCtrl.ctrl + '.cv[:]')
+			cvsGimbal = pm.PyNode(self.globalCtrl.gimbal + '.cv[:]')
+			pm.scale(cvsGlobal, width, width, width )
+			pm.scale(cvsGimbal, width/1.5, width/1.5, width/1.5)
 
-		self.sup = super(puppet, self)
-		self.sup.__init__(self.topNode, **kwds)
+			pm.delete( "|*RigBoundTop_GRP" )
+			pm.hide(self.rigGrp, self.rigModel)
 
-		pm.evaluationManager(mode='parallel')
+			self.prepareRig()
+
+			self.createRigModules()
+
+			self.finishRig()
+
+			self.sup = super(puppet, self)
+			self.sup.__init__(self.topNode, **kwds)
+
+		except Exception as e:
+			print "*************************************"
+			print "=========== Error happened ========="
+			print "*************************************"
+			raise
+		finally:
+			pm.evaluationManager(mode='parallel')
+
+			mayaTimer = pm.timer(e=True)
+
+			pm.undoInfo(state=True)
+			print "END: rigPuppet built in %g seconds" % mayaTimer
 
 
 	def prepareRig(self):

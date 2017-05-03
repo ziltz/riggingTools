@@ -45,5 +45,12 @@ class rig_module(object):
 		self.skeletonList = []
 		self.partsList = []
 
-		if pm.objExists('rigModules_GRP'):
-			pm.parent(self.top, 'rigModules_GRP')
+		rigModule = 'rigModules_GRP'
+		if pm.objExists(rigModule):
+			pm.parent(self.top, rigModule)
+			pm.addAttr(rigModule, longName=name+'Module', at='long', k=True,
+			           min=0, max=1, dv=1)
+			pm.connectAttr( rigModule+'.'+name+'Module', self.top.visibility  )
+
+
+

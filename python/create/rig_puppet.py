@@ -178,12 +178,51 @@ class puppet(rig_object):
 						                     dv=2, v=1)
 
 			# scale global control
-			bbox = self.model.boundingBox()
-			width = bbox.width() * 0.15
+			self.bbox = self.model.boundingBox()
+			width = self.bbox.width() * 0.3
 			cvsGlobal = pm.PyNode(self.globalCtrl.ctrl + '.cv[:]')
 			cvsGimbal = pm.PyNode(self.globalCtrl.gimbal + '.cv[:]')
 			pm.scale(cvsGlobal, width, width, width )
 			pm.scale(cvsGimbal, width/1.5, width/1.5, width/1.5)
+
+			# make display toggle
+			self.displayTransform = pm.circle(name='displayModulesToggleControl',
+			                             sw=360, nr=(0, 1, 0), ch=0)[0]
+			pm.delete(self.displayTransform.getShape())
+
+			displayCurves = pm.PyNode(
+				pm.textCurves(f="Quartz|wt:50|sz:28|sl:n|st:100", t="Display", ch=0,
+				              fzn=True)[0])
+			pm.setAttr(displayCurves.translateX, -1.7)
+			pm.move(0, 0, 0, displayCurves.rotatePivot, p=True, ws=True)
+			pm.move(0, 0, 0, displayCurves.scalePivot, p=True, ws=True)
+
+			pm.move( 0,(self.bbox.height()+(self.bbox.height()*0.1)),0,
+			         displayCurves, r=True )
+			displayScale = self.bbox[1][0]/4
+			pm.scale( displayCurves, displayScale,displayScale,displayScale  )
+
+			allCurves = pm.listRelatives(displayCurves, ad=True, c=True,
+			                             type="nurbsCurve")
+			parentCurves = []
+			for crv in allCurves:
+				parentTransform = pm.listRelatives(crv, p=True)[0]
+				pm.parent(parentTransform, w=True)
+				pm.makeIdentity(parentTransform, apply=True, t=1, r=1, s=1)
+				pm.parent(crv, self.displayTransform, shape=True, add=True)
+				parentCurves.append(parentTransform)
+
+			pm.dgdirty(allPlugs=True)
+			pm.refresh()
+			pm.delete(parentCurves, s=False)
+			pm.delete( displayCurves )
+			pm.parent( self.displayTransform, self.globalCtrl.ctrl )
+			for at in ['translateX','translateY','translateZ',
+			             'rotateX', 'rotateY', 'rotateZ',
+			             'scaleX', 'scaleY', 'scaleZ', 'visibility']:
+				#getattr(self.displayTransform, at).set(k=False)
+				self.displayTransform.attr(at).set(k=False)
+				self.displayTransform.attr(at).setLocked(True)
 
 			pm.delete( "|*RigBoundTop_GRP" )
 			pm.hide(self.rigGrp, self.rigModel)
@@ -193,6 +232,8 @@ class puppet(rig_object):
 			self.createRigModules()
 
 			self.finishRig()
+
+			pm.select(cl=True)
 
 			self.sup = super(puppet, self)
 			self.sup.__init__(self.topNode, **kwds)
@@ -235,6 +276,30 @@ class puppet(rig_object):
 		cmds.dgdirty(allPlugs=True)
 		cmds.refresh()
 
+		# add controls to set and display toggle
+		pm.select(cl=True)
+		controlSet = pm.sets( n=self.character+'RigPuppetControlSet' )
+		moduleAttrs = pm.listAttr(self.rigModule, ud=True, st='*Module')
+		allControls = []
+		for at in moduleAttrs:
+			sectionName = at.replace( 'Module', '' )
+			moduleName = at+'_GRP'
+			module = pm.PyNode( moduleName )
+			modGroups = pm.listRelatives( module, c=True )
+			for grp in modGroups:
+				if 'Controls' in grp.stripNamespace():
+					allCurves = pm.listRelatives(grp, ad=True,c=True, type="nurbsCurve")
+					for ctrl in allCurves:
+						allControls.append( pm.listRelatives(ctrl, p=True)[0] )
+
+					pm.addAttr(self.displayTransform, ln=sectionName, at='enum',
+					           enumName='None:Primary', k=False, dv=1)
+					self.displayTransform.attr(sectionName).set(cb=True)
+					pm.connectAttr( self.displayTransform.attr(sectionName),
+					                grp.lodVisibility )
+
+		pm.select(cl=True)
+		controlSet.addMembers(allControls)
 
 		# ik fk switches
 		# FK = 0, IK = 10 on switch

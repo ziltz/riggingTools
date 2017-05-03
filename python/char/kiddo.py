@@ -60,7 +60,7 @@ def kiddoRigModules():
 	upperWaistXYZ = simpleControls(['upperWaistY_JA_JNT', 'upperWaistZ_JA_JNT',
 	                               'upperWaistX_JA_JNT'],
 	               modify=1, scale=(45,10,50),
-	               parentOffset=bodyModule.controls,
+	               parentOffset=bodyModule.parts,
 	               lockHideAttrs=['tx', 'ty', 'tz'])
 
 	upperWaistY = upperWaistXYZ['upperWaistY_JA_JNT']

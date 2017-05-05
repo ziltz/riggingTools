@@ -241,7 +241,6 @@ class puppet(rig_object):
 		except Exception as e:
 			print "*************************************"
 			print "=========== Error happened ========="
-			print "*************************************"
 			raise
 		finally:
 			pm.evaluationManager(mode='parallel')
@@ -249,7 +248,10 @@ class puppet(rig_object):
 			mayaTimer = pm.timer(e=True)
 
 			pm.undoInfo(state=True)
+			print ''
+			print ''
 			print "END: rigPuppet built in %g seconds" % mayaTimer
+			print ''
 
 
 	def prepareRig(self):

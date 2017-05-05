@@ -227,7 +227,11 @@ class rig_control(object):
 
 		return ctrl
 
+	def cylinder(self):
+		ctrl = mm.eval('curve -n '+self.ctrlName+' -d 1 -p 1 1 0 -p 0.92388 1 -0.382683 -p 0.707107 1 -0.707106 -p 0.382684 1 -0.923879 -p 5.06639e-007 1 -1 -p -0.382683 1 -0.92388 -p -0.707106 1 -0.707107 -p -0.923879 1 -0.382684 -p -1 1 -3.57628e-007 -p -0.92388 1 0.382683 -p -0.707107 1 0.707107 -p -0.382684 1 0.923879 -p -1.49012e-007 1 1 -p 0.382683 1 0.92388 -p 0.707107 1 0.707107 -p 0.92388 1 0.382683 -p 1 1 0 -p 1 -1 0 -p 0.92388 -1 -0.382683 -p 0.707107 -1 -0.707106 -p 0.382684 -1 -0.923879 -p 5.06639e-007 -1 -1 -p -0.382683 -1 -0.92388 -p -0.707106 -1 -0.707107 -p -0.923879 -1 -0.382684 -p -1 -1 -3.57628e-007 -p -1 1 -3.57628e-007 -p -1 -1 -3.57628e-007 -p -0.92388 -1 0.382683 -p -0.707107 -1 0.707107 -p -0.382684 -1 0.923879 -p -1.49012e-007 -1 1 -p -1.49012e-007 1 1 -p -1.49012e-007 -1 1 -p 0.382683 -1 0.92388 -p 0.707107 -1 0.707107 -p 0.92388 -1 0.382683 -p 1 -1 0 -p 0.92388 -1 -0.382683 -p 0.707107 -1 -0.707106 -p 0.382684 -1 -0.923879 -p 5.06639e-007 -1 -1 -p 5.06639e-007 1 -1 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 ;')
 
+
+		return ctrl
 
 '''
 
@@ -265,16 +269,17 @@ def simpleControls(joints=None, **kwds ):
 		if side:
 			name = naming.replace( side+'_', '' )
 
-		'''
+
 		ctrlShape = 'box'
 		try:
 			ctrlShape = kwds['shape']
 			kwds.pop( 'shape', 0 )
 		except KeyError:
 			pass
-		'''
 
-		control = rig_control(side=side, name=name, shape='box',
+		print 'ctrlShape = '+ctrlShape
+
+		control = rig_control(side=side, name=name, shape=ctrlShape,
 		                      targetOffset=jnt, constrainOffset=parent,
 		                      constrain=jnt,
 		                      **kwds)

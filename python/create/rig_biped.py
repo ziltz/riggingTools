@@ -424,7 +424,7 @@ class rig_biped(object):
 		self.fingersModule = module
 
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
-		ctrlSize = [ctrlSize/1.5, ctrlSize, ctrlSize/1.5]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
 
 

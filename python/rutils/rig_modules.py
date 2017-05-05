@@ -8,6 +8,14 @@ import pymel.core as pm
 class rig_module(object):
 
 	def __init__(self, name):
+
+		self.side = ''
+		print name
+		if name.startswith('l_'):
+			self.side = 'l'
+		if name.startswith('r_'):
+			self.side = 'r'
+
 		self.top = pm.PyNode(rig_transform(0, name=name+'Module').object)
 
 		self.controls = pm.PyNode(rig_transform(0, name=name+'Controls',

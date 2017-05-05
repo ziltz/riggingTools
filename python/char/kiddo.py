@@ -33,6 +33,7 @@ def kiddoPrepareRig():
 		mc.parent(side+'legJA_JNT', w=True )
 		mc.parent(side+'hipZ_JA_JNT', w=True  )
 		mc.parent(side+'hipY_JA_JNT', w=True)
+		#mc.parent(side+'handRotYJA_JNT', w=True  )
 
 def kiddoRigModules():
 	print 'Create kiddo rig modules'
@@ -116,7 +117,7 @@ def kiddoRigModules():
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=10)
 
-		fingersModule = biped.hand( side, ctrlSize= 2.2 )
+		fingersModule = biped.hand( side, ctrlSize= 2.5 )
 
 		shoulderModule = biped.shoulder(side, ctrlSize = 12)
 
@@ -296,6 +297,26 @@ def kiddoRigModules():
 		pm.setAttr( rotCon.interpType, 2 )
 		pm.transformLimits(hipY.modify, ry=(-30, 10), ery=(1, 1))
 
+		pm.addAttr(hipY.ctrl, longName='limitOutRotation', at='float', k=True, min=0,
+		           max=10,
+		           dv=5)
+		pm.addAttr(hipY.ctrl, longName='limitInRotation', at='float', k=True, min=0,
+		           max=10,
+		           dv=10)
+
+		pm.setDrivenKeyframe(hipY.modify+'.minRotYLimit' ,
+		                     cd=hipY.ctrl.limitOutRotation,
+		                     dv=0, v=-45 )
+		pm.setDrivenKeyframe(hipY.modify+'.minRotYLimit',
+		                     cd=hipY.ctrl.limitOutRotation,
+		                     dv=10, v=0)
+		pm.setDrivenKeyframe(hipY.modify+'.maxRotYLimit',
+		                     cd=hipY.ctrl.limitInRotation,
+		                     dv=0, v=10)
+		pm.setDrivenKeyframe(hipY.modify+'.maxRotYLimit',
+		                     cd=hipY.ctrl.limitInRotation,
+		                     dv=10, v=0)
+
 		# constrain shizzle
 		
 		legTop = rig_transform(0, name=side + '_legTop',
@@ -409,25 +430,49 @@ def kiddoRigModules():
 		           k=True)
 		ankle.ctrl.MOTION.setLocked(True)
 
-		pm.addAttr(ankle.ctrl, longName='fangs', at='float', k=True, min=0, max=10,
+		pm.addAttr(ankle.ctrl, longName='footFangs', at='float', k=True, min=0,
+		           max=10,
+		           dv=0)
+		pm.addAttr(ankle.ctrl, longName='toeFangs', at='float', k=True, min=0,
+		           max=10,
 		           dv=0)
 		fangsJnt = pm.PyNode(side+'_toeFangsJA_JNT')
+		toeFangsJnt = pm.PyNode(side + '_footFangsJA_JNT')
 		fangsTranslate = fangsJnt.translate.get()
-		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.footFangs, dv=0,
 		                     v=fangsTranslate[0])
-		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.footFangs, dv=0,
 		                     v=fangsTranslate[1])
-		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.fangs, dv=0,
+		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.footFangs, dv=0,
 		                     v=fangsTranslate[2])
 		pm.move(0, 1.5, 0, fangsJnt, r=True, os=True)
 		fangsTranslate = fangsJnt.translate.get()
 		pm.move(0, -1.5, 0, fangsJnt, r=True, os=True)
-		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateX, cd=ankle.ctrl.footFangs, dv=10,
 		                     v=fangsTranslate[0])
-		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateY, cd=ankle.ctrl.footFangs, dv=10,
 		                     v=fangsTranslate[1])
-		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.fangs, dv=10,
+		pm.setDrivenKeyframe(fangsJnt.translateZ, cd=ankle.ctrl.footFangs, dv=10,
 		                     v=fangsTranslate[2])
+
+		# foot fangs
+		fangsTranslate = toeFangsJnt.translate.get()
+		pm.setDrivenKeyframe(toeFangsJnt.translateX, cd=ankle.ctrl.toeFangs, dv=0,
+		                     v=fangsTranslate[0])
+		pm.setDrivenKeyframe(toeFangsJnt.translateY, cd=ankle.ctrl.toeFangs, dv=0,
+		                     v=fangsTranslate[1])
+		pm.setDrivenKeyframe(toeFangsJnt.translateZ, cd=ankle.ctrl.toeFangs, dv=0,
+		                     v=fangsTranslate[2])
+		pm.move(0, 0, -4.7, toeFangsJnt, r=True, os=True)
+		fangsTranslate = toeFangsJnt.translate.get()
+		pm.move(0, 0, 4.7,toeFangsJnt, r=True, os=True)
+		pm.setDrivenKeyframe(toeFangsJnt.translateX, cd=ankle.ctrl.toeFangs, dv=10,
+		                     v=fangsTranslate[0])
+		pm.setDrivenKeyframe(toeFangsJnt.translateY, cd=ankle.ctrl.toeFangs, dv=10,
+		                     v=fangsTranslate[1])
+		pm.setDrivenKeyframe(toeFangsJnt.translateZ, cd=ankle.ctrl.toeFangs, dv=10,
+		                     v=fangsTranslate[2])
+
 
 		pm.addAttr(ankle.ctrl, longName='toeCapRotate', at='float', k=True, dv=0)
 		if side == 'l':
@@ -437,32 +482,13 @@ def kiddoRigModules():
 
 
 		# simple controls
+		legSidesSimpleControls(legModule, side, secColour)
 
-		simpleControls( side+'_kneeCapJA_JNT' , colour=secColour,
-		                               modify=1, scale=(10,10, 3),
-		                              parentOffset=legModule.controls,
-		                              lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'] )
+		armSidesSimpleControls(armModule, side, secColour)
 
-		simpleControls(side + '_ballsJA_JNT', colour=secColour,
-		               modify=1, scale=(3, 6, 6),
-		               parentOffset=legModule.controls,
-		               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+	# asymettrical controls
+	bodySimpleControls(bodyModule)
 
-		simpleControls(side + '_shoulderShieldJA_JNT', colour=secColour,
-		               modify=1, scale=(4, 4, 4),
-		               parentOffset=armModule.controls,
-		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
-
-
-
-	# assymentrical controls
-	simpleControls('r_gunBarrelJA_JNT', colour=secColour, scale=(4, 4, 4),
-	               parentOffset=armModule.controls,
-	               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
-
-	simpleControls('missileJA_JNT', colour='white', scale=(8, 6, 8),
-	               parentOffset=bodyModule.controls,
-	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
 def kiddoFinish():
 	print 'Finishing kiddo'
@@ -474,14 +500,86 @@ def kiddoFinish():
 
 		# main space
 		#pm.setAttr(side+'_foot_CTRL.space', 1)
+		pm.setAttr(side + '_ankle_CTRL.pitchSpace', 2)
+		pm.setAttr(side + '_ankle_CTRL.rollSpace', 2)
 		pm.setAttr(side + '_heelRotY_CTRL.space', 1)
 
 
 
 
+def bodySimpleControls(module):
+	simpleControls('missileJA_JNT', colour='white', scale=(8, 6, 8),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	simpleControls('l_buckleJA_JNT', colour='white', scale=(2, 2, 2),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	simpleControls('radarJA_JNT', colour='white', scale=(6, 4, 6),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	# engine controls
+	colour = 'blue'
+	for side in ('l', 'r'):
+		simpleControls( side+'_engineJA_JNT' , colour='white', scale=(4, 3, 4),
+		               parentOffset=module.controls, shape='cylinder',
+		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+		if side == 'r':
+			colour = 'red'
+		simpleControls(( side+'_engineFlapAJA_JNT', side+'_engineFlapBJA_JNT',
+		               side+'_engineFlapCJA_JNT'),
+		               colour=colour, scale=(3,1.5,1.0),
+		               parentOffset=module.controls,
+		               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+
+def armSidesSimpleControls(module, side, colour):
+	shieldRotYControl = simpleControls(side + '_shoulderShieldRotYJA_JNT',
+	               colour=colour,
+	               modify=1, scale=(4, 4, 4),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+	shieldRotXControl = simpleControls(side + '_shoulderShieldRotXJA_JNT',
+                    colour=colour,
+                    modify=1, scale=(4, 4, 4),
+                    parentOffset=module.controls,
+                    lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	shieldRotY = shieldRotYControl[side + '_shoulderShieldRotYJA_JNT']
+	shieldRotX = shieldRotXControl[side + '_shoulderShieldRotXJA_JNT']
+	pm.delete( pm.listRelatives( shieldRotX.offset, type="constraint") )
+	pm.parentConstraint( shieldRotY.con, shieldRotX.offset, mo=True )
+
+	if side == 'r':
+		simpleControls('r_gunBarrelJA_JNT', colour=colour, scale=(4, 4, 4),
+		               parentOffset=module.controls,
+		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+		blade = simpleControls('r_bladeJA_JNT', colour=colour, scale=(4, 4, 4),
+		               parentOffset=module.controls,
+		               lockHideAttrs=['tx', 'ty', 'rx', 'ry','rz'])
+
+		bladeCtrl = blade['r_bladeJA_JNT']
+		pm.transformLimits(bladeCtrl.ctrl, tz=(-20, 1), etz=(1, 0))
 
 
 
+def legSidesSimpleControls(module, side, colour):
+	simpleControls(side + '_kneeCapJA_JNT', colour=colour,
+	               modify=1, scale=(10, 10, 3),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
+	simpleControls(side + '_ballsJA_JNT', colour=colour,
+	               modify=1, scale=(3, 6, 6),
+	               parentOffset=module.controls,
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	carvesBlade = ( side+'_carvesBladeAJA_JNT', side+'_carvesBladeBJA_JNT',
+	                side+'_carvesBladeCJA_JNT', side+'_carvesBladeDJA_JNT')
+	simpleControls( carvesBlade, colour=colour,
+	                modify=1, scale=( 3,1.5,1.0 ), parentOffset=module.controls,
+	                lockHideAttrs=[ 'tx','ty','tz','ry','rz' ])
 
 

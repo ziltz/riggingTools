@@ -82,5 +82,3 @@ def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):
 
 
 
-
-

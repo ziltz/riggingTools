@@ -6,12 +6,17 @@ import maya.mel as mm
 
 from create.rig_puppet import puppet
 from create.rig_biped import rig_biped
-from rutils.rig_modules import rig_module
+
 from make.rig_controls import *
+from make.rig_ik import rig_ik
+
+from rutils.rig_modules import rig_module
 from rutils.rig_utils import *
 from rutils.rig_chain import *
-from make.rig_ik import rig_ik
 from rutils.rig_nodes import *
+from rutils.rig_anim import *
+
+import string
 
 '''
 
@@ -529,9 +534,81 @@ def kiddoFinish():
 
 
 def bodySimpleControls(module):
-	simpleControls('missileJA_JNT', colour='white', scale=(8, 6, 8),
+	sc = simpleControls('missileJA_JNT', colour='white', scale=(7, 6, 8),
 	               parentOffset=module.controls,
 	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+	missile = sc['missileJA_JNT']
+	pm.move(0, 2.1, 2.5, missile.ctrl.cv, os=True, r=True)
+	pm.addAttr(missile.ctrl, ln='MOTION', at='enum',
+	           enumName='___________',
+	           k=True)
+	missile.ctrl.MOTION.setLocked(True)
+	pm.addAttr(missile.ctrl, longName='cockFlaps', at='float',
+	           k=True, dv=0, min=0, max=10)
+	pm.addAttr(missile.ctrl, longName='offsetLeftFlaps', at='float',
+	           k=True, dv=0, min=-10, max=10)
+	pm.addAttr(missile.ctrl, longName='offsetRightFlaps', at='float',
+	           k=True, dv=0, min=-10, max=10)
+
+	ABC = list(string.ascii_uppercase)
+	missileBayJnts = []
+	missileBay = []
+	missileBayHingeJnts = []
+	missileBayHinge = []
+	missileBayFlapJnts = []
+	missileBayFlap = []
+	for i in range(0, 5):
+		missileBayJnts.append( 'missileBay'+ABC[i]+'JA_JNT')
+		missileBayHingeJnts.append('missileBayHinge' + ABC[i] + 'JA_JNT')
+		missileBayFlapJnts.append( 'missileBayFlap'+ABC[i]+'JA_JNT'  )
+
+	scBay = simpleControls(missileBayJnts, colour='red', scale=(0.3, 0.3, 0.3),
+	                    parentOffset=module.controls, modify=3,
+	                    lockHideAttrs=['tx', 'tz', 'rx','ry', 'rz'])
+
+	sc = simpleControls(missileBayHingeJnts+missileBayFlapJnts, colour='yellow',
+	                    scale=(0.1, 0.3, 0.1), modify=3, shape='cylinder',
+	                    parentOffset=module.controls,
+	                    lockHideAttrs=['tx', 'tz', 'ty', 'ry', 'rx'])
+
+	for i in range (0,5):
+		missileBay.append(scBay[missileBayJnts[i]])
+		missileBayHinge.append(sc[missileBayHingeJnts[i]])
+		missileBayFlap.append(sc[missileBayFlapJnts[i]])
+
+	missileBayHingeMods1 = []
+	missileBayHingeMods2 = []
+	missileBayFlapMods1 = []
+	missileBayFlapMods2 = []
+	for i in range(0,5):
+
+		pm.move(0.2, 0, 0, missileBay[i].ctrl.cv, os=True, r=True)
+		pm.rotate(missileBayHinge[i].ctrl.cv, -90, 0, 0, os=True, r=True)
+		pm.rotate(missileBayFlap[i].ctrl.cv, -90, 0, 0, os=True, r=True)
+
+		pm.transformLimits(missileBay[i].ctrl, ty=(-2.315, 0), ety=(1, 1))
+		pm.transformLimits(missileBayHinge[i].ctrl, rz=(0, 0), erz=(0, 1))
+		pm.transformLimits(missileBayFlap[i].ctrl, rz=(0, 0), erz=(0, 1))
+
+		rig_animDrivenKey(missile.ctrl.cockFlaps, (2, 10),
+		                  missileBay[i].modify[0] + '.translateY', (0,-2.315 ))
+		rig_animDrivenKey(missile.ctrl.cockFlaps, (0, 5),
+		                  missileBayHinge[i].modify[0] + '.rotateZ', (0, -45 ))
+		rig_animDrivenKey(missile.ctrl.cockFlaps, (0, 5),
+		                  missileBayFlap[i].modify[0] + '.rotateZ', (0, -45 ))
+		missileBayHingeMods1.append(missileBayHinge[i].modify[1])
+		missileBayHingeMods2.append(missileBayHinge[i].modify[2])
+		missileBayFlapMods1.append(missileBayFlap[i].modify[1])
+		missileBayFlapMods2.append(missileBayFlap[i].modify[2])
+
+	offsetSDKControls(missile.ctrl, missileBayHingeMods1, transformAttr='rz',
+	                  attr='offsetRightFlaps', sdkVal=-45)
+	offsetSDKControls(missile.ctrl, missileBayFlapMods1, transformAttr='rz',
+	                  attr='offsetRightFlaps', sdkVal=-45)
+	offsetSDKControls(missile.ctrl, missileBayHingeMods2, transformAttr='rz',
+	                  attr='offsetLeftFlaps', sdkVal=-45, reverse=1)
+	offsetSDKControls(missile.ctrl, missileBayFlapMods2, transformAttr='rz',
+	                  attr='offsetLeftFlaps', sdkVal=-45, reverse=1)
 
 	simpleControls('l_buckleJA_JNT', colour='white', scale=(2, 2, 2),
 	               parentOffset=module.controls,

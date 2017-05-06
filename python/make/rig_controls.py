@@ -244,6 +244,13 @@ def simpleControls(joints=None, **kwds ):
 		jointList = [joints]
 
 	controlDict = {}
+	ctrlShape = 'box'
+	try:
+		ctrlShape = kwds['shape']
+		kwds.pop('shape', 0)
+	except KeyError:
+		pass
+
 	for jnt in jointList:
 		parent = None
 
@@ -268,14 +275,6 @@ def simpleControls(joints=None, **kwds ):
 		name = naming
 		if side:
 			name = naming.replace( side+'_', '' )
-
-
-		ctrlShape = 'box'
-		try:
-			ctrlShape = kwds['shape']
-			kwds.pop( 'shape', 0 )
-		except KeyError:
-			pass
 
 		print 'ctrlShape = '+ctrlShape
 
@@ -472,4 +471,51 @@ def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
 
 
 	return controls
+
+
+def offsetSDKControls( ctrl, modifyList, transformAttr='rx',attr='offsetControl',
+                       sdkVal=60, reverse=0 ):
+
+	try:
+		print getattr(ctrl, attr)+' exists'
+	except AttributeError:
+		pm.addAttr(ctrl, longName=attr, at='float',
+		           k=True, dv=0, min=-10, max=10)
+
+	val = sdkVal / len(modifyList)
+	if reverse:
+		rCount = len(modifyList)-1
+		for i in range(0, len(modifyList)):
+			multiplier = i
+			if i == 0:
+				multiplier = 0.5
+			pm.setDrivenKeyframe(modifyList[rCount] + '.' + transformAttr,
+			                     cd=getattr(ctrl, attr),
+			                     dv=0, v=0)
+			pm.setDrivenKeyframe(modifyList[rCount] + '.' + transformAttr,
+			                     cd=getattr(ctrl, attr),
+			                     dv=10, v=val * multiplier)
+			pm.setDrivenKeyframe(modifyList[rCount] + '.' + transformAttr,
+			                     cd=getattr(ctrl, attr),
+			                     dv=-10, v=val * (multiplier * -1))
+			rCount = rCount - 1
+	else:
+		for i in range(0, len(modifyList)):
+			multiplier = i
+			if i == 0:
+				multiplier = 0.5
+			pm.setDrivenKeyframe(modifyList[i]+'.'+transformAttr,
+			                     cd=getattr(ctrl,attr),
+			                     dv=0, v=0)
+			pm.setDrivenKeyframe(modifyList[i]+'.'+transformAttr,
+			                     cd=getattr(ctrl,attr),
+			                     dv=10, v=val*multiplier)
+			pm.setDrivenKeyframe(modifyList[i]+'.'+transformAttr,
+			                     cd=getattr(ctrl,attr),
+			                     dv=-10, v=val*(multiplier*-1))
+
+
+
+
+
 

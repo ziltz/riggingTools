@@ -274,7 +274,7 @@ def kiddoRigModules():
 
 		pm.setAttr( side+'_hipAimZ_LOC.rotateOrder', 4 )
 
-		hipY = rig_control(side=side, name='hipYaw', shape='sphere', modify=1,
+		hipY = rig_control(side=side, name='hipYaw', shape='sphere', modify=2,
 		                   scale=(5, 7, 5),
 		                   parentOffset=legModule.controls, targetOffset=hipYJnt,
 		                   lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'],
@@ -285,7 +285,7 @@ def kiddoRigModules():
 		#rotCon = pm.parentConstraint(hipAimY_loc, hipY.modify, mo=True,
 		#                             skipTranslate=('x', 'y', 'z'),
 		#                             skipRotate=('x', 'z'))
-		rotCon = pm.orientConstraint(hipY.offset, hipAimY_loc, hipY.modify,
+		rotCon = pm.orientConstraint(hipY.offset, hipAimY_loc, hipY.modify[0],
 		                             mo=True, skip=('x','z'))
 		targetY = rotCon.getWeightAliasList()
 		pm.addAttr(hipY.ctrl, longName='aim', at='float', k=True, min=0, max=1, dv=1)
@@ -295,27 +295,45 @@ def kiddoRigModules():
 		                output=(targetY[0], targetZ[0],0) )
 
 		pm.setAttr( rotCon.interpType, 2 )
-		pm.transformLimits(hipY.modify, ry=(-30, 10), ery=(1, 1))
+		pm.transformLimits(hipY.modify[0], ry=(-30, 10), ery=(1, 1))
+
+		pm.addAttr(hipY.ctrl, longName='aimRotation', at='float', k=True, min=0,
+		           max=10,
+		           dv=0)
 
 		pm.addAttr(hipY.ctrl, longName='limitOutRotation', at='float', k=True, min=0,
 		           max=10,
-		           dv=5)
+		           dv=3)
 		pm.addAttr(hipY.ctrl, longName='limitInRotation', at='float', k=True, min=0,
 		           max=10,
-		           dv=10)
+		           dv=0)
+		hipY.ctrl.limitOutRotation.set(cb=True)
+		hipY.ctrl.limitInRotation.set(cb=True)
 
-		pm.setDrivenKeyframe(hipY.modify+'.minRotYLimit' ,
+		pm.setDrivenKeyframe(hipY.modify[0]+'.minRotYLimit' ,
 		                     cd=hipY.ctrl.limitOutRotation,
 		                     dv=0, v=-45 )
-		pm.setDrivenKeyframe(hipY.modify+'.minRotYLimit',
+		pm.setDrivenKeyframe(hipY.modify[0]+'.minRotYLimit',
 		                     cd=hipY.ctrl.limitOutRotation,
 		                     dv=10, v=0)
-		pm.setDrivenKeyframe(hipY.modify+'.maxRotYLimit',
+		pm.setDrivenKeyframe(hipY.modify[0]+'.maxRotYLimit',
 		                     cd=hipY.ctrl.limitInRotation,
 		                     dv=0, v=10)
-		pm.setDrivenKeyframe(hipY.modify+'.maxRotYLimit',
+		pm.setDrivenKeyframe(hipY.modify[0]+'.maxRotYLimit',
 		                     cd=hipY.ctrl.limitInRotation,
 		                     dv=10, v=0)
+
+		rotCon = pm.orientConstraint(hipY.offset, hipY.modify[0], hipY.modify[1],
+		                             mo=True)
+		conTargets = rotCon.getWeightAliasList()
+		pm.setDrivenKeyframe(conTargets[0],
+		                     cd=hipY.ctrl.aimRotation,
+		                     dv=0, v=1)
+		pm.setDrivenKeyframe(conTargets[0],
+		                     cd=hipY.ctrl.aimRotation,
+		                     dv=10, v=0)
+		connectReverse(name=side + '_hipYTarget', input=(conTargets[0], 0, 0),
+		               output=(conTargets[1], 0, 0))
 
 		# constrain shizzle
 		
@@ -490,6 +508,8 @@ def kiddoRigModules():
 	bodySimpleControls(bodyModule)
 
 
+
+
 def kiddoFinish():
 	print 'Finishing kiddo'
 
@@ -504,6 +524,7 @@ def kiddoFinish():
 		pm.setAttr(side + '_ankle_CTRL.rollSpace', 2)
 		pm.setAttr(side + '_heelRotY_CTRL.space', 1)
 
+		pm.addAttr(side+'_foot_CTRL.twist', edit=1, minValue=-30, maxValue=30)
 
 
 
@@ -520,20 +541,74 @@ def bodySimpleControls(module):
 	               parentOffset=module.controls,
 	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
+	simpleControls('securityCamJA_JNT', colour='white', scale=(1.5, 0.5, 1.5),
+	               parentOffset=module.controls, shape='cylinder',
+	               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+
+	sc = simpleControls('topHatchJA_JNT', colour='red', scale=(4, 0.3, 4),
+	               parentOffset=module.controls, shape='cylinder',
+	               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+
+	topHatch = sc['topHatchJA_JNT']
+	pm.move(0, 0.5, 0, topHatch.ctrl.cv, os=True, r=True)
+
+	sc = simpleControls(('cockpitTopJA_JNT','cockpitBottomJA_JNT'), colour='yellow',
+	               scale=(7, 3, 10),
+	               parentOffset=module.controls, shape='circle',
+	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	cockpitTop = sc['cockpitTopJA_JNT']
+	pm.move( 0, 0, 10,cockpitTop.ctrl.cv, os=True, r=True)
+	cockpitBottom = sc['cockpitBottomJA_JNT']
+	pm.rotate(cockpitBottom.ctrl.cv ,40, 0, 0,  os=True, r=True)
+	pm.scale(cockpitBottom.ctrl.cv, 1, 1, 0.6, os=True, r=True)
+
+
 	# engine controls
 	colour = 'blue'
 	for side in ('l', 'r'):
-		simpleControls( side+'_engineJA_JNT' , colour='white', scale=(4, 3, 4),
+		sc = simpleControls( side+'_engineJA_JNT' , colour='white', scale=(4, 3, 4),
 		               parentOffset=module.controls, shape='cylinder',
 		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
+		engine = sc[side+'_engineJA_JNT']
+		pm.addAttr(engine.ctrl, ln='MOTION', at='enum',
+		           enumName='___________',
+		           k=True)
+		engine.ctrl.MOTION.setLocked(True)
+
+		pm.addAttr(engine.ctrl, longName='engineRPM', at='float',
+		           k=True, dv=15)
+		pm.addAttr(engine.ctrl, longName='reverseRPM', at='long',
+		           k=True, dv=0, min=0, max=1)
+		pm.addAttr(engine.ctrl, longName='rotateFlaps', at='float',
+		           k=True, dv=0)
+
 		if side == 'r':
 			colour = 'red'
-		simpleControls(( side+'_engineFlapAJA_JNT', side+'_engineFlapBJA_JNT',
-		               side+'_engineFlapCJA_JNT'),
-		               colour=colour, scale=(3,1.5,1.0),
+		sc = simpleControls(( side+'_engineFlapAJA_JNT', side+'_engineFlapBJA_JNT',
+		               side+'_engineFlapCJA_JNT'), modify=1,
+		               colour=colour, scale=(3,1.5,0.5),
 		               parentOffset=module.controls,
 		               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+		for jnt in sc:
+			engineFlap = sc[jnt]
+			pm.connectAttr( engine.ctrl.rotateFlaps, engineFlap.modify+'.rotateX' )
 
+		mayaTime = pm.PyNode('time1')
+		engineRotMD = multiplyDivideNode(side+'_engineRotate', 'multiply',
+		                   input1=[mayaTime.outTime, 0,0],
+		                   input2=[0.25, 0, 0],
+		                   output=[])
+		multiplyDivideNode(side + '_engineRpm', 'multiply',
+		                   input1=[engineRotMD.outputX, 0, 0],
+		                   input2=[engine.ctrl.engineRPM, 0, 0],
+		                   output=[side+'_engineSpinJA_JNT.rotateY'])
+		pm.setDrivenKeyframe(engineRotMD.input2X,
+		                     cd=engine.ctrl.reverseRPM,
+		                     dv=0, v=1)
+		pm.setDrivenKeyframe(engineRotMD.input2X,
+		                     cd=engine.ctrl.reverseRPM,
+		                     dv=1, v=-1)
 
 def armSidesSimpleControls(module, side, colour):
 	shieldRotYControl = simpleControls(side + '_shoulderShieldRotYJA_JNT',
@@ -556,12 +631,13 @@ def armSidesSimpleControls(module, side, colour):
 		simpleControls('r_gunBarrelJA_JNT', colour=colour, scale=(4, 4, 4),
 		               parentOffset=module.controls,
 		               lockHideAttrs=['tx', 'ty', 'tz', 'rx', 'rz'])
-		blade = simpleControls('r_bladeJA_JNT', colour=colour, scale=(4, 4, 4),
+		blade = simpleControls('r_bladeJA_JNT', colour=colour, scale=(5, 2, 13),
 		               parentOffset=module.controls,
 		               lockHideAttrs=['tx', 'ty', 'rx', 'ry','rz'])
 
 		bladeCtrl = blade['r_bladeJA_JNT']
-		pm.transformLimits(bladeCtrl.ctrl, tz=(-20, 1), etz=(1, 0))
+		pm.move( 0,0,10, bladeCtrl.ctrl.cv, os=True, r=True  )
+		pm.transformLimits(bladeCtrl.ctrl, tz=(-20, 0), etz=(1, 1))
 
 
 
@@ -578,8 +654,27 @@ def legSidesSimpleControls(module, side, colour):
 
 	carvesBlade = ( side+'_carvesBladeAJA_JNT', side+'_carvesBladeBJA_JNT',
 	                side+'_carvesBladeCJA_JNT', side+'_carvesBladeDJA_JNT')
-	simpleControls( carvesBlade, colour=colour,
-	                modify=1, scale=( 3,1.5,1.0 ), parentOffset=module.controls,
+	sc = simpleControls( carvesBlade, colour=colour,
+	                modify=3, scale=( 3,1.5,0.5 ), parentOffset=module.controls,
 	                lockHideAttrs=[ 'tx','ty','tz','ry','rz' ])
+	bladeA = sc[side+'_carvesBladeAJA_JNT']
+	pm.addAttr(bladeA.ctrl, ln='MOTION', at='enum',
+	           enumName='___________',
+	           k=True)
+	bladeA.ctrl.MOTION.setLocked(True)
+	pm.addAttr(bladeA.ctrl, longName='rotateFlaps', at='float',
+	           k=True, dv=0)
+	col = name_to_rgb('white')
+	bladeA.ctrl.overrideColorRGB.set(col[0], col[1], col[2])
+	bladeMods = []
+	bladeMods2 = []
+	for i in range(0,4):
+		blade = sc[carvesBlade[i]]
+		pm.connectAttr(bladeA.ctrl.rotateFlaps, blade.modify[0]+'.rotateX')
+		bladeMods.append(blade.modify[1])
+		bladeMods2.append(blade.modify[2])
 
-
+	offsetSDKControls(bladeA.ctrl, bladeMods,transformAttr ='rx',
+						attr='offsetRotationBottom', sdkVal=100)
+	offsetSDKControls(bladeA.ctrl, bladeMods2, transformAttr='rx',
+	                  attr='offsetRotationTop', sdkVal=100, reverse=1)

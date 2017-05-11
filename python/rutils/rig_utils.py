@@ -2,7 +2,7 @@ __author__ = 'Jerry'
 
 import glob, os, platform, math, importlib
 
-import maya.cmds as mc
+import maya.cmds as cmds
 import maya.mel as mm
 import pymel.core as pm
 
@@ -68,8 +68,40 @@ def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):
 	pm.setAttr(ctrl+'.'+attrName, cb=True)
 	pm.connectAttr(ctrl+'.'+attrName, obj.visibility)
 
+'''
 
 
+
+'''
+def importLatestAsset(assetType=None, projectRoot=None, type='model'):
+	
+	if projectRoot is None:
+		pm.workspace(update=True)
+		projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/'
+		print ' project root ' + projectRoot + ' found'
+	
+	
+	genericPath = projectRoot + type+'/'
+	if assetType is None:
+		fileList = []
+		os.chdir(genericPath)
+		for f in glob.glob("*.ma"):
+			fileList.append(f)
+		
+		fileList.sort()
+		latestFile = fileList[-1:][0]
+		assetType = genericPath + latestFile
+	else:
+		assetType = genericPath + assetType + '.ma'
+	
+	print type+' file path = ' + assetType
+	# import type file
+	try:
+		cmds.file(assetType, i=True, ignoreVersion=True,
+		                     ra=False, mergeNamespacesOnClash=False,
+		                     typ="mayaAscii", loadReferenceDepth='none')
+	except RuntimeError:
+		print assetType + ' file not found'
 
 
 

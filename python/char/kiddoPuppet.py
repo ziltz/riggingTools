@@ -20,12 +20,12 @@ import string
 
 '''
 
-import char.kiddo as char
-char.kiddoPuppet()
+import char.kiddoPuppet as char
+char.buildPuppet()
 
 '''
 
-def kiddoPuppet():
+def buildPuppet():
 	puppet( character='kiddo' )
 
 

@@ -27,7 +27,7 @@ class puppet(rig_object):
 		pm.evaluationManager(mode='serial')
 
 		try:
-			self.charModule = importlib.import_module('char.' + self.character)
+			self.charModule = importlib.import_module('char.' + self.character+'Puppet')
 			print self.charModule
 
 			pm.workspace(update=True)
@@ -38,8 +38,8 @@ class puppet(rig_object):
 				#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
 				fileList = []
 				os.chdir(projectRoot)
-				for file in glob.glob("*.ma"):
-					fileList.append(file)
+				for f in glob.glob("*.ma"):
+					fileList.append(f)
 
 				fileList.sort()
 				latestFile = fileList[-1:][0]
@@ -74,25 +74,25 @@ class puppet(rig_object):
 
 			try:
 				self.rigGrp = pm.parent('rig_GRP', self.globalCtrl.gimbal)[0]
-			except:
+			except Exception as e:
 				self.rigGrp = rig_transform(0, name='rig',
 				                            parent=self.globalCtrl.gimbal).object
 
 			try:
 				self.rigModule = pm.parent('rigModules_GRP',
 				                           self.globalCtrl.gimbal)[0]
-			except:
+			except Exception as e:
 				self.rigModule = rig_transform(0, name='rigModules',
 				                               parent=self.globalCtrl.gimbal).object
 
 			try:
 				self.model = pm.parent('model_GRP', self.topNode)[0]
-			except:
+			except Exception as e:
 				self.model = rig_transform(0, name='model', parent=self.topNode).object
 
 			try:
 				self.rigModel = pm.parent('rigModel_GRP', self.model)[0]
-			except:
+			except Exception as e:
 				self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
 
 			self.worldSpace = rig_transform(0, name= 'worldSpace',
@@ -224,7 +224,11 @@ class puppet(rig_object):
 				self.displayTransform.attr(at).set(k=False)
 				self.displayTransform.attr(at).setLocked(True)
 
-			pm.delete( "|*RigBoundTop_GRP" )
+			try:
+				pm.delete( "|*RigBoundTop_GRP" )
+			except pm.MayaNodeError:
+				print 'RigBound top node does not exist'
+				
 			pm.hide(self.rigGrp, self.rigModel)
 
 			self.prepareRig()
@@ -261,7 +265,7 @@ class puppet(rig_object):
 		cmds.refresh()
 
 
-		func = getattr(self.charModule, self.character+'PrepareRig')()
+		getattr(self.charModule, self.character+'PrepareRig')()
 
 	def createRigModules(self):
 		print 'Creating core rig modules'
@@ -270,7 +274,7 @@ class puppet(rig_object):
 		cmds.refresh()
 
 
-		func = getattr(self.charModule, self.character + 'RigModules')()
+		getattr(self.charModule, self.character + 'RigModules')()
 
 	def finishRig(self):
 		print 'Finishing core rig'
@@ -333,10 +337,6 @@ class puppet(rig_object):
 
 		# make skeleton and model reference
 		if pm.objExists('model_GRP'):
-			#geoList = rig_geoUnderGroupHierarchy('model_GRP')
-			#for g in geoList:
-			#	obj = pm.PyNode(g)
-			#	pm.setAttr( obj.overrideEnabled, 1 )
 			obj = pm.PyNode(self.model)
 			pm.setAttr(obj.overrideEnabled, 1)
 			pm.setDrivenKeyframe(obj.overrideDisplayType,
@@ -350,7 +350,7 @@ class puppet(rig_object):
 			if layer.stripNamespace() not in 'defaultLayer':
 				pm.delete(layer)
 
-		func = getattr(self.charModule, self.character + 'Finish')()
+		getattr(self.charModule, self.character + 'Finish')()
 
 
 # make default human puppet

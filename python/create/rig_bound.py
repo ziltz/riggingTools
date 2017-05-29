@@ -123,7 +123,11 @@ class bound(rig_object):
 
 			self.rigGrp = rig_transform(0, name='rig',
 				                            parent=self.globalCtrl.ctrl).object
-			
+			pm.addAttr(self.rigGrp, longName='worldScale', at='float',
+			           k=True, min=0, defaultValue=1)
+			self.rigGrp.worldScale.set(cb=True)
+			pm.connectAttr( self.globalCtrl.ctrl.scaleX, self.rigGrp.worldScale )
+
 			self.modelGrp = rig_transform(0, name='model', parent=self.topNode).object
 
 			self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object

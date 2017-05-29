@@ -12,7 +12,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import glob, os
 
-class puppet(rig_object):
+class puppet(object):
 	
 	def __init__(self,  **kwds):
 
@@ -44,8 +44,8 @@ class puppet(rig_object):
 				fileList.sort()
 				latestFile = fileList[-1:][0]
 				self.rigBound = projectRoot + latestFile
-			else:
-				self.rigBound = projectRoot + self.rigBound + '.ma'
+			#else:
+			#	self.rigBound = projectRoot + self.rigBound + '.ma'
 
 			print 'rigBound file path = '+self.rigBound
 			# import rigBound file
@@ -77,6 +77,11 @@ class puppet(rig_object):
 			except Exception as e:
 				self.rigGrp = rig_transform(0, name='rig',
 				                            parent=self.globalCtrl.gimbal).object
+				pm.addAttr(self.rigGrp, longName='worldScale', at='float',
+				           k=True, min=0, defaultValue=1)
+				self.rigGrp.worldScale.set(cb=True)
+
+
 
 			try:
 				self.rigModule = pm.parent('rigModules_GRP',
@@ -228,7 +233,8 @@ class puppet(rig_object):
 				pm.delete( "|*RigBoundTop_GRP" )
 			except pm.MayaNodeError:
 				print 'RigBound top node does not exist'
-				
+
+			pm.connectAttr(self.globalCtrl.ctrl+'.scaleX', self.rigGrp.worldScale)
 			pm.hide(self.rigGrp, self.rigModel)
 
 			self.prepareRig()
@@ -239,8 +245,8 @@ class puppet(rig_object):
 
 			pm.select(cl=True)
 
-			self.sup = super(puppet, self)
-			self.sup.__init__(self.topNode, **kwds)
+			#self.sup = super(puppet, self)
+			#self.sup.__init__(self.topNode, **kwds)
 
 		except Exception as e:
 			print "*************************************"

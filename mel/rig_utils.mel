@@ -147,21 +147,25 @@ global proc rig_constrainBlockGeometry()
 	for ($geo in $lowGeos)
 	{
 		print ("geo = "+$geo+"\n");
-
-		string $jntName = `substitute "JNTBLOCK" $geo "JNT"`; 
-
-		if (`gmatch $geo "*JNTBLOCK"`)
+		string $con = rig_stringFirst(`listRelatives -typ "constraint" $geo`);
+		string $sc = `findRelatedSkinCluster $geo`;
+		if ( (!`objExists $con`) && (!`objExists $sc`) )
 		{
-			if (`objExists $jntName`)
+			string $jntName = `substitute "JNTBLOCK" $geo "JNT"`;
+
+			if (`gmatch $geo "*JNTBLOCK"`)
 			{
-				print ("jnt = "+$jntName+"\n");
-				parentConstraint -mo $jntName $geo;
+				if (`objExists $jntName`)
+				{
+					print ("jnt = "+$jntName+"\n");
+					parentConstraint -mo $jntName $geo;
+				}
+				else
+					print ($jntName +" does not exist"+"\n");
 			}
-			else
-				print ($jntName +" does not exist"+"\n");
-		}
-		else{
-			print ($geo+" not constrained= "+"\n");
+			else{
+				print ($geo+" not constrained= "+"\n");
+			}
 		}
 	}
 

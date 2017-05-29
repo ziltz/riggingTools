@@ -370,40 +370,55 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	if type(multipleConstrainer) is str:
 		doSpace = 0
 
+	constrainerList = []
+	if doSpace:
+		print 'making locs'
+		for space in multipleConstrainer:
+			suffix = space.split('_')[-1:][0]
+			spaceName = space.replace('_'+suffix, '_'+obj+'Proxy')
+			loc = rig_transform(0, name=spaceName, type='locator',
+		                            parent=space, target=space).object
+			pm.delete(pm.orientConstraint( obj, loc ))
+			pm.hide(loc)
+			constrainerList.append(loc)
+	else:
+		constrainerList = multipleConstrainer[:]
+
 	obj = pm.PyNode(obj)
+
 
 	if pm.objExists(obj):
 		try:
 			con = ''
 			if constrainType is 'parentConstraint':
 				if skip is None:
-					con = pm.parentConstraint(multipleConstrainer, obj,
+					con = pm.parentConstraint(constrainerList, obj,
 					                          mo=maintainOffset)
 				else:
-					con = pm.parentConstraint(multipleConstrainer, obj,
+					con = pm.parentConstraint(constrainerList, obj,
 				                          mo=maintainOffset, skip=skip)
 
 			if constrainType is 'orientConstraint':
 				if skip is None:
-					con = pm.orientConstraint(multipleConstrainer, obj,
+					con = pm.orientConstraint(constrainerList, obj,
 					                          mo=maintainOffset)
 				else:
-					con = pm.orientConstraint(multipleConstrainer, obj,
+					con = pm.orientConstraint(constrainerList, obj,
 				                          mo=maintainOffset, skip=skip)
 
 			if constrainType is 'pointConstraint':
 				if skip is None:
-					con = pm.pointConstraint(multipleConstrainer, obj,
+					con = pm.pointConstraint(constrainerList, obj,
 					                          mo=maintainOffset)
 				else:
-					con = pm.pointConstraint(multipleConstrainer, obj,
+					con = pm.pointConstraint(constrainerList, obj,
 				                          mo=maintainOffset, skip=skip)
 
 			pm.setAttr(con.interpType, interp)
 
 			if doSpace:
 				ctrl = pm.PyNode(ctrl)
-				if len(multipleConstrainer) is len(enumName):
+				if len(constrainerList) is len(enumName):
 					targets = con.getWeightAliasList()
 
 					enumList = enumName[0]
@@ -431,7 +446,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 					pm.error(' Unequal amount of constrainer to enum names ')
 
 		except pm.MayaNodeError:
-			for m in multipleConstrainer:
+			for m in constrainerList:
 				print m + ' does not exist'+'\n'
 	else:
 		print obj+' does not exist'+'\n'

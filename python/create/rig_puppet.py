@@ -237,6 +237,9 @@ class puppet(object):
 			pm.connectAttr(self.globalCtrl.ctrl+'.scaleX', self.rigGrp.worldScale)
 			pm.hide(self.rigGrp, self.rigModel)
 
+			pm.addAttr(self.globalCtrl.ctrl, ln='rigAuthor', at='enum',
+			           enumName='Jerry:Lee', k=False, dv=0)
+
 			self.prepareRig()
 
 			self.createRigModules()

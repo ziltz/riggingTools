@@ -373,7 +373,7 @@ def kiddoRigModules():
 	# asymettrical controls
 	bodySimpleControls(bodyModule)
 
-
+	kiddoWiresSetup()
 
 
 def kiddoFinish():
@@ -385,6 +385,10 @@ def kiddoFinish():
 		hip.aim.set(k=False, cb=False)
 
 		pm.setAttr( side+"_kneeCap_CTRL.space", 1  )
+
+		pm.setAttr(side + "_footCap_CTRL.space", 2)
+		pm.setAttr(side + "_toe_CTRL.space", 2)
+
 
 	#pm.setAttr( "r_footCapModify1_GRP_orientConstraint1.offsetX", 0)
 	#pm.setAttr( "r_toeModify1_GRP_orientConstraint1.offsetX", 0)
@@ -470,7 +474,7 @@ def bodySimpleControls(module):
 	offsetSDKControls(missile.ctrl, missileBayFlapMods2, transformAttr='rz',
 	                  attr='offsetLeftFlaps', sdkVal=-45, reverse=1)
 
-	simpleControls('l_buckleJA_JNT', colour='white', scale=(2, 2, 2),
+	simpleControls(['l_buckleJA_JNT', 'r_backBuckleJA_JNT', 'l_backBuckleJA_JNT'], colour='white', scale=(2, 2, 2),
 	               parentOffset=module.controls,
 	               lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
 
@@ -630,13 +634,52 @@ def legSidesSimpleControls(module, side, colour):
 	                [footCap.offset, 'lowerBodyJA_JNT', 'worldSpace_GRP'],
 	                footCap.ctrl, ['heel', 'pelvis', 'world'], type='orientConstraint', skip=[ 'y', 'z'])
 
-	sc = simpleControls(side + '_toeFangsJA_JNT', colour=colour,
+	sc = simpleControls([side + '_toeFangsOuterJA_JNT', side+'_toeFangsInnerJA_JNT'], colour=colour,
 	                    modify=1, scale=(3, 6, 3),
 	                    parentOffset=module.controls,
 	                    lockHideAttrs=['tx', 'rx', 'tz', 'ry', 'rz'])
-	toeFang = sc[side + '_toeFangsJA_JNT']
+	toeFangOuter = sc[side + '_toeFangsOuterJA_JNT']
+	toeFangInner = sc[side + '_toeFangsInnerJA_JNT']
 	if side == 'l':
-		pm.transformLimits(toeFang.ctrl, ty=(-5, 1.5), ety=(1, 1))
+		pm.transformLimits(toeFangOuter.ctrl, ty=(-5, 1.5), ety=(1, 1))
+		pm.transformLimits(toeFangInner.ctrl, ty=(-5, 1.5), ety=(1, 1))
 	else:
-		pm.transformLimits(toeFang.ctrl, ty=(-1.5, 5), ety=(1, 1))
+		pm.transformLimits(toeFangOuter.ctrl, ty=(-1.5, 5), ety=(1, 1))
+		pm.transformLimits(toeFangInner.ctrl, ty=(-1.5, 5), ety=(1, 1))
+
+	sc = simpleControls([side + '_toeOuterBaseJA_JNT', side + '_toeOuterJA_JNT', side+'_toeInnerBaseJA_JNT', side+'_toeInnerJA_JNT'], colour=colour,
+	                    modify=1, scale=(2, 2, 2),
+	                    parentOffset=module.controls,
+	                    lockHideAttrs=['tx', 'ty', 'tz', 'ry', 'rz'])
+
+	if side == 'l':
+		sc = simpleControls('l_footFangsJA_JNT', colour=colour,
+		                    modify=1, scale=(2, 1.5, 6),
+		                    parentOffset=module.controls,
+		                    lockHideAttrs=['tx', 'rx', 'ty ', 'ry', 'rz'])
+		lFootFangs = sc['l_footFangsJA_JNT']
+		pm.transformLimits(lFootFangs.ctrl, tz=(-4.7, 0.6), etz=(1, 1))
+
+
+
+def kiddoWiresSetup():
+
+	tubesModule = rig_module('wires')
+
+	tubes1 = pm.ls("*Tube?JA_JNT")
+	tubes2 = pm.ls("*TubeJA_JNT")
+
+	tubes = tubes1 + tubes2
+
+	sc = simpleControls(tubes, scale=(1,1,1),
+	                    parentOffset=tubesModule.controls,
+	                    lockHideAttrs=['rx', 'ry', 'rz'])
+
+
+
+
+
+
+
+
 

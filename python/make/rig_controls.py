@@ -258,7 +258,11 @@ def simpleControls(joints=None, **kwds ):
 		try:
 			parent = pm.listRelatives(jnt, type="joint", p=True)[0]
 		except IndexError:
-			print 'No parent found'
+			print 'No joint parent found, finding other'
+			try:
+				parent = pm.listRelatives(jnt, type="transform", p=True)[0]
+			except IndexError:
+				print 'No parent found'
 
 		side = ''
 		if jnt.startswith('l_'):

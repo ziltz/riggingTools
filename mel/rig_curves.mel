@@ -1,0 +1,84 @@
+
+
+
+
+// from two curves with same amount of cvs, create one curve in middle with blendshape and make low curve by resampling to 4 knots and make three joints to skin to.
+global proc rig_curvesSimpleWireSetup(string $name, string $crv1, string $crv2, string $geo)
+{
+
+	string $parentGrp = `group -em -n ($name+"_GRP")`;
+
+	string $curve = rig_curvesMiddleCurve( $name, $crv1, $crv2);
+	
+	string $lowCurve = rig_stringFirst(`duplicate -rr -n ($name+"LowDriver_CRV") $curve`);
+
+	rebuildCurve -ch 1 -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kep 1 -kt 0 -s 4 -d 3 -tol 0.01 $lowCurve;
+
+	float $startPos[] = `xform -q -t -ws ($lowCurve+".cv[0]")`;
+	float $midPos[] = `xform -q -t -ws ($lowCurve+".cv[3]")`;
+	float $endPos[] = `xform -q -t -ws ($lowCurve+".cv[6]")`;
+
+	select -cl;
+	string $jntStart = `joint -n ($name+"A_JNT")`;
+	select -cl;
+	string $jntMid = `joint -n ($name+"JA_JNT")`;
+	select -cl;
+	string $jntEnd = `joint -n ($name+"B_JNT")`;
+
+	string $grp = `group -em -n ($name+"JntOffset_GRP")`;
+
+	xform -ws -t $startPos[0] $startPos[1] $startPos[2] $jntStart;
+	xform -ws -t $midPos[0] $midPos[1] $midPos[2] $jntMid;
+	xform -ws -t $midPos[0] $midPos[1] $midPos[2] $grp;
+	xform -ws -t $endPos[0] $endPos[1] $endPos[2] $jntEnd;
+
+	parent $jntMid $grp;
+
+	parentConstraint -mo $jntStart $jntEnd $grp;
+
+	skinCluster -tsb $jntStart $jntMid $jntEnd $lowCurve;
+
+	string $wireLow = rig_stringFirst(`wire -gw false -en 1.000000 -ce 0.000000 -li 0.000000 -dds 0 100 -w $lowCurve $curve`);
+
+	string $wireDriver = rig_stringFirst(`wire -gw false -en 1.000000 -ce 0.000000 -li 0.000000 -dds 0 100 -w $curve $geo`);
+
+	setAttr ($geo+".inheritsTransform") 0;
+
+	if (`objExists "rig_GRP.worldScale"`)
+	{
+		connectAttr "rig_GRP.worldScale" ($wireLow+".scale[0]");
+		connectAttr "rig_GRP.worldScale" ($wireDriver+".scale[0]");
+
+		for ($at in {"sx", "sy","sz"})
+		{
+			connectAttr "rig_GRP.worldScale" ($jntStart+"."+$at);
+			connectAttr "rig_GRP.worldScale" ($jntEnd+"."+$at);
+			connectAttr "rig_GRP.worldScale" ($grp+"."+$at);
+		}
+	}
+
+	parent $curve $lowCurve $jntStart $jntEnd $grp ($curve+"BaseWire") ($lowCurve+"BaseWire") $parentGrp;
+
+}
+
+global proc rig_curvesSimpleWireSetupMirror()
+{
+
+}
+
+
+global proc string rig_curvesMiddleCurve(string $name, string $crv1, string $crv2)
+{
+
+	string $curve = rig_stringFirst(`duplicate -rr -n ($name+"Driver_CRV") $crv1`);
+
+	string $bs = rig_stringFirst(`blendShape $crv1 $crv2 $curve`);
+
+	setAttr ($bs+"."+$crv1) 0.5;
+	setAttr ($bs+"."+$crv2) 0.5;
+
+	delete -ch $curve;
+	delete $crv1 $crv2;
+
+	return $curve;
+}

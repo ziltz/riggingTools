@@ -44,8 +44,10 @@ class bound(rig_object):
 		
 		
 		self.mayaScene = self.character + '_rigBound_buildScene'
-		
-		
+
+		self.makeBiped = defaultReturn(False, 'biped', param=kwds)
+		self.makeQuadruped = defaultReturn(False, 'quadruped', param=kwds)
+
 		pm.newFile(f=True)
 
 		print "START: rigBound build "+self.character

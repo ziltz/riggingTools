@@ -6,7 +6,7 @@ from rutils.rig_object import rig_object
 from rutils.rig_utils import *
 from make.rig_controls import *
 from rutils.rig_transform import rig_transform
-
+from create.rig_skeleton import loadPose, removePose
 
 import pymel.core as pm
 import maya.cmds as cmds
@@ -31,7 +31,7 @@ class puppet(object):
 			print self.charModule
 
 			pm.workspace(update=True)
-			projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'
+			projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'+self.character+'/'
 			print ' project root '+projectRoot+' found'
 
 			if self.rigBound is None:
@@ -63,7 +63,9 @@ class puppet(object):
 			cmds.refresh()
 
 			# unparent skeleton
-			skeleton = pm.parent(pm.listRelatives('skeleton_GRP', typ='joint'), w=True)
+			rootJoint = cmds.parent(cmds.listRelatives('skeleton_GRP', typ='joint'), w=True)[0]
+
+			loadPose(rootJoint, 'tPose')
 
 			self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
 			                              con=0, showAttrs=['sx', 'sy','sz'])
@@ -314,6 +316,7 @@ class puppet(object):
 					                grp.lodVisibility )
 
 		pm.select(cl=True)
+		allControls.extend( ['global_CTRL','globalGimbal_CTRL' ] )
 		controlSet.addMembers(allControls)
 
 		# ik fk switches

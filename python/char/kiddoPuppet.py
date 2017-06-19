@@ -21,11 +21,11 @@ import string
 '''
 
 import char.kiddoPuppet as char
-char.buildPuppet()
+char.buildKiddo()
 
 '''
 
-def buildPuppet():
+def buildKiddo():
 	puppet( character='kiddo' )
 	#puppet( character='kiddo', rigBound = 'C:/Users/Jerry/Documents/maya/projects/kuba/scenes/rigBound/kiddo_new_leg8.ma' )
 
@@ -39,7 +39,11 @@ def kiddoPrepareRig():
 		mc.parent(side+'legJA_JNT', w=True )
 		mc.parent(side+'hipZ_JA_JNT', w=True  )
 		mc.parent(side+'hipY_JA_JNT', w=True)
-		#mc.parent(side+'handRotYJA_JNT', w=True  )
+
+		mc.rename( side+'thumbJA_JNT', side+'fngThumbJA_JNT' )
+		mc.rename( side+'thumbJB_JNT', side+'fngThumbJB_JNT' )
+		mc.rename( side+'thumbJC_JNT', side+'fngThumbJC_JNT' )
+		mc.rename(side + 'thumbJEnd_JNT', side + 'fngThumbJEnd_JNT')
 
 def kiddoRigModules():
 	print 'Create kiddo rig modules'
@@ -120,6 +124,8 @@ def kiddoRigModules():
 	biped.spineConnection = 'upperWaistX_JA_JNT'
 	biped.pelvisConnection = 'lowerBodyJA_JNT'
 	biped.centerConnection = 'mainJA_JNT'
+	biped.fngThumb = 'thumbJA_JNT'
+	biped.fngIndex = 'fngIndexJA_JNT'
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=10)
 

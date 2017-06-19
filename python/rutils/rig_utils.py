@@ -55,13 +55,6 @@ def rig_skinClusterTransforms(group=None):
 	print 'Done turning off inherit transforms on skinned geos'
 
 
-def lengthVector( posA, posB):
-	dx = posA[0] - posB[0]
-	dy = posA[1] - posB[1]
-	dz = posA[2] - posB[2]
-	return math.sqrt( dx*dx + dy*dy + dz*dz )
-
-
 def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):
 	pm.addAttr(ctrl, longName=attrName, at='long', k=False, min=0, max=1, dv=defaultValue)
 	#ctrl.attrName.set(cb=True)

@@ -7,8 +7,10 @@ from make.rig_controls import *
 from rutils.rig_modules import rig_module
 from rutils.rig_transform import rig_transform
 from rutils.rig_nodes import blendColors
+from rutils.rig_math import *
 
 import pymel.core as pm
+import maya.cmds as cmds
 import maya.mel as mm
 import string
 
@@ -37,11 +39,13 @@ class rig_biped(object):
 		self.elbowName = 'elbowJA_JNT'
 		self.handName = 'handJA_JNT'
 
-		self.thumb = 'thumbJA_JNT'
-		self.fngIndex = 'fngIndexJA_JNT'
+		self.elbowAxis = 'rx'
+
+		self.fngThumb = 'fngThumbJA_JNT'
+		self.fngIndex = 'fngIndJA_JNT'
 		self.fngMid = 'fngMidJA_JNT'
 		self.fngRing = 'fngRingJA_JNT'
-		self.fngPinky = 'fngPinkyJA_JNT'
+		self.fngPinky = 'fngPnkyJA_JNT'
 
 		self.armJoints = []
 
@@ -315,6 +319,7 @@ class rig_biped(object):
 
 		pm.delete(pm.aimConstraint(elbow, poleVector.offset, mo=False))
 
+		handPos = pm.xform(hand, translation=True, query=True, ws=True)
 		elbowPos = pm.xform(elbow, translation=True, query=True, ws=True)
 		poleVectorPos = pm.xform(poleVector.con, translation=True, query=True,
 		                         ws=True)
@@ -326,8 +331,12 @@ class rig_biped(object):
 
 		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
 
-		pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
-		        objectSpace=True)
+		#pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
+		 #       objectSpace=True)
+
+		pvDistance = lengthVector(handPos, elbowPos)
+		pm.move(poleVector.offset, [pvDistance*2, 0, 0], relative=True, objectSpace=True)
+
 
 		print 'ik handle '+ik.handle
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
@@ -395,9 +404,12 @@ class rig_biped(object):
 			                     dv=0,
 			                     v=1)
 		elbowFk = fkCtrls[1]
-		for at in ['ry','rz']:
+		rotateAxis = ['rx','ry','rz']
+		if self.elbowAxis in rotateAxis: rotateAxis.remove(self.elbowAxis)
+		for at in rotateAxis:
 			elbowFk.ctrl.attr(at).setKeyable(False)
 			elbowFk.ctrl.attr(at).setLocked(True)
+
 
 		self.armControls['fk'] = fkCtrls
 
@@ -434,7 +446,7 @@ class rig_biped(object):
 
 		skipAxis = rotateAxis + ['tx', 'ty','tz' ]
 
-		for finger in ( self.thumb, self.fngIndex, self.fngMid, self.fngRing,
+		for finger in ( self.fngThumb, self.fngIndex, self.fngMid, self.fngRing,
 		                self.fngPinky ):
 
 			fng = finger
@@ -479,4 +491,33 @@ class rig_biped(object):
 		
 
 
+def rig_bipedPrepare():
 
+	fngJoints = cmds.ls('*fng*JA_JNT')
+	for digit in fngJoints:
+		try:
+			cmds.parent( digit, w=True)
+		except ValueError:
+			print 'Skipping ' + digit + ' as it does not exist'
+
+	toesJoints = cmds.ls('*toe*JA_JNT')
+	if 'l_toesJA_JNT' in toesJoints: toesJoints.remove('l_toesJA_JNT')
+	if 'r_toesJA_JNT' in toesJoints: toesJoints.remove('r_toesJA_JNT')
+	for digit in toesJoints:
+		try:
+			cmds.parent(digit, w=True)
+		except ValueError:
+			print 'Skipping ' + digit + ' as it does not exist'
+
+	sideJointList = [ 'clavicleJA_JNT', 'armJA_JNT', 'legJA_JNT' ]
+	for jnt in sideJointList:
+		for side in ('l_', 'r_'):
+			try:
+				cmds.parent(side + jnt, w=True)
+			except ValueError:
+				print 'Skipping '+side+jnt+' as it does not exist'
+
+	try:
+		cmds.parent( 'neckJA_JNT', w=True)
+	except ValueError:
+		print 'Skipping neckJA_JNT as it does not exist'

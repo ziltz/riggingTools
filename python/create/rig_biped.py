@@ -16,7 +16,7 @@ import string
 
 '''
 
-testing
+kiddo branch
 
 import rig_biped as rb
 reload(rb)

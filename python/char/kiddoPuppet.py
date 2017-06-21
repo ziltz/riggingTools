@@ -28,7 +28,6 @@ char.buildKiddo()
 def buildKiddo():
 	puppet( character='kiddo' )
 	#puppet( character='kiddo', rigBound = 'C:/Users/Jerry/Documents/maya/projects/kuba/scenes/rigBound/kiddo_new_leg8.ma' )
-	print 'kiddo branch'
 
 def kiddoPrepareRig():
 	print 'Prepare kiddo'

@@ -99,7 +99,7 @@ class rig_control(object):
 		if self.con > 0:
 			self.con = rig_transform(0, name=self.name+'Con', parent=self.ctrl
 			).object
-			pm.setAttr(self.con + ".rotateOrder", self.rotateOrder)
+			mc.setAttr(self.con + ".rotateOrder", self.rotateOrder)
 			lastParent = self.con
 
 		if self.offset > 0:

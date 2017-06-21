@@ -50,6 +50,9 @@ def gizmoRigModules():
 
 		biped.connectArmShoulder(side)
 
+		legModule = biped.leg(side, ctrlSize=3)
+
+		toesModule = biped.foot(side, ctrlSize=0.5)
 	
 
 def gizmoFinish():

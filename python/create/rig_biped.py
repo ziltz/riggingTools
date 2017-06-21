@@ -8,6 +8,7 @@ from rutils.rig_modules import rig_module
 from rutils.rig_transform import rig_transform
 from rutils.rig_nodes import blendColors
 from rutils.rig_math import *
+from rutils.rig_anim import *
 
 import pymel.core as pm
 import maya.cmds as cmds
@@ -38,8 +39,7 @@ class rig_biped(object):
 		self.armName = 'armJA_JNT'
 		self.elbowName = 'elbowJA_JNT'
 		self.handName = 'handJA_JNT'
-
-		self.elbowAxis = 'rx'
+		self.handFngName = 'handJB_JNT'
 
 		self.fngThumb = 'fngThumbJA_JNT'
 		self.fngIndex = 'fngIndJA_JNT'
@@ -47,12 +47,32 @@ class rig_biped(object):
 		self.fngRing = 'fngRingJA_JNT'
 		self.fngPinky = 'fngPnkyJA_JNT'
 
+		self.legName = 'legJA_JNT'
+		self.kneeName = 'kneeJA_JNT'
+		self.footName = 'footJA_JNT'
+		self.footBName = 'footJB_JNT'
+		self.toesName = 'toesJA_JNT'
+
+		self.toeThumb = 'toeThumbJA_JNT'
+		self.toeIndex = 'toeIndJA_JNT'
+		self.toeMid = 'toeMidJA_JNT'
+		self.toeRing = 'toeRingJA_JNT'
+		self.toePinky = 'toePnkyJA_JNT'
+
+		self.elbowAxis = 'rx'
+		self.kneeAxis = 'rz'
+
 		self.armJoints = []
+		self.legJoints = []
 
 		# values : poleVector, hand, fk
 		self.armControls = {}
 		self.armTop = ''
 		self.shoulderControl = None
+
+		# values : poleVector, foot, fk
+		self.legControls = {}
+		self.legTop = ''
 
 		self.spineConnection = 'spineJF_JNT'
 		self.centerConnection = 'spineJA_JNT'
@@ -238,22 +258,22 @@ class rig_biped(object):
 		arm = self.armName
 		elbow = self.elbowName
 		hand = self.handName
+		handFng = self.handFngName
 
 		if side != '':
 			arm = side + '_' + arm
 			elbow = side + '_' + elbow
 			hand = side + '_' + hand
+			handFng = side + '_' + handFng
 
-		chain = [arm, elbow, hand]
+		chain = [arm, elbow, hand, handFng]
 
 		pm.parent(arm, module.skeleton)
 
-		print 'arm '+arm
-		print 'elbow '+elbow
-		print 'hand '+hand
-
-		ctrlSizeHalf = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
 		ctrlSize = [ctrlSize,ctrlSize,ctrlSize]
+
 
 		self.armTop = rig_transform(0, name=side + '_armTop',
 		              target=arm, parent=module.parts).object
@@ -269,7 +289,10 @@ class rig_biped(object):
 		                            target=elbow, rotateOrder=2).object
 		handResult = rig_transform(0, name=side + '_handResult', type='joint',
 		                           target=hand, rotateOrder=2).object
-		chainResult = [armResult, elbowResult, handResult]
+		handFngResult = rig_transform(0, name=side + '_handFngResult', type='joint',
+		                           target=handFng, rotateOrder=2).object
+
+		chainResult = [armResult, elbowResult, handResult,handFngResult]
 
 		chainParent(chainResult)
 		chainResult.reverse()
@@ -281,7 +304,10 @@ class rig_biped(object):
 		                        target=elbow, rotateOrder=2).object
 		handFK = rig_transform(0, name=side+'_handFK', type='joint', target=hand, rotateOrder=2
 		                       ).object
-		chainFK = [ armFK, elbowFK, handFK ]
+		handFngFK = rig_transform(0, name=side + '_handFngFK', type='joint', target=handFng, rotateOrder=2
+		).object
+
+		chainFK = [ armFK, elbowFK, handFK, handFngFK ]
 
 		chainParent(chainFK)
 		chainFK.reverse()
@@ -293,7 +319,10 @@ class rig_biped(object):
 		                        target=elbow, rotateOrder=2).object
 		handIK = rig_transform(0, name=side+'_handIK', type='joint', target=hand, rotateOrder=2
 		                       ).object
-		chainIK = [ armIK, elbowIK, handIK ]
+		handFngIK = rig_transform(0, name=side + '_handFngIK', type='joint', target=handFng, rotateOrder=2
+		).object
+
+		chainIK = [ armIK, elbowIK, handIK, handFngIK ]
 
 		chainParent(chainIK)
 		chainIK.reverse()
@@ -306,7 +335,7 @@ class rig_biped(object):
 		poleVector = rig_control(side=side, name='armPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
-		                         parentOffset=module.controls, scale=ctrlSizeHalf )
+		                         parentOffset=module.controls, scale=ctrlSizeQuarter )
 
 		if side == 'r':
 			pm.rotate(poleVector.ctrl.cv, 90, 0, 0, r=True, os=True)
@@ -344,7 +373,7 @@ class rig_biped(object):
 		                          rotateOrder=2)
 
 		pm.delete(pm.pointConstraint(hand, handControl.offset))
-		pm.parentConstraint( handControl.con, ik.handle, mo=True )
+		#pm.parentConstraint( handControl.con, ik.handle, mo=True )
 
 		handControl.gimbal = createCtrlGimbal( handControl )
 		handControl.pivot = createCtrlPivot( handControl )
@@ -362,12 +391,46 @@ class rig_biped(object):
 
 		self.armControls['hand'] = handControl
 
+		'''
 		handIK_loc = rig_transform(0, name= side+'_handIKBuffer', type='locator',
 		                           target=handIK, parent = handControl.con).object
 		pm.hide(handIK_loc)
 		pm.parentConstraint(handIK_loc, handIK, mo=True, skipTranslate=(
 		'x','y','z'))
+		'''
 
+		handBallControl = rig_control(side=side, name='handBall', shape='cylinder', modify=1,
+		                          parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                          rotateOrder=2)
+
+		pm.delete(pm.pointConstraint(handFng, handBallControl.offset))
+		handBallControl.gimbal = createCtrlGimbal(handBallControl)
+		pm.parentConstraint( handControl.con, handBallControl.offset, mo=True )
+		pm.parentConstraint( handBallControl.con, ik.handle, mo=True )
+
+		pm.connectAttr(module.top.ikFkSwitch, handBallControl.offset + '.visibility')
+
+		pm.rotate(handBallControl.ctrl.cv, [90, 0, 0], relative=True, objectSpace=True)
+
+		constrainObject(handBallControl.modify,
+		                [handBallControl.offset, 'worldSpace_GRP'],
+		                handBallControl.ctrl, ['hand', 'world'],
+		                type='orientConstraint')
+
+		wristBallLoc = rig_transform(0, name=side + '_wristBallAim', type='locator',
+		                          parent=module.parts, target=hand).object
+		fngBallLoc = rig_transform(0, name=side + '_fngBallAim', type='locator',
+		                             parent=module.parts, target=handFng).object
+
+		pm.parentConstraint(  elbowIK,  wristBallLoc, mo=True )
+		pm.parentConstraint(  handBallControl.con,  fngBallLoc, mo=True )
+
+		handBallAimTop = mm.eval('rig_makePiston("'+wristBallLoc+'", "'+fngBallLoc+'", "'+side+'_handBallAim");')
+		pm.parent( side+'_wristBallAim_LOCUp', side+'_fngBallAim_LOCAimOffset' )
+
+		pm.orientConstraint( side+'_wristBallAim_JNT', handIK, mo=True )
+
+		pm.parent( handBallAimTop, module.parts )
 
 		# auto pole vector
 		autoPVOffset = rig_transform(0, name=side+'_autoPVOffset',
@@ -386,8 +449,30 @@ class rig_biped(object):
 		                type='parentConstraint')
 
 
+		fingersControl = rig_control(side=side, name='fingers', shape='pyramid', modify=1,
+		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                             rotateOrder=2)
 
+		pm.delete(pm.parentConstraint(handFng, fingersControl.offset))
+		pm.parentConstraint( fingersControl.con, handFngIK, mo=True )
+		pm.parentConstraint( handBallControl.con, fingersControl.offset, mo=True )
 
+		pm.connectAttr(module.top.ikFkSwitch, fingersControl.offset + '.visibility')
+
+		constrainObject(fingersControl.modify,
+		                [ handControl.con ,fingersControl.offset, 'worldSpace_GRP'],
+		                fingersControl.ctrl, ['wrist', 'handBall','world'],
+		                type='orientConstraint')
+
+		fingersPos = pm.xform(fingersControl.con, translation=True, query=True, ws=True)
+		endPos = pm.xform(side+'_handJEnd_JNT', translation=True, query=True, ws=True)
+
+		fngLength = lengthVector(fingersPos, endPos  )
+
+		if side == 'l':
+			pm.move(fingersControl.ctrl.cv, [fngLength, 0, 0], relative=True)
+		else:
+			pm.move(fingersControl.ctrl.cv, [fngLength*-1, 0, 0], relative=True)
 
 
 		# create fk
@@ -429,8 +514,12 @@ class rig_biped(object):
 		abc = list(string.ascii_lowercase)
 
 		name = side + '_fingers'
+		sideName = side + '_'
 		if side == '':
 			name = 'fingers'
+			sideName = ''
+
+
 
 		module = rig_module(name)
 		self.fingersModule = module
@@ -463,15 +552,30 @@ class rig_biped(object):
 
 				childrenFngs.pop(len(childrenFngs)-1)
 
-				simpleControls(fng,
+				sc = simpleControls(fng,
 				               modify=2, scale=ctrlSize,
-				               parentOffset=module.controls,
-				               lockHideAttrs=['tx','ty','tz'])
+				               parentOffset=module.controls)
+
+				fngCtrl = sc[fng]
+				baseLimit = 0.2
+				pm.transformLimits( fngCtrl.ctrl, tx=(-1*baseLimit, baseLimit), etx=(1, 1))
+				pm.transformLimits( fngCtrl.ctrl, ty=(-1*baseLimit, baseLimit), ety=(1, 1))
+				pm.transformLimits( fngCtrl.ctrl, tz=(-1*baseLimit, baseLimit), etz=(1, 1))
+
+				if 'Thumb' in fng:
+					if pm.objExists(sideName+'handJA_JNT'):
+						pm.parentConstraint(  sideName+'handJA_JNT', fngCtrl.offset, mo=True)
+				else:
+					if pm.objExists(sideName + 'handJB_JNT'):
+						pm.parentConstraint(sideName + 'handJA_JNT', fngCtrl.offset, mo=True)
+						pm.orientConstraint(sideName + 'handJB_JNT', fngCtrl.modify[0], mo=True, skip='x')
 
 				simpleControls(childrenFngs,
 				               modify=2, scale=ctrlSize,
 				               parentOffset=module.controls,
 				               lockHideAttrs=skipAxis)
+
+				pm.parent( fng, module.skeleton )
 
 			else:
 				print fng + ' does not exist...Skipping.'
@@ -479,16 +583,427 @@ class rig_biped(object):
 
 
 
-
-		return
+		return module
 
 
 	def pelvis (self):
 		return
 
-	def leg (self, side):
-		return
-		
+	def leg (self, side='', ctrlSize=1.0):
+		name = side + '_leg'
+		if side == '':
+			name = 'leg'
+
+		module = rig_module(name)
+		self.legModule = module
+
+		leg = self.legName
+		knee = self.kneeName
+		foot = self.footName
+		footB = self.footBName
+		toes = self.toesName
+
+		if side != '':
+			leg = side + '_' + leg
+			knee = side + '_' + knee
+			foot = side + '_' + foot
+			footB = side + '_' + footB
+			toes = side + '_' + toes
+
+		chain = [leg, knee, foot, footB, toes]
+
+		pm.parent(leg, module.skeleton)
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		self.legTop = rig_transform(0, name=side + '_legTop',
+		                            target=leg, parent=module.parts).object
+
+		legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
+		                                 parent=self.legTop).object
+
+		# chain result
+		legResult = rig_transform(0, name=side + '_legResult', type='joint',
+		                          target=leg, parent=legSkeletonParts,
+		                          rotateOrder=2).object
+		kneeResult = rig_transform(0, name=side + '_kneeResult', type='joint',
+		                            target=knee, rotateOrder=2).object
+		footResult = rig_transform(0, name=side + '_footResult', type='joint',
+		                           target=foot, rotateOrder=2).object
+		footBResult = rig_transform(0, name=side + '_footBResult', type='joint',
+		                              target=footB, rotateOrder=2).object
+		toesResult = rig_transform(0, name=side + '_toesResult', type='joint',
+		                            target=toes, rotateOrder=2).object
+
+		chainResult = [legResult, kneeResult, footResult, footBResult, toesResult]
+
+		chainParent(chainResult)
+		chainResult.reverse()
+
+		# chain FK
+		legFK = rig_transform(0, name=side + '_legFK', type='joint', target=leg,
+		                      parent=legSkeletonParts, rotateOrder=2).object
+		kneeFK = rig_transform(0, name=side + '_kneeFK', type='joint',
+		                        target=knee, rotateOrder=2).object
+		footFK = rig_transform(0, name=side + '_footFK', type='joint', target=foot, rotateOrder=2
+		).object
+		footBFK = rig_transform(0, name=side + '_footBFK', type='joint', target=footB, rotateOrder=2
+		).object
+		toesFK = rig_transform(0, name=side + '_toesFK', type='joint', target=toes, rotateOrder=2
+		).object
+
+		chainFK = [legFK, kneeFK, footFK, footBFK, toesFK]
+
+		chainParent(chainFK)
+		chainFK.reverse()
+
+		# chain IK
+		legIK = rig_transform(0, name=side + '_legIK', type='joint', target=leg,
+		                      parent=legSkeletonParts, rotateOrder=2).object
+		kneeIK = rig_transform(0, name=side + '_kneeIK', type='joint',
+		                        target=knee, rotateOrder=2).object
+		footIK = rig_transform(0, name=side + '_footIK', type='joint', target=foot, rotateOrder=2
+		).object
+		footBIK = rig_transform(0, name=side + '_footBIK', type='joint', target=footB, rotateOrder=2
+		).object
+		toesIK = rig_transform(0, name=side + '_toesIK', type='joint', target=toes, rotateOrder=2
+		).object
+
+		chainIK = [legIK, kneeIK, footIK, footBIK,toesIK]
+
+		chainParent(chainIK)
+		chainIK.reverse()
+
+		# create ik
+		ik = rig_ik(name, legIK, footIK, 'ikRPsolver')
+		pm.parent(ik.handle, module.parts)
+
+		poleVector = rig_control(side=side, name='legPV', shape='pointer',
+		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
+		                         targetOffset=[leg, foot],
+		                         parentOffset=module.controls, scale=ctrlSizeQuarter)
+
+		if side == 'r':
+			pm.rotate(poleVector.ctrl.cv, 90, 0, 0, r=True, os=True)
+		else:
+			pm.rotate(poleVector.ctrl.cv, -90, 0, 0, r=True, os=True)
+
+		pm.connectAttr(module.top.ikFkSwitch, poleVector.offset + '.visibility')
+
+		self.legControls['poleVector'] = poleVector
+
+		pm.delete(pm.aimConstraint(knee, poleVector.offset, mo=False))
+
+		footPos = pm.xform(foot, translation=True, query=True, ws=True)
+		kneePos = pm.xform(knee, translation=True, query=True, ws=True)
+		poleVectorPos = pm.xform(poleVector.con, translation=True, query=True,
+		                         ws=True)
+
+		pvDistance = lengthVector(kneePos, poleVectorPos)
+
+		pm.xform(poleVector.offset, translation=[pvDistance, 0, 0], os=True,
+		         r=True)
+
+		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
+
+		# pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
+		#       objectSpace=True)
+
+		pvDistance = lengthVector(footPos, kneePos)
+		pm.move(poleVector.offset, [pvDistance * 2, 0, 0], relative=True, objectSpace=True)
+
+		print 'ik handle ' + ik.handle
+
+		# ## MAKE FOOT CONTROL
+		footControl = rig_control(side=side, name='foot', shape='box', modify=2,
+		                          parentOffset=module.controls, scale=ctrlSize,
+		                          rotateOrder=2)
+
+		pm.delete(pm.pointConstraint(foot, footControl.offset))
+
+		footControl.gimbal = createCtrlGimbal(footControl)
+		footControl.pivot = createCtrlPivot(footControl)
+
+		constrainObject(footControl.offset,
+		                [self.pelvisConnection, self.centerConnection,
+		                 'worldSpace_GRP'],
+		                footControl.ctrl, ['pelvis', 'spine', 'world'],
+		                type='parentConstraint')
+
+		pm.addAttr(footControl.ctrl, ln='MOTION', at='enum',
+		           enumName='___________',
+		           k=True)
+		footControl.ctrl.MOTION.setLocked(True)
+		pm.addAttr(footControl.ctrl, longName='twist', at='float', k=True)
+		pm.addAttr(footControl.ctrl, longName='footRoll', at='float', k=True, min=0,
+		           max=10, dv=0)
+		pm.connectAttr(footControl.ctrl.twist, ik.handle.twist)
+
+		pm.connectAttr(module.top.ikFkSwitch, footControl.offset + '.visibility')
+
+		self.legControls['foot'] = footControl
+
+		# auto pole vector LOCATOR
+		autoPVOffset = rig_transform(0, name=side + '_autoLegPVOffset',
+		                             parent=module.parts, target=poleVector.con
+		).object
+		autoPVLoc = rig_transform(0, name=side + '_autoLegPV', type='locator',
+		                          parent=autoPVOffset, target=autoPVOffset).object
+
+		pm.parentConstraint(self.pelvisConnection, autoPVOffset, mo=True)
+		pm.pointConstraint(self.pelvisConnection, footControl.con, autoPVLoc, mo=True)
+
+		constrainObject(poleVector.offset,
+		                [autoPVLoc, self.pelvisConnection, self.centerConnection,
+		                 'worldSpace_GRP'],
+		                poleVector.ctrl, ['auto', 'pelvis', 'main', 'world'],
+		                type='parentConstraint')
+
+		# ## MAKE FOOT BALL CONTROL
+		footBallControl = rig_control(side=side, name='footBall', shape='cylinder', modify=2,
+		                              parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                              rotateOrder=2)
+
+		pm.delete(pm.pointConstraint(footB, footBallControl.offset))
+		pm.parentConstraint(footBallControl.con, ik.handle, mo=True)
+
+		pm.connectAttr(module.top.ikFkSwitch, footBallControl.offset + '.visibility')
+
+		pm.rotate(footBallControl.ctrl.cv, [90, 0, 0], relative=True, objectSpace=True)
+		pm.move(footBallControl.ctrl.cv, [0, 0.5, 0], relative=True)
+
+		constrainObject(footBallControl.modify[0],
+		                [footBallControl.offset, 'worldSpace_GRP'],
+		                footBallControl.ctrl, ['foot', 'world'],
+		                type='orientConstraint')
+
+		wristBallLoc = rig_transform(0, name=side + '_footBallAim', type='locator',
+		                             parent=module.parts, target=foot).object
+		fngBallLoc = rig_transform(0, name=side + '_toesBallAim', type='locator',
+		                           parent=module.parts, target=footB).object
+
+		pm.parentConstraint(kneeIK, wristBallLoc, mo=True)
+		pm.parentConstraint(footBallControl.con, fngBallLoc, mo=True)
+
+		footBallAimTop = mm.eval('rig_makePiston("' + wristBallLoc + '", "' + fngBallLoc + '", "' + side + '_footBallAim");')
+		pm.parent(side + '_footBallAim_LOCUp', side + '_toesBallAim_LOCAimOffset')
+
+		pm.orientConstraint(side + '_footBallAim_JNT', footIK, mo=True)
+
+		pm.parent(footBallAimTop, module.parts)
+
+		### MAKE FOOT TOES CONTROL
+		footToesControl = rig_control(side=side, name='footToes', shape='cylinder', modify=2,
+		                              parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                              rotateOrder=2)
+
+		pm.delete(pm.pointConstraint(toes, footToesControl.offset))
+		pm.parentConstraint(footControl.con, footToesControl.offset, mo=True)
+		pm.parentConstraint(footToesControl.con, footBallControl.offset, mo=True)
+
+		pm.connectAttr(module.top.ikFkSwitch, footToesControl.offset + '.visibility')
+
+		pm.rotate(footToesControl.ctrl.cv, [0, 0, 90], relative=True, objectSpace=True)
+
+		constrainObject(footToesControl.modify[0],
+		                [footToesControl.offset, 'worldSpace_GRP'],
+		                footToesControl.ctrl, ['foot', 'world'],
+		                type='orientConstraint')
+
+		footBallLoc = rig_transform(0, name=side + '_footBallBAim', type='locator',
+		                             parent=module.parts, target=footB).object
+		footToesLoc = rig_transform(0, name=side + 'footToesAim', type='locator',
+		                           parent=module.parts, target=toes).object
+
+		pm.parentConstraint(footIK, footBallLoc, mo=True)
+		pm.parentConstraint(footToesControl.con, footToesLoc, mo=True)
+
+		footToesAimTop = mm.eval('rig_makePiston("' + footBallLoc + '", "' + footToesLoc + '", "' + side + '_footToesAim");')
+		pm.parent(side + '_footBallBAim_LOCUp', side + '_footToesAim_LOCAimOffset')
+
+		pm.orientConstraint(side + '_footBallBAim_JNT', footBIK, mo=True)
+
+		pm.parent(footToesAimTop, module.parts)
+
+		## MAKE FOOT ROLLS
+		pm.addAttr(footControl.ctrl, ln='ROLLS', at='enum',
+		           enumName='___________',
+		           k=True)
+		footControl.ctrl.ROLLS.setLocked(True)
+		rollTip = rig_transform(0, name=side + '_footRollTip',
+		                            parent=footControl.gimbal.ctrl,
+		                            target=side+'_footRollTip_LOC').object
+		rollHeel = rig_transform(0, name=side + '_footRollHeel',
+		                    parent=rollTip,
+		                    target=side + '_footRollHeel_LOC').object
+		rollIn = rig_transform(0, name=side + '_footRollIn',
+		                     parent=rollHeel,
+		                     target=side + '_footRollIn_LOC').object
+		rollOut = rig_transform(0, name=side + '_footRollOut',
+		                       parent=rollIn,
+		                       target=side + '_footRollOut_LOC').object
+		pm.parent( footControl.con, rollOut )
+
+		pm.addAttr(footControl.ctrl, longName='rollTip', at='float', k=True, min=0,
+		           max=10, dv=0)
+		pm.addAttr(footControl.ctrl, longName='rollHeel', at='float', k=True, min=0,
+		           max=10, dv=0)
+		pm.addAttr(footControl.ctrl, longName='rollIn', at='float', k=True, min=0,
+		           max=10, dv=0)
+		pm.addAttr(footControl.ctrl, longName='rollOut', at='float', k=True, min=0,
+		           max=10, dv=0)
+
+		flipRoll = 1
+		if side == 'r':
+			flipRoll = -1
+		rig_animDrivenKey(footControl.ctrl.rollTip, (0, 10),
+		                  rollTip+'.rotateX', (0, 90 ))
+		rig_animDrivenKey(footControl.ctrl.rollHeel, (0, 10),
+		                  rollHeel+'.rotateX', (0, -90 ))
+		rig_animDrivenKey(footControl.ctrl.rollIn, (0, 10),
+		                  rollIn+'.rotateZ', (0, 90*flipRoll ))
+		rig_animDrivenKey(footControl.ctrl.rollOut, (0, 10),
+		                  rollOut + '.rotateZ', (0, -90*flipRoll ))
+
+		## do foot roll with footBall and footToes modify
+		rig_animDrivenKey(footControl.ctrl.footRoll, (0,5, 10),
+		                  footBallControl.modify[1] + '.rotateX', (0, 20,30 ))
+		rig_animDrivenKey(footControl.ctrl.footRoll, (0, 5, 10),
+		                  footToesControl.modify[1] + '.rotateX', (0, 0, 40 ))
+
+		# ## MAKE TOES CONTROL
+		toesControl = rig_control(side=side, name='toes', shape='pyramid', modify=1,
+		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                             rotateOrder=2)
+
+		pm.delete(pm.parentConstraint(toes, toesControl.offset))
+		pm.parentConstraint(toesControl.con, toesIK, mo=True)
+		pm.parentConstraint(footToesControl.con, toesControl.offset, mo=True)
+
+		pm.connectAttr(module.top.ikFkSwitch, toesControl.offset + '.visibility')
+
+		constrainObject(toesControl.modify,
+		                [footControl.con, toesControl.offset, 'worldSpace_GRP'],
+		                toesControl.ctrl, ['foot', 'footBall', 'world'],
+		                type='orientConstraint')
+
+		toesPos = pm.xform(toesControl.con, translation=True, query=True, ws=True)
+		endPos = pm.xform(side + '_toesJEnd_JNT', translation=True, query=True, ws=True)
+
+		toesLength = lengthVector(toesPos, endPos)
+
+		pm.move(toesControl.ctrl.cv, [0, 0, toesLength], relative=True)
+
+		'''
+		if side == 'l':
+			pm.move(toesControl.ctrl.cv, [0, 0, toesLength], relative=True)
+		else:
+			pm.move(toesControl.ctrl.cv, [0, 0, toesLength * -1], relative=True)
+		'''
+
+		# create fk
+		print 'fk chain ' + str(chainFK)
+		fkCtrls = fkControlChain(chainFK, scale=ctrlSize)
+		for fk in fkCtrls:
+			pm.parent(fk.offset, module.controls)
+			pm.setDrivenKeyframe(fk.offset + '.visibility',
+			                     cd=module.top.ikFkSwitch,
+			                     dv=1,
+			                     v=0)
+			pm.setDrivenKeyframe(fk.offset + '.visibility',
+			                     cd=module.top.ikFkSwitch,
+			                     dv=0,
+			                     v=1)
+		kneeFk = fkCtrls[1]
+		rotateAxis = ['rx', 'ry', 'rz']
+		if self.elbowAxis in rotateAxis: rotateAxis.remove(self.kneeAxis)
+		for at in rotateAxis:
+			kneeFk.ctrl.attr(at).setKeyable(False)
+			kneeFk.ctrl.attr(at).setLocked(True)
+
+		self.armControls['fk'] = fkCtrls
+
+		self.connectIkFkSwitch(chains=[chainResult, chainIK, chainFK],
+		                       module=module, name=name)
+
+		# constrain result to skeleton
+		for i in range(0, len(chain)):
+			pm.parentConstraint(chainResult[i], chain[i], mo=True)
+
+		return module
+
+
+	def foot(self, side = '', axis = 'ry', ctrlSize = 1.0):
+		abc = list(string.ascii_lowercase)
+
+		name = side + '_toes'
+		sideName = side + '_'
+		if side == '':
+			name = 'toes'
+			sideName = ''
+
+		module = rig_module(name)
+		self.fingersModule = module
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		rotateAxis = ['rx', 'ry', 'rz']
+
+		rotateAxis.remove(axis)
+
+		skipAxis = rotateAxis + ['tx', 'ty', 'tz']
+
+		for toes in ( self.toeThumb, self.toeIndex, self.toeMid, self.toeRing,
+		                self.toePinky ):
+
+			toe = toes
+
+			if side != '':
+				toe = side + '_' + toe
+
+			print 'finger is ' + toe
+			if pm.objExists(toe):
+
+				chainFingers = rig_chain(toe)
+
+				childrenFngs = chainFingers.chainChildren
+
+				childrenFngs.pop(len(childrenFngs) - 1)
+
+				sc = simpleControls(toe,
+				                    modify=2, scale=ctrlSize,
+				                    parentOffset=module.controls)
+
+				toeCtrl = sc[toe]
+				baseLimit = 0.2
+				pm.transformLimits(toeCtrl.ctrl, tx=(-1 * baseLimit, baseLimit), etx=(1, 1))
+				pm.transformLimits(toeCtrl.ctrl, ty=(-1 * baseLimit, baseLimit), ety=(1, 1))
+				pm.transformLimits(toeCtrl.ctrl, tz=(-1 * baseLimit, baseLimit), etz=(1, 1))
+
+				pm.move(toeCtrl.ctrl.cv, [0, 0, 0.3], relative=True)
+
+				if 'Thumb' in toe:
+					if pm.objExists(sideName + 'footJA_JNT'):
+						pm.parentConstraint(sideName + 'footJA_JNT', toeCtrl.offset, mo=True)
+				else:
+					if pm.objExists(sideName + 'footJB_JNT'):
+						pm.parentConstraint(sideName + 'footJB_JNT', toeCtrl.offset, mo=True)
+						pm.orientConstraint(sideName + 'toesJA_JNT', toeCtrl.modify[0], mo=True, skip='x')
+
+				simpleControls(childrenFngs,
+				               modify=2, scale=ctrlSize,
+				               parentOffset=module.controls,
+				               lockHideAttrs=skipAxis)
+
+				pm.parent(toe, module.skeleton)
+
+			else:
+				print toe + ' does not exist...Skipping.'
+
+		return module
 
 
 def rig_bipedPrepare():
@@ -508,6 +1023,8 @@ def rig_bipedPrepare():
 			cmds.parent(digit, w=True)
 		except ValueError:
 			print 'Skipping ' + digit + ' as it does not exist'
+
+
 
 	sideJointList = [ 'clavicleJA_JNT', 'armJA_JNT', 'legJA_JNT' ]
 	for jnt in sideJointList:

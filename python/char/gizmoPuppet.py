@@ -41,6 +41,9 @@ def gizmoRigModules():
 
 	biped = rig_biped()
 	biped.elbowAxis = 'ry'
+
+	biped.pelvis(ctrlSize=5)
+
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=3)
 
@@ -53,6 +56,8 @@ def gizmoRigModules():
 		legModule = biped.leg(side, ctrlSize=3)
 
 		toesModule = biped.foot(side, ctrlSize=0.5)
+
+		biped.connectLegPelvis()
 	
 
 def gizmoFinish():

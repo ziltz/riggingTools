@@ -73,6 +73,7 @@ class rig_biped(object):
 		# values : poleVector, foot, fk
 		self.legControls = {}
 		self.legTop = ''
+		self.pelvisControl = None
 
 		self.spineConnection = 'spineJF_JNT'
 		self.centerConnection = 'spineJA_JNT'
@@ -81,10 +82,15 @@ class rig_biped(object):
 		self.spineModule = ''
 		self.neckModule = ''
 		self.headModule = ''
+
 		self.shoulderModule = ''
 		self.armModule = ''
-		self.legModule = ''
 		self.fingersModule = ''
+
+		self.legModule = ''
+		self.toesModule = ''
+		self.pelvisModule = ''
+
 
 
 	def create(self):
@@ -244,13 +250,20 @@ class rig_biped(object):
 				pm.pointConstraint(hand.con, child, mo=True)
 				
 		pm.parent(pistonTop, self.armModule.parts)
-		
-		return
+
 
 	def arm (self, side='', ctrlSize=1.0):
 		name = side+'_arm'
 		if side == '':
 			name = 'arm'
+
+
+		secColour = 'green'
+		if side == 'r':
+			secColour = 'magenta'
+		elif side == 'l':
+			secColour = 'deepskyblue'
+
 
 		module = rig_module(name)
 		self.armModule = module
@@ -401,7 +414,7 @@ class rig_biped(object):
 
 		handBallControl = rig_control(side=side, name='handBall', shape='cylinder', modify=1,
 		                          parentOffset=module.controls, scale=ctrlSizeQuarter,
-		                          rotateOrder=2)
+		                          rotateOrder=2, colour =secColour)
 
 		pm.delete(pm.pointConstraint(handFng, handBallControl.offset))
 		handBallControl.gimbal = createCtrlGimbal(handBallControl)
@@ -451,7 +464,7 @@ class rig_biped(object):
 
 		fingersControl = rig_control(side=side, name='fingers', shape='pyramid', modify=1,
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
-		                             rotateOrder=2)
+		                             rotateOrder=2, lockHideAttrs=['tx','ty','tz'])
 
 		pm.delete(pm.parentConstraint(handFng, fingersControl.offset))
 		pm.parentConstraint( fingersControl.con, handFngIK, mo=True )
@@ -586,13 +599,71 @@ class rig_biped(object):
 		return module
 
 
-	def pelvis (self):
-		return
+	def pelvis (self, ctrlSize=1):
+		name = 'pelvis'
+
+		module = self.spineModule
+
+		if self.spineModule == '':
+			module = rig_module(name)
+
+		self.pelvisModule = module
+
+		pelvis = self.pelvisConnection
+
+		pm.parent(pelvis, module.skeleton)
+
+		print 'pelvis ' + pelvis
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		self.pelvisControl = rig_control(side='', name='pelvis', shape='box',
+		                                   targetOffset=pelvis, modify=1,
+		                                   parentOffset=module.controls, lockHideAttrs=[
+				'tx', 'ty', 'tz'], constrain=pelvis, scale=ctrlSize, rotateOrder=0)
+
+		if pm.objExists(self.centerConnection):
+			pm.parentConstraint(self.centerConnection, self.pelvisControl.offset, mo=True)
+
+		if pm.objExists('rigModules_GRP'):
+			pm.parent(module.top, 'rigModules_GRP')
+
+		return module
+
+	def connectLegPelvis(self):
+
+		fkCtrls = self.legControls['fk']
+		#foot = self.legControls['foot']
+
+		print 'self.pelvisControl ' + str(self.pelvisControl.ctrl)
+		pm.parentConstraint(self.pelvisControl.con, fkCtrls[0].offset,
+		                    mo=True)
+		pm.parentConstraint(self.pelvisControl.con, self.legTop,
+		                    mo=True)
+
+		'''
+		hipControl = rig_control(side=side, name='hip', shape='sphere', modify=1,
+		                         parentOffset=module.controls, scale=ctrlSizeHalf,
+		                         rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
+
+		constrainObject(hipControl.offset,
+		                [self.pelvisConnection, self.centerConnection,
+		                 'worldSpace_GRP'],
+		                poleVector.ctrl, ['pelvis', 'main', 'world'],
+		                type='parentConstraint')
+		'''
 
 	def leg (self, side='', ctrlSize=1.0):
 		name = side + '_leg'
 		if side == '':
 			name = 'leg'
+
+		secColour = 'green'
+		if side == 'r':
+			secColour = 'magenta'
+		elif side == 'l':
+			secColour = 'deepskyblue'
 
 		module = rig_module(name)
 		self.legModule = module
@@ -752,8 +823,8 @@ class rig_biped(object):
 		autoPVLoc = rig_transform(0, name=side + '_autoLegPV', type='locator',
 		                          parent=autoPVOffset, target=autoPVOffset).object
 
-		pm.parentConstraint(self.pelvisConnection, autoPVOffset, mo=True)
-		pm.pointConstraint(self.pelvisConnection, footControl.con, autoPVLoc, mo=True)
+		pm.parentConstraint(self.centerConnection, autoPVOffset, mo=True)
+		pm.pointConstraint(self.centerConnection, footControl.con, autoPVLoc, mo=True)
 
 		constrainObject(poleVector.offset,
 		                [autoPVLoc, self.pelvisConnection, self.centerConnection,
@@ -764,7 +835,7 @@ class rig_biped(object):
 		# ## MAKE FOOT BALL CONTROL
 		footBallControl = rig_control(side=side, name='footBall', shape='cylinder', modify=2,
 		                              parentOffset=module.controls, scale=ctrlSizeQuarter,
-		                              rotateOrder=2)
+		                              rotateOrder=2, colour=secColour)
 
 		pm.delete(pm.pointConstraint(footB, footBallControl.offset))
 		pm.parentConstraint(footBallControl.con, ik.handle, mo=True)
@@ -797,7 +868,7 @@ class rig_biped(object):
 		### MAKE FOOT TOES CONTROL
 		footToesControl = rig_control(side=side, name='footToes', shape='cylinder', modify=2,
 		                              parentOffset=module.controls, scale=ctrlSizeQuarter,
-		                              rotateOrder=2)
+		                              rotateOrder=2, colour=secColour)
 
 		pm.delete(pm.pointConstraint(toes, footToesControl.offset))
 		pm.parentConstraint(footControl.con, footToesControl.offset, mo=True)
@@ -846,6 +917,8 @@ class rig_biped(object):
 		                       target=side + '_footRollOut_LOC').object
 		pm.parent( footControl.con, rollOut )
 
+		pm.delete(pm.ls("?_footRoll*_LOC"))
+
 		pm.addAttr(footControl.ctrl, longName='rollTip', at='float', k=True, min=0,
 		           max=10, dv=0)
 		pm.addAttr(footControl.ctrl, longName='rollHeel', at='float', k=True, min=0,
@@ -876,7 +949,7 @@ class rig_biped(object):
 		# ## MAKE TOES CONTROL
 		toesControl = rig_control(side=side, name='toes', shape='pyramid', modify=1,
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
-		                             rotateOrder=2)
+		                             rotateOrder=2, lockHideAttrs=['tx','ty','tz'])
 
 		pm.delete(pm.parentConstraint(toes, toesControl.offset))
 		pm.parentConstraint(toesControl.con, toesIK, mo=True)
@@ -923,7 +996,7 @@ class rig_biped(object):
 			kneeFk.ctrl.attr(at).setKeyable(False)
 			kneeFk.ctrl.attr(at).setLocked(True)
 
-		self.armControls['fk'] = fkCtrls
+		self.legControls['fk'] = fkCtrls
 
 		self.connectIkFkSwitch(chains=[chainResult, chainIK, chainFK],
 		                       module=module, name=name)

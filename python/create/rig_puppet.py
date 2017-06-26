@@ -7,6 +7,7 @@ from rutils.rig_utils import *
 from make.rig_controls import *
 from rutils.rig_transform import rig_transform
 from create.rig_skeleton import loadPose, removePose
+from rutils.rig_anim import *
 
 import pymel.core as pm
 import maya.cmds as cmds
@@ -272,6 +273,9 @@ class puppet(object):
 	def prepareRig(self):
 		print 'Prepare core rig'
 
+		pm.select('model_GRP')
+		pm.viewFit()
+
 		cmds.dgdirty(allPlugs=True)
 		cmds.refresh()
 
@@ -310,10 +314,13 @@ class puppet(object):
 						allControls.append( pm.listRelatives(ctrl, p=True)[0] )
 
 					pm.addAttr(self.displayTransform, ln=sectionName, at='enum',
-					           enumName='None:Primary', k=False, dv=1)
+					           enumName='None:Primary:Secondary', k=False, dv=1)
 					self.displayTransform.attr(sectionName).set(cb=True)
 					pm.connectAttr( self.displayTransform.attr(sectionName),
 					                grp.lodVisibility )
+					secondaryCtrlsGrp = grp.replace( 'Controls_GRP', 'ControlsSecondary_GRP' )
+					rig_animDrivenKey(self.displayTransform.attr(sectionName), (0, 1, 2),
+					                  secondaryCtrlsGrp + '.visibility', (0, 0, 1 ))
 
 		pm.select(cl=True)
 		allControls.extend( ['global_CTRL','globalGimbal_CTRL' ] )
@@ -363,6 +370,9 @@ class puppet(object):
 				pm.delete(layer)
 
 		getattr(self.charModule, self.character + 'Finish')()
+
+		# turn off inherit transforms on skinned geo
+		rig_skinClusterTransforms(group='model_GRP')
 
 
 # make default human puppet

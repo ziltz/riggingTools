@@ -78,18 +78,15 @@ class rig_control(object):
 		if self.constrain is not 0:
 			if type(self.constrain) is str: # single obj constrain
 				if pm.objExists(self.constrain):
-					print 'SINGLE CONSTRAINT'
 					pm.parentConstraint(self.con, self.constrain, mo=True)
 			else:
 				try: # check if pyNode obj
 					if self.constrain.exists():
-						print 'SINGLE CONSTRAINING PYNODE'
 						pm.parentConstraint(self.con, self.constrain, mo=True)
 				except AttributeError: # if fail then it must be list
 					if type(self.constrain) is list:
 						for con in self.constrain:
 							if pm.objExists( con ):
-								print 'MULTI CONSTRAINING'
 								pm.parentConstraint( self.con, con, mo=True )
 
 
@@ -238,7 +235,6 @@ class rig_control(object):
 '''
 def simpleControls(joints=None, **kwds ):
 
-	print type(joints)
 	jointList = joints
 	if type(joints) is str or type(joints) is unicode:
 		jointList = [joints]
@@ -254,11 +250,9 @@ def simpleControls(joints=None, **kwds ):
 	for jnt in jointList:
 		parent = None
 
-		print 'joint ' + jnt
 		try:
 			parent = pm.listRelatives(jnt, type="joint", p=True)[0]
 		except IndexError:
-			print 'No joint parent found, finding other'
 			try:
 				parent = pm.listRelatives(jnt, type="transform", p=True)[0]
 			except IndexError:
@@ -279,8 +273,6 @@ def simpleControls(joints=None, **kwds ):
 		name = naming
 		if side:
 			name = naming.replace( side+'_', '' )
-
-		print 'ctrlShape = '+ctrlShape
 
 		control = rig_control(side=side, name=name, shape=ctrlShape,
 		                      targetOffset=jnt, constrainOffset=parent,
@@ -376,7 +368,6 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 	constrainerList = []
 	if doSpace:
-		print 'making locs'
 		for space in multipleConstrainer:
 			suffix = space.split('_')[-1:][0]
 			spaceName = space.replace('_'+suffix, '_'+obj+'Proxy')

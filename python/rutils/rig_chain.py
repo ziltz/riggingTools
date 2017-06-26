@@ -37,8 +37,6 @@ def chainParent( list, reverse=0 ):
 	if reverse == 0:
 		chain.reverse()
 	for i in range(0, len(chain)-1 ):
-		print (chain[i])
-		print (chain[i+1])
 		try:
 			mc.parent( chain[i], chain[i+1] )
 		except TypeError:

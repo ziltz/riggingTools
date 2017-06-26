@@ -42,7 +42,13 @@ def gizmoRigModules():
 	biped = rig_biped()
 	biped.elbowAxis = 'ry'
 
+	biped.spine(ctrlSize=6)
+
 	biped.pelvis(ctrlSize=5)
+
+	biped.neck( ctrlSize=2.5 )
+
+	biped.head(ctrlSize=5)
 
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=3)
@@ -63,7 +69,7 @@ def gizmoRigModules():
 def gizmoFinish():
 	print 'Finishing gizmo'
 
-
+	rig_bipedFinalize()
 
 
 

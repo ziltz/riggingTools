@@ -1,12 +1,12 @@
 
 
 
-from make.rig_ik import rig_ik
+from make.rig_ik import *
 from rutils.rig_chain import *
 from make.rig_controls import *
 from rutils.rig_modules import rig_module
 from rutils.rig_transform import rig_transform
-from rutils.rig_nodes import blendColors
+from rutils.rig_nodes import *
 from rutils.rig_math import *
 from rutils.rig_anim import *
 
@@ -14,6 +14,8 @@ import pymel.core as pm
 import maya.cmds as cmds
 import maya.mel as mm
 import string
+
+ABC = list(string.ascii_uppercase)
 
 '''
 
@@ -75,13 +77,17 @@ class rig_biped(object):
 		self.legTop = ''
 		self.pelvisControl = None
 
+		self.spineFullBodyCtrl = None
+		self.spineUpperCtrl = None
+		self.spineLowerCtrl = None
+
 		self.spineConnection = 'spineJF_JNT'
 		self.centerConnection = 'spineJA_JNT'
 		self.pelvisConnection = 'pelvisJA_JNT'
 
 		self.spineModule = ''
-		self.neckModule = ''
 		self.headModule = ''
+		self.neckModule = ''
 
 		self.shoulderModule = ''
 		self.armModule = ''
@@ -133,28 +139,517 @@ class rig_biped(object):
 
 		# blend joints together
 
-		print 'chain[0] '+ str(chains[0])
-		print 'chain[1] ' + str(chains[1])
-		print 'chain[2] ' + str(chains[2])
-
 		for i in range(0, len(chains[0])):
 
+			con = pm.orientConstraint( chains[1][i], chains[2][i], chains[0][i] )
+			targetsOrient = con.getWeightAliasList()
+			pm.setAttr(con.interpType, 2)
+
+			con = pm.pointConstraint(chains[1][i], chains[2][i], chains[0][i])
+			targetsPoint = con.getWeightAliasList()
+
+			pm.connectAttr( self.switchLoc+'.'+name, targetsOrient[0] )
+			pm.connectAttr(self.switchLoc + '.' + name, targetsPoint[0])
+			connectReverse(input=(self.switchLoc+'.'+name, self.switchLoc+'.'+name, 0),
+			               output=(targetsOrient[1], targetsPoint[1], 0))
+
+			'''
 			blendColors(chains[1][i], chains[2][i], chains[0][i], name=name+str(i),
 			            driverAttr=self.switchLoc+'.'+name,
 			            attribute='rotate')
+
+			blendColors(chains[1][i], chains[2][i], chains[0][i], name=name + str(i),
+			            driverAttr=self.switchLoc + '.' + name,
+			            attribute='translate')
+			'''
 
 		switchAttr = getattr(self.switchLoc, name)
 		pm.connectAttr( switchAttr, module.top.ikFkSwitch  )
 
 
-	def spine(self):
-		return
+	def spine(self,  ctrlSize=1 ):
+		name = 'spine'
+
+		module = rig_module(name)
+		self.spineModule = module
+
+		pm.parent(self.centerConnection, module.skeleton)
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		'''
+		string $spline = cMS_makeSpline($baseName, $nControls, $controlType, $detail, $nRead, $readType, $ctrls, $reads, $bConstrainMid) ;
+	string $spline = cMS_makeSpline($baseName, $nControls, $controlType, 8, 0, "null", $ctrls, $reads, 1) ;
+
+		'''
+
+		# full body control
+		spineFullBody = rig_control(name='spineFullBody', shape='box', modify=1,
+		                            scale=ctrlSize,
+		                         colour='yellow', parentOffset=module.controls, rotateOrder=2)
+		pm.delete(pm.pointConstraint( 'spineJA_JNT', spineFullBody.offset ))
+		self.spineFullBodyCtrl = spineFullBody
+		spineTop = pm.xform('spineJF_JNT', translation=True, query=True, ws=True)
+		spineBot = pm.xform('spineJA_JNT', translation=True, query=True, ws=True)
+		spineDistance = lengthVector(spineBot, spineTop)
+		pm.move(pm.PyNode( spineFullBody.ctrl+'.cv[:]' ), [0, spineDistance, -1*(spineDistance*2)],
+		        relative=True,
+		        worldSpace=True)
+		spineFullBody.gimbal = createCtrlGimbal(spineFullBody)
+		spineFullBody.pivot = createCtrlPivot(spineFullBody)
+
+
+		pm.scale(pm.PyNode(spineFullBody.ctrl+'.cv[:]'), 0.5, 1, 0.5)
+
+		# spine lower
+		spineLower = rig_control(name='spineLower', shape='box', modify=1,
+		                         targetOffset='spineJB_JNT',
+		                         constrainOffset=spineFullBody.con, scale=ctrlSize,
+		                         colour='yellow', parentOffset=module.controls, rotateOrder=2)
+		spineLower.gimbal = createCtrlGimbal(spineLower)
+		spineLower.pivot = createCtrlPivot(spineLower)
+
+		self.spineLowerCtrl = spineLower
+
+		constrainObject(spineLower.modify,
+		                [spineLower.offset, 'worldSpace_GRP'],
+		                spineLower.ctrl, ['fullBody', 'world'],
+		                type='parentConstraint')
+
+		pm.parentConstraint( spineLower.con, self.centerConnection, mo=True )
+
+		pm.move(pm.PyNode(spineLower.ctrl + '.cv[:]'),
+		        [0, 0, 0.5],
+		        relative=True,
+		        worldSpace=True)
+		pm.scale(pm.PyNode(spineLower.ctrl + '.cv[:]'), 1, 0.7, 1)
+
+		# spine upper
+		spineUpper = rig_control(name='spineUpper', shape='box', modify=1,scale=ctrlSize,
+		                         colour='yellow', parentOffset=module.controls, rotateOrder=2)
+		spineUpper.gimbal = createCtrlGimbal(spineUpper)
+		spineUpper.pivot = createCtrlPivot(spineUpper)
+
+		self.spineUpperCtrl = spineUpper
+
+		pm.delete(pm.parentConstraint( 'spineJE_JNT', spineUpper.offset ))
+		pm.parentConstraint( spineFullBody.con, spineUpper.offset, mo=True )
+
+		pm.move(pm.PyNode(spineUpper.ctrl + '.cv[:]'),
+		        [0, 0, 1.5],
+		        relative=True,
+		        worldSpace=True)
+
+		constrainObject(spineUpper.modify,
+		                [spineUpper.offset, 'worldSpace_GRP'],
+		                spineUpper.ctrl, ['fullBody', 'world'],
+		                type='parentConstraint')
+
+		pm.addAttr(spineUpper.ctrl, ln='MOTION', at='enum',
+		           enumName='___________',
+		           k=True)
+		spineUpper.ctrl.MOTION.setLocked(True)
+
+		spineChain = rig_chain(self.centerConnection).chainChildren
+
+		driverJntsList = []
+		driverCtrlList = {}
+		for i in range (0, len(spineChain)):
+			driverJnt = rig_transform(0, name='spineDriverJ'+ABC[i+1], type='joint',
+			                          target=spineChain[i], parent=module.parts,
+			                          rotateOrder=2).object
+			driverJntsList.append(driverJnt)
+
+			driverCtrl = rig_control(name='spineDriver'+ABC[i+1], shape='circle', modify=1,
+			                        targetOffset=spineChain[i], scale=ctrlSizeHalf,
+			                        colour='green', parentOffset=module.controlsSec, rotateOrder=2)
+			driverCtrlList[ 'spine'+ABC[i+1] ] = driverCtrl
+
+			pm.parentConstraint( driverCtrl.con, driverJnt, mo=True )
+
+		# constrain control drivers
+		pm.parentConstraint( spineUpper.con, driverCtrlList['spineE'].offset, mo=True )
+		pm.parentConstraint( spineUpper.con, driverCtrlList['spineF'].offset, mo=True )
+
+		pm.parentConstraint(spineLower.con, driverCtrlList['spineB'].offset, mo=True)
+		pm.parentConstraint(spineLower.con, driverCtrlList['spineC'].offset, mo=True)
+		pm.parentConstraint(spineUpper.con,spineLower.con, driverCtrlList['spineD'].offset, mo=True)
+
+		# create spline ik
+		ik = rig_ik(name, 'spineJB_JNT', 'spineJF_JNT', 'ikSplineSolver', numSpans=5)
+		pm.parent(ik.handle, ik.curve, module.parts)
+		#// Result: [u'spine2_ik_Handle', u'effector6', u'curve2'] //
+
+		spineLowerAim = rig_transform(0, name='spineLowerAim', type='locator',
+		                        parent=module.parts, target='spineJB_JNT' ).object
+		spineUpperAim = rig_transform(0, name= 'spineUpperAim', type='locator',
+		                            parent=module.parts, target='spineJE_JNT').object
+
+		#pm.setAttr(spineLowerAim + '.rotateZ', -90)
+		#pm.setAttr(spineUpperAim + '.rotateZ', -90)
+		pm.rotate( spineLowerAim, 0,0,-90, r=True , os=True)
+		pm.rotate(spineUpperAim, 0, 0, -90, r=True, os=True)
+
+		pm.parentConstraint(spineLower.con, spineLowerAim, mo=True)
+		pm.parentConstraint(spineUpper.con, spineUpperAim, mo=True)
+
+		spineAimTop = mm.eval(
+			'rig_makePiston("' + spineLowerAim + '", "' + spineUpperAim + '", "spineAim");')
+
+		# advanced twist spine
+		pm.setAttr(ik.handle + '.dTwistControlEnable', 1)
+		pm.setAttr(ik.handle + '.dWorldUpType', 2)  # object up start and end
+		pm.setAttr(ik.handle + '.dForwardAxis', 2)  # positive y
+		pm.setAttr(ik.handle + '.dWorldUpAxis', 6)  # positive x
+
+		pm.connectAttr('spineUpperAim_LOCUp.worldMatrix[0]', ik.handle.dWorldUpMatrixEnd, f=True)
+		pm.connectAttr('spineLowerAim_LOCUp.worldMatrix[0]', ik.handle.dWorldUpMatrix, f=True)
+
+		pm.parent(spineAimTop, module.parts)
+
+		axis = '.ry'
+		# create new attributes
+		pm.addAttr(spineUpper.ctrl, ln="autoTwist", at="double", dv=0, min=0, max=1, k=False)
+		pm.addAttr(spineUpper.ctrl, ln="twistOffset", at="double", dv=0, k=True)
+
+		# create nodes for autoTwist and twistOffset
+		autoTwist1 = pm.createNode("multiplyDivide", n="md_" + spineUpper.ctrl + "_autoTwist1")
+		autoTwist2 = pm.createNode("multiplyDivide", n="md_" + spineUpper.ctrl + "_autoTwist2")
+		twistOffset1 = pm.createNode("plusMinusAverage", n="pma_" + spineUpper.ctrl + "_twistOffset1")
+		twistOffset2 = pm.createNode("plusMinusAverage", n="pma_" + spineUpper.ctrl + "_twistOffset2")
+
+		# connect the end control
+		pm.connectAttr(spineUpper.ctrl + axis, autoTwist1 + ".input1X")
+		pm.connectAttr(spineUpper.ctrl + ".autoTwist", autoTwist1 + ".input2X")
+
+		pm.connectAttr(autoTwist1 + ".outputX", twistOffset1 + ".input1D[0]")
+		pm.connectAttr(spineUpper.ctrl + ".twistOffset", twistOffset1 + ".input1D[1]")
+
+		# connect the start control
+		pm.connectAttr(spineLower.ctrl + axis, autoTwist2 + ".input1X")
+		pm.connectAttr(spineUpper.ctrl + ".autoTwist", autoTwist2 + ".input2X")
+
+		pm.connectAttr(twistOffset1 + ".output1D", twistOffset2 + ".input1D[0]")
+		pm.connectAttr(autoTwist2 + ".outputX", twistOffset2 + ".input1D[1]")
+
+		pm.setAttr(twistOffset2 + ".operation", 2)  # subtract
+
+		# connect to the ikHandle
+		#pm.connectAttr(spineLower.ctrl + axis, ik.handle + ".roll")
+		pm.connectAttr(twistOffset2 + ".output1D", ik.handle + ".twist")
+
+		pm.select(ik.curve)
+		curveShape = pm.pickWalk(direction='down')
+		curveInfoNode = pm.arclen(curveShape[0], ch=True)
+		curveInfo = pm.rename(curveInfoNode, name + '_splineIk_curveInfo')
+		globalCurve = pm.duplicate(ik.curve)
+		globalCurve = pm.rename(globalCurve, name + 'global_splineIk_curve')
+		pm.select(globalCurve)
+		globalCurveShape = pm.pickWalk(direction='down')
+		globalCurveInfoNode = pm.arclen(globalCurveShape[0], ch=True)
+		globalCurveInfo = pm.rename(globalCurveInfoNode, name + 'global_splineIk_curveInfo')
+		pm.parent(globalCurve, module.parts)
+		pm.setAttr(globalCurve + '.inheritsTransform', 1)
+
+		distanceToStretch_PM = plusMinusNode(name + '_distanceToStretch', 'subtract',
+		                                     curveInfo, 'arcLength', globalCurveInfo, 'arcLength')
+
+
+		correctAdd_Minus_MD = multiplyDivideNode(name+'_correctAdd_Minus', 'multiply',
+		                                         input1=[-1, 0, 0],
+		                                         input2=[distanceToStretch_PM+'.output1D', 0, 0],
+		                                         output=[])
+
+		toggleStretch_ctrl_MD = multiplyDivideNode(name + '_toggleStretch_ctrl', 'multiply',
+		                                         input1=[0, 0, 0],
+		                                         input2=[correctAdd_Minus_MD + '.outputX', 0, 0],
+		                                         output=[])
+
+		distanceStretchCurve_PM = plusMinusNode(name + '_distanceStretchCurve', 'sum',
+		                                        curveInfo, 'arcLength', toggleStretch_ctrl_MD,
+		                                        'outputX')
+
+		globalCurveStretchyFix_MD = multiplyDivideNode(name + '_globalCurveStretchyFix', 'divide',
+		                                         input1=[distanceStretchCurve_PM+'.output1D', 0, 0],
+		                                         input2=[globalCurveInfo + '.arcLength', 1, 1],
+		                                         output=[])
+
+		pm.addAttr(spineUpper.ctrl, longName='stretch', shortName='ts',
+		             attributeType="double",
+		             min=0, max=1, defaultValue=1, keyable=True)
+
+		connectReverse(input=(spineUpper.ctrl + '.stretch', 0, 0),
+		               output=(toggleStretch_ctrl_MD + '.input1X', 0, 0))
+
+		for i in range(0, len(spineChain)-1 ):
+			pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', spineChain[i] + '.scaleY',
+			               f=True)
+
+		pm.skinCluster(driverJntsList, ik.curve, tsb=True)
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
+		return module
 		
-	def neck(self):
+	def neck(self, ctrlSize=1.0):
+
+		name = 'neck'
+
+		module = rig_module(name)
+		self.neckModule = module
+
+		pm.parent('neckJA_JNT', module.skeleton)
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+
+		# make neck fk controls
+		neckBaseFK = rig_control(name='neckBaseFK', shape='box', modify=1,
+		                         lockHideAttrs=['tx', 'ty', 'tz'],scale=ctrlSize,
+		                         colour='lightGreen', parentOffset=module.controls, rotateOrder=2)
+
+		pm.delete(pm.parentConstraint( 'neckJA_JNT', neckBaseFK.offset ))
+		pm.parentConstraint( self.spineConnection, neckBaseFK.offset )
+
+		neckMidFK = rig_control(name='neckMidFK', shape='box', modify=1,
+		                        lockHideAttrs=['tx', 'ty', 'tz'], scale=ctrlSize,
+		                        colour='lightGreen', parentOffset=module.controls, rotateOrder=2)
+
+		pm.delete(pm.parentConstraint('neckJB_JNT', neckMidFK.offset))
+
+		pm.parent(neckMidFK.offset, neckBaseFK.con)
+
+
+		neckBasePos = pm.xform(neckBaseFK.con, translation=True, query=True, ws=True)
+		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
+		neckLength = lengthVector(neckBasePos, headPos)
+
+		pm.move(pm.PyNode(neckBaseFK.ctrl + '.cv[:]'), 0, 0, -1*neckLength, r=True,
+		        os=True)
+		pm.move(pm.PyNode(neckMidFK.ctrl + '.cv[:]'), 0, 0, -1 * neckLength, r=True,
+		        os=True)
+
+		pm.scale(pm.PyNode(neckBaseFK.ctrl + '.cv[:]'), 1, 0.5, 1)
+		pm.scale(pm.PyNode(neckBaseFK.ctrl + '.cv[:]'), 0.8, 1, 1)
+		pm.scale(pm.PyNode(neckMidFK.ctrl + '.cv[:]'), 1, 0.5, 1)
+		pm.scale(pm.PyNode(neckMidFK.ctrl + '.cv[:]'), 0.8, 1, 1)
+
+		constrainObject(neckBaseFK.modify,
+		                [neckBaseFK.offset, 'worldSpace_GRP'],
+		                neckBaseFK.ctrl, ['spineUpper', 'world'],
+		                type='orientConstraint')
+
+		constrainObject(neckMidFK.modify,
+		                [neckMidFK.offset, 'worldSpace_GRP'],
+		                neckMidFK.ctrl, ['neckBase', 'world'],
+		                type='orientConstraint')
+
+		# neckBase
+		neckBase = rig_control(name='neckBase', shape='circle', modify=1,
+		                         targetOffset='neckJA_JNT',
+		                         constrainOffset=self.spineConnection, scale=ctrlSize,
+		                         colour='lightGreen', parentOffset=module.controlsSec,
+		                         rotateOrder=2)
+
+		constrainObject(neckBase.modify,
+		                [ neckBaseFK.con , neckBase.offset, 'worldSpace_GRP'],
+		                neckBase.ctrl, ['neckBaseFK','spine', 'world'],
+		                type='orientConstraint')
+
+		neckBaseDriver = rig_transform(0, name='neckBaseDriver', type='joint',
+		                           target='neckJB_JNT', parent=module.parts,
+		                           rotateOrder=2).object
+
+		pm.parentConstraint( neckBase.con, neckBaseDriver, mo=True )
+
+		# neckMid
+		neckMid = rig_control(name='neckMid', shape='circle', modify=1,
+		                       targetOffset='neckJB_JNT', scale=ctrlSize,
+		                       colour='lightGreen', parentOffset=module.controlsSec, rotateOrder=2)
+
+		constrainObject(neckMid.modify,
+		                [ neckMidFK.con , neckMid.offset, neckBase.con,'worldSpace_GRP'],
+		                neckMid.ctrl, [ 'neckMidFK' , 'neckAim' ,'neckBase', 'world'],
+		                type='parentConstraint')
+
+		neckMidDriver = rig_transform(0, name='neckMidDriver', type='joint',
+		                          target='neckJB_JNT', parent=module.parts,
+		                          rotateOrder=2).object
+
+		pm.parentConstraint(neckMid.con, neckMidDriver, mo=True)
+
+		neckTop = rig_control(name='neckTop', shape='circle', modify=1,
+		                      targetOffset='headJA_JNT', scale=ctrlSize,
+		                      colour='yellow', parentOffset=module.parts, rotateOrder=2)
+
+		neckTopDriver = rig_transform(0, name='headDriver', type='joint',
+		                           target='headJA_JNT', parent=module.parts,
+		                           rotateOrder=2).object
+
+		pm.parentConstraint(neckTop.con, neckTopDriver, mo=True)
+		pm.parentConstraint( neckTop.con, neckBase.con, neckMid.offset, mo=True )
+
+		driverJnts = [neckBaseDriver, neckMidDriver, neckTopDriver]
+
+		neckTopGrp = rig_transform(0, name='neckTop',
+		                            target='neckJA_JNT', parent=module.parts).object
+
+		neckSkeletonParts = rig_transform(0, name='neckSkeletonParts',
+		                                 parent=neckTopGrp).object
+		# chain result
+		neckBaseIK = rig_transform(0, name='neckBaseIK', type='joint',
+		                          target='neckJA_JNT', parent=neckSkeletonParts,
+		                          rotateOrder=2).object
+		neckMidIK = rig_transform(0, name='neckMidIK', type='joint',
+		                            target='neckJB_JNT', rotateOrder=2).object
+		neckTopIK = rig_transform(0, name='neckTopIK', type='joint',
+		                           target='headJA_JNT', rotateOrder=2).object
+
+		chainNeckIK = [neckBaseIK, neckMidIK, neckTopIK]
+
+		chainParent(chainNeckIK)
+		chainNeckIK.reverse()
+
+		# create spline ik
+		ik = rig_ik(name, neckBaseIK, neckTopIK, 'ikSplineSolver', numSpans=2)
+		pm.parent(ik.handle, ik.curve, module.parts)
+		# // Result: [u'spine2_ik_Handle', u'effector6', u'curve2'] //
+
+		neckAim = rig_transform(0, name='neckAim', type='locator',
+		                              parent=module.parts, target='neckJA_JNT').object
+		headAim = rig_transform(0, name='headAim', type='locator',
+		                              parent=module.parts, target='headJA_JNT').object
+
+		pm.rotate(neckAim, 0, 0, -90, r=True, os=True)
+		pm.rotate(headAim, 0, 0, -90, r=True, os=True)
+
+		pm.parentConstraint(neckBase.con, neckAim, mo=True)
+		pm.parentConstraint(neckTop.con, headAim, mo=True)
+
+		neckAimTop = mm.eval(
+			'rig_makePiston("' + neckAim + '", "' + headAim + '", "neckHeadAim");')
+
+		# advanced twist spine
+		pm.setAttr(ik.handle + '.dTwistControlEnable', 1)
+		pm.setAttr(ik.handle + '.dWorldUpType', 2)  # object up start and end
+		pm.setAttr(ik.handle + '.dForwardAxis', 2)  # positive y
+		pm.setAttr(ik.handle + '.dWorldUpAxis', 6)  # positive x
+
+		pm.connectAttr('headAim_LOCUp.worldMatrix[0]', ik.handle.dWorldUpMatrixEnd, f=True)
+		pm.connectAttr('neckAim_LOCUp.worldMatrix[0]', ik.handle.dWorldUpMatrix, f=True)
+
+		pm.parent(neckAimTop, module.parts)
+
+		sc = pm.skinCluster(driverJnts, ik.curve, tsb=True, dr=0.1, maximumInfluences=2)
+
+		pm.skinPercent( sc, ik.curve.cv[2],   tv=[neckMidDriver,1] )
+		pm.skinPercent(sc, ik.curve.cv[0], tv=[neckBaseDriver, 1])
+		pm.skinPercent(sc, ik.curve.cv[4], tv=[neckTopDriver, 1])
+
+		pm.select(ik.curve)
+		curveShape = pm.pickWalk(direction='down')
+		curveInfoNode = pm.arclen(curveShape[0], ch=True)
+		curveInfo = pm.rename(curveInfoNode, name + '_splineIk_curveInfo')
+		globalCurve = pm.duplicate(ik.curve)
+		globalCurve = pm.rename(globalCurve, name + 'global_splineIk_curve')
+		pm.select(globalCurve)
+		globalCurveShape = pm.pickWalk(direction='down')
+		globalCurveInfoNode = pm.arclen(globalCurveShape[0], ch=True)
+		globalCurveInfo = pm.rename(globalCurveInfoNode, name + 'global_splineIk_curveInfo')
+		pm.parent(globalCurve, module.parts)
+		pm.setAttr(globalCurve + '.inheritsTransform', 1)
+
+		distanceToStretch_PM = plusMinusNode(name + '_distanceToStretch', 'subtract',
+		                                     curveInfo, 'arcLength', globalCurveInfo, 'arcLength')
+
+		correctAdd_Minus_MD = multiplyDivideNode(name + '_correctAdd_Minus', 'multiply',
+		                                         input1=[-1, 0, 0],
+		                                         input2=[distanceToStretch_PM + '.output1D', 0, 0],
+		                                         output=[])
+
+		toggleStretch_ctrl_MD = multiplyDivideNode(name + '_toggleStretch_ctrl', 'multiply',
+		                                           input1=[0, 0, 0],
+		                                           input2=[correctAdd_Minus_MD + '.outputX', 0, 0],
+		                                           output=[])
+
+		distanceStretchCurve_PM = plusMinusNode(name + '_distanceStretchCurve', 'sum',
+		                                        curveInfo, 'arcLength', toggleStretch_ctrl_MD,
+		                                        'outputX')
+
+		globalCurveStretchyFix_MD = multiplyDivideNode(name + '_globalCurveStretchyFix', 'divide',
+		                                               input1=[ distanceStretchCurve_PM + '.output1D', 0,0],
+		                                               input2=[globalCurveInfo + '.arcLength', 1, 1],
+		                                               output=[])
+
+		pm.addAttr(neckTop.ctrl, longName='stretch', shortName='ts',
+		           attributeType="double",
+		           min=0, max=1, defaultValue=1, keyable=True)
+
+		connectReverse(input=(neckTop.ctrl + '.stretch', 0, 0),
+		               output=(toggleStretch_ctrl_MD + '.input1X', 0, 0))
+
+		pm.connectAttr(globalCurveStretchyFix_MD + '.outputX',  neckBaseIK+'.scaleY',
+		             f=True)
+		pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', neckMidIK+'.scaleY',
+		              f=True)
+
+		pm.connectAttr( neckBaseIK+'.scaleY', 'neckJA_JNT.scaleY',
+		               f=True)
+		pm.connectAttr(neckMidIK + '.scaleY', 'neckJB_JNT.scaleY',
+		               f=True)
+
+		pm.parentConstraint(neckBaseIK, 'neckJA_JNT',mo=True )
+		pm.parentConstraint(neckMidIK, 'neckJB_JNT', mo=True )
+
+
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
 		return
-		
-	def head(self):
-		return
+
+	def head(self, ctrlSize=1.0):
+
+		name = 'head'
+
+		module = rig_module(name)
+		self.headModule = module
+
+		pm.parent('headJA_JNT', module.skeleton)
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		headControl = rig_control(name='head', shape='box', modify=1,
+		                          targetOffset='headJA_JNT', scale=ctrlSize,
+		                          colour='yellow', parentOffset=module.controls, rotateOrder=2)
+		headControl.gimbal = createCtrlGimbal(headControl)
+		headControl.pivot = createCtrlPivot(headControl)
+
+
+		constrainObject(headControl.offset,
+		                [ 'neckMidFKCon_GRP' , 'spineJF_JNT', self.spineFullBodyCtrl.con, 'worldSpace_GRP'],
+		                headControl.ctrl, ['neckFK', 'spineUpper', 'fullBody', 'world'],
+		                type='parentConstraint')
+
+		pm.addAttr(headControl.ctrl, longName='stretch', shortName='ts',
+		           attributeType="double",
+		           min=0, max=1, defaultValue=0, keyable=True)
+		pm.connectAttr(headControl.ctrl + '.stretch', 'neckTop_CTRL.stretch',
+		               f=True)
+
+		# connect head to neck top
+		pm.parentConstraint( headControl.con, 'neckTopOffset_GRP', mo=True )
+
+		pm.pointConstraint( 'neckTopIK_JNT', 'headJA_JNT', mo=True )
+		pm.orientConstraint( headControl.con, 'headJA_JNT', mo=True )
+
 
 	def shoulder (self, side='', ctrlSize=1 ):
 		name = side + '_shoulder'
@@ -175,8 +670,6 @@ class rig_biped(object):
 
 		pm.parent(shoulder, module.skeleton)
 
-		print 'shoulder ' + shoulder
-
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
@@ -185,12 +678,28 @@ class rig_biped(object):
 		                            parentOffset=module.controls,lockHideAttrs=[
 				'tx','ty','tz'], constrain=shoulder, scale =ctrlSize, rotateOrder=0 )
 
+		pm.rotate( pm.PyNode( self.shoulderControl.ctrl+'.cv[:]' ), 0,0,-90, r=True, os=True )
+
+		clavPos = pm.xform(shoulder, translation=True, query=True, ws=True)
+		armPos = pm.xform(side+'_'+self.armName, translation=True, query=True, ws=True)
+		clavLength = lengthVector( armPos, clavPos )
+		if side == 'l':
+			pm.move( pm.PyNode( self.shoulderControl.ctrl+'.cv[:]' ), clavLength,0,0, r=True,
+			         os=True )
+		else:
+			pm.move(pm.PyNode(self.shoulderControl.ctrl + '.cv[:]'), -1*clavLength, 0, 0, r=True,
+			        os=True)
+
+
 		if pm.objExists(self.spineConnection):
 			pm.parentConstraint(self.spineConnection, self.shoulderControl.offset, mo=True)
 
 
 		if pm.objExists('rigModules_GRP'):
 			pm.parent(module.top, 'rigModules_GRP')
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		return module
 
@@ -248,7 +757,11 @@ class rig_biped(object):
 			if child.stripNamespace().endswith('handAim_LOCAimOffset'):
 				pm.delete(pm.listRelatives(child, type='constraint'))
 				pm.pointConstraint(hand.con, child, mo=True)
-				
+
+		# constrain auto pv
+		pm.parentConstraint( side+'handAim_JNT', side+'shoulderAim_JNT',
+		                     side+'autoArmPVOffset_GRP', mo=True )
+
 		pm.parent(pistonTop, self.armModule.parts)
 
 
@@ -355,6 +868,7 @@ class rig_biped(object):
 		else:
 			pm.rotate(poleVector.ctrl.cv, -90, 0, 0, r=True, os=True)
 
+
 		pm.connectAttr(module.top.ikFkSwitch, poleVector.offset+'.visibility' )
 
 		self.armControls['poleVector'] = poleVector
@@ -377,8 +891,14 @@ class rig_biped(object):
 		 #       objectSpace=True)
 
 		pvDistance = lengthVector(handPos, elbowPos)
-		pm.move(poleVector.offset, [pvDistance*2, 0, 0], relative=True, objectSpace=True)
+		#pm.move(poleVector.offset, [pvDistance*2, 0, 0], relative=True, objectSpace=True)
+		pm.move(poleVector.offset, [0, 0, -1*(pvDistance * 2)], relative=True,worldSpace=True)
 
+		pm.rotate(poleVector.ctrl.cv, 0, 0, 90, r=True, os=True)
+		if side == 'r':
+			pm.rotate(poleVector.ctrl.cv, 0, 30, 0, r=True, os=True)
+		else:
+			pm.rotate(poleVector.ctrl.cv, 0, -30, 0, r=True, os=True)
 
 		print 'ik handle '+ik.handle
 		handControl = rig_control(side=side,name='hand', shape='box', modify=2,
@@ -392,9 +912,9 @@ class rig_biped(object):
 		handControl.pivot = createCtrlPivot( handControl )
 
 		constrainObject(handControl.offset,
-		                [self.spineConnection, self.centerConnection ,
+		                [self.spineConnection, self.spineFullBodyCtrl.con ,self.centerConnection ,
 		                 'worldSpace_GRP'],
-		                handControl.ctrl, ['spine','main','world'],
+		                handControl.ctrl, ['spine','fullBody ','spineLower','world'],
 		                type='parentConstraint')
 
 		pm.addAttr(handControl.ctrl, longName='twist', at='float', k=True)
@@ -418,7 +938,8 @@ class rig_biped(object):
 
 		pm.delete(pm.pointConstraint(handFng, handBallControl.offset))
 		handBallControl.gimbal = createCtrlGimbal(handBallControl)
-		pm.parentConstraint( handControl.con, handBallControl.offset, mo=True )
+		#pm.parentConstraint( handControl.con, handBallControl.offset, mo=True )
+		pm.parent( handBallControl.offset, handControl.con )
 		pm.parentConstraint( handBallControl.con, ik.handle, mo=True )
 
 		pm.connectAttr(module.top.ikFkSwitch, handBallControl.offset + '.visibility')
@@ -426,14 +947,19 @@ class rig_biped(object):
 		pm.rotate(handBallControl.ctrl.cv, [90, 0, 0], relative=True, objectSpace=True)
 
 		constrainObject(handBallControl.modify,
-		                [handBallControl.offset, 'worldSpace_GRP'],
-		                handBallControl.ctrl, ['hand', 'world'],
+		                [handBallControl.offset, self.spineFullBodyCtrl.con,'worldSpace_GRP'],
+		                handBallControl.ctrl, ['hand', 'fullBody' ,'world'],
 		                type='orientConstraint')
 
 		wristBallLoc = rig_transform(0, name=side + '_wristBallAim', type='locator',
 		                          parent=module.parts, target=hand).object
 		fngBallLoc = rig_transform(0, name=side + '_fngBallAim', type='locator',
 		                             parent=module.parts, target=handFng).object
+
+		for obj in (wristBallLoc, fngBallLoc):
+			pm.setAttr(obj + '.rotateX', -90)
+			pm.setAttr(obj + '.rotateY', 0)
+			pm.setAttr(obj + '.rotateZ', 0)
 
 		pm.parentConstraint(  elbowIK,  wristBallLoc, mo=True )
 		pm.parentConstraint(  handBallControl.con,  fngBallLoc, mo=True )
@@ -443,22 +969,27 @@ class rig_biped(object):
 
 		pm.orientConstraint( side+'_wristBallAim_JNT', handIK, mo=True )
 
+		pm.delete(pm.listRelatives(side+'_wristBallAim_LOCAimOffset', type='constraint'))
+		pm.pointConstraint( handIK, side+'_wristBallAim_LOCAimOffset', mo=True )
+		pm.orientConstraint(elbowIK, side + '_wristBallAim_LOCAimOffset', mo=True)
+
 		pm.parent( handBallAimTop, module.parts )
 
 		# auto pole vector
-		autoPVOffset = rig_transform(0, name=side+'_autoPVOffset',
+		autoPVOffset = rig_transform(0, name=side+'_autoArmPVOffset',
 		                             parent=module.parts, target = poleVector.con
 		).object
-		autoPVLoc = rig_transform(0, name=side+'_autoPV' ,type='locator',
+		autoPVLoc = rig_transform(0, name=side+'_autoArmPV' ,type='locator',
 		                          parent=autoPVOffset,target=autoPVOffset ).object
 
-		pm.parentConstraint( self.spineConnection, autoPVOffset, mo=True )
-		pm.pointConstraint( self.spineConnection, handControl.con,autoPVLoc , mo=True)
+		#pm.parentConstraint( self.spineConnection, autoPVOffset, mo=True )
+		#pm.pointConstraint( self.spineConnection, handControl.con,autoPVLoc , mo=True)
 
 		constrainObject(poleVector.offset,
-		                [autoPVLoc, self.spineConnection,self.centerConnection,
+		                [autoPVLoc, self.spineConnection ,self.centerConnection,
+		                 self.spineFullBodyCtrl.con,
 		                 'worldSpace_GRP'],
-		                poleVector.ctrl, ['auto', 'spine', 'main', 'world'],
+		                poleVector.ctrl, ['auto', 'spineUpper', 'spineLower','fullBody', 'world'],
 		                type='parentConstraint')
 
 
@@ -473,19 +1004,27 @@ class rig_biped(object):
 		pm.connectAttr(module.top.ikFkSwitch, fingersControl.offset + '.visibility')
 
 		constrainObject(fingersControl.modify,
-		                [ handControl.con ,fingersControl.offset, 'worldSpace_GRP'],
-		                fingersControl.ctrl, ['wrist', 'handBall','world'],
+		                [ handControl.con ,fingersControl.offset, self.spineFullBodyCtrl.con,
+		                  'worldSpace_GRP'],
+		                fingersControl.ctrl, ['wrist', 'handBall','fullBody','world'],
 		                type='orientConstraint')
 
 		fingersPos = pm.xform(fingersControl.con, translation=True, query=True, ws=True)
 		endPos = pm.xform(side+'_handJEnd_JNT', translation=True, query=True, ws=True)
 
-		fngLength = lengthVector(fingersPos, endPos  )
+		fngLength = lengthVector(fingersPos, endPos  )*1.5
 
 		if side == 'l':
 			pm.move(fingersControl.ctrl.cv, [fngLength, 0, 0], relative=True)
 		else:
 			pm.move(fingersControl.ctrl.cv, [fngLength*-1, 0, 0], relative=True)
+
+		# create ik stretchy and soft pop
+		endBlendLoc = rig_ikStretchySoftPop(side, name, chainIK, module, handControl,
+		                                    ctrlSizeQuarter,
+		                            self.armTop )
+
+		pm.pointConstraint( endBlendLoc, handBallControl.offset, mo=True )
 
 
 		# create fk
@@ -519,7 +1058,8 @@ class rig_biped(object):
 		for i in range(0, len(chain)):
 			pm.parentConstraint( chainResult[i], chain [i], mo=True)
 
-
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		return module
 
@@ -593,8 +1133,8 @@ class rig_biped(object):
 			else:
 				print fng + ' does not exist...Skipping.'
 
-
-
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		return module
 
@@ -619,7 +1159,7 @@ class rig_biped(object):
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
 		self.pelvisControl = rig_control(side='', name='pelvis', shape='box',
-		                                   targetOffset=pelvis, modify=1,
+		                                   targetOffset=pelvis, modify=1, colour='green',
 		                                   parentOffset=module.controls, lockHideAttrs=[
 				'tx', 'ty', 'tz'], constrain=pelvis, scale=ctrlSize, rotateOrder=0)
 
@@ -628,6 +1168,11 @@ class rig_biped(object):
 
 		if pm.objExists('rigModules_GRP'):
 			pm.parent(module.top, 'rigModules_GRP')
+
+		pm.scale(pm.PyNode(self.pelvisControl.ctrl + '.cv[:]'), 1, 0.3, 1)
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		return module
 
@@ -777,13 +1322,16 @@ class rig_biped(object):
 		pm.xform(poleVector.offset, translation=[pvDistance, 0, 0], os=True,
 		         r=True)
 
+		pm.rotate(poleVector.ctrl.cv, 0, 0, 90, r=True, os=True)
+
 		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
 
 		# pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
 		#       objectSpace=True)
 
 		pvDistance = lengthVector(footPos, kneePos)
-		pm.move(poleVector.offset, [pvDistance * 2, 0, 0], relative=True, objectSpace=True)
+		#pm.move(poleVector.offset, [pvDistance * 2, 0, 0], relative=True, objectSpace=True)
+		pm.move(poleVector.offset, [0, 0, pvDistance * 2],relative=True, worldSpace=True)
 
 		print 'ik handle ' + ik.handle
 
@@ -798,9 +1346,9 @@ class rig_biped(object):
 		footControl.pivot = createCtrlPivot(footControl)
 
 		constrainObject(footControl.offset,
-		                [self.pelvisConnection, self.centerConnection,
+		                [self.pelvisConnection, self.centerConnection,self.spineFullBodyCtrl.con,
 		                 'worldSpace_GRP'],
-		                footControl.ctrl, ['pelvis', 'spine', 'world'],
+		                footControl.ctrl, ['pelvis', 'spineLower', 'fullBody' , 'world'],
 		                type='parentConstraint')
 
 		pm.addAttr(footControl.ctrl, ln='MOTION', at='enum',
@@ -823,13 +1371,13 @@ class rig_biped(object):
 		autoPVLoc = rig_transform(0, name=side + '_autoLegPV', type='locator',
 		                          parent=autoPVOffset, target=autoPVOffset).object
 
-		pm.parentConstraint(self.centerConnection, autoPVOffset, mo=True)
-		pm.pointConstraint(self.centerConnection, footControl.con, autoPVLoc, mo=True)
+		#pm.parentConstraint(self.centerConnection, autoPVOffset, mo=True)
+		#pm.pointConstraint(self.centerConnection, footControl.con, autoPVLoc, mo=True)
 
 		constrainObject(poleVector.offset,
 		                [autoPVLoc, self.pelvisConnection, self.centerConnection,
 		                 'worldSpace_GRP'],
-		                poleVector.ctrl, ['auto', 'pelvis', 'main', 'world'],
+		                poleVector.ctrl, ['auto', 'pelvis', 'spineLower', 'world'],
 		                type='parentConstraint')
 
 		# ## MAKE FOOT BALL CONTROL
@@ -855,6 +1403,11 @@ class rig_biped(object):
 		fngBallLoc = rig_transform(0, name=side + '_toesBallAim', type='locator',
 		                           parent=module.parts, target=footB).object
 
+		for obj in (wristBallLoc, fngBallLoc):
+			pm.setAttr(obj + '.rotateX', 0)
+			pm.setAttr(obj + '.rotateY', 0)
+			pm.setAttr(obj + '.rotateZ', -90)
+
 		pm.parentConstraint(kneeIK, wristBallLoc, mo=True)
 		pm.parentConstraint(footBallControl.con, fngBallLoc, mo=True)
 
@@ -862,6 +1415,10 @@ class rig_biped(object):
 		pm.parent(side + '_footBallAim_LOCUp', side + '_toesBallAim_LOCAimOffset')
 
 		pm.orientConstraint(side + '_footBallAim_JNT', footIK, mo=True)
+
+		pm.delete(pm.listRelatives(side + '_footBallAim_LOCAimOffset', type='constraint'))
+		pm.pointConstraint(footIK, side + '_footBallAim_LOCAimOffset', mo=True)
+		pm.orientConstraint(kneeIK, side + '_footBallAim_LOCAimOffset', mo=True)
 
 		pm.parent(footBallAimTop, module.parts)
 
@@ -871,7 +1428,8 @@ class rig_biped(object):
 		                              rotateOrder=2, colour=secColour)
 
 		pm.delete(pm.pointConstraint(toes, footToesControl.offset))
-		pm.parentConstraint(footControl.con, footToesControl.offset, mo=True)
+		#pm.parentConstraint(footControl.con, footToesControl.offset, mo=True)
+		pm.parent( footToesControl.offset, footControl.con )
 		pm.parentConstraint(footToesControl.con, footBallControl.offset, mo=True)
 
 		pm.connectAttr(module.top.ikFkSwitch, footToesControl.offset + '.visibility')
@@ -887,6 +1445,11 @@ class rig_biped(object):
 		                             parent=module.parts, target=footB).object
 		footToesLoc = rig_transform(0, name=side + 'footToesAim', type='locator',
 		                           parent=module.parts, target=toes).object
+
+		for obj in (footBallLoc, footToesLoc):
+			pm.setAttr(obj + '.rotateX', 0)
+			pm.setAttr(obj + '.rotateY', 0)
+			pm.setAttr(obj + '.rotateZ', -90)
 
 		pm.parentConstraint(footIK, footBallLoc, mo=True)
 		pm.parentConstraint(footToesControl.con, footToesLoc, mo=True)
@@ -976,6 +1539,32 @@ class rig_biped(object):
 			pm.move(toesControl.ctrl.cv, [0, 0, toesLength * -1], relative=True)
 		'''
 
+		# make leg foot aim
+		footAimLoc = rig_transform(0, name=side + '_footLegAim', type='locator',
+		                        parent=module.parts).object
+		legAimLoc = rig_transform(0, name=side + '_legFootAim', type='locator',
+		                            parent=module.parts).object
+
+		pm.pointConstraint( self.legTop, legAimLoc  )
+		pm.pointConstraint( footControl.con, footAimLoc  )
+		pm.setAttr( footAimLoc+'.rotateZ', -90 )
+		pm.setAttr(legAimLoc+'.rotateZ', -90)
+
+		legAimTop = mm.eval('rig_makePiston("'+legAimLoc+'", "'+footAimLoc+'", "'+side+'_legAim");')
+
+		pm.parentConstraint( side+'_legFootAim_JNT', side+'_footLegAim_JNT', autoPVOffset, mo=True )
+
+		pm.parent( legAimTop, module.parts )
+
+
+
+		# create ik stretchy and soft pop
+		endBlendLoc = rig_ikStretchySoftPop(side, name, chainIK, module, footControl,
+		                                    ctrlSizeQuarter,
+		                                    self.legTop)
+
+		pm.pointConstraint(endBlendLoc, footToesControl.offset, mo=True)
+
 		# create fk
 		print 'fk chain ' + str(chainFK)
 		fkCtrls = fkControlChain(chainFK, scale=ctrlSize)
@@ -1004,6 +1593,9 @@ class rig_biped(object):
 		# constrain result to skeleton
 		for i in range(0, len(chain)):
 			pm.parentConstraint(chainResult[i], chain[i], mo=True)
+
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 		return module
 
@@ -1076,6 +1668,9 @@ class rig_biped(object):
 			else:
 				print toe + ' does not exist...Skipping.'
 
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
+
 		return module
 
 
@@ -1111,3 +1706,13 @@ def rig_bipedPrepare():
 		cmds.parent( 'neckJA_JNT', w=True)
 	except ValueError:
 		print 'Skipping neckJA_JNT as it does not exist'
+
+
+
+def rig_bipedFinalize():
+
+	# world space hands and feet
+	for s in ['l', 'r']:
+		pm.setAttr(s+'_foot_CTRL.space', 3)
+		pm.setAttr(s+'_hand_CTRL.space', 1)
+

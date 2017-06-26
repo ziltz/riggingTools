@@ -10,7 +10,6 @@ class rig_module(object):
 	def __init__(self, name):
 
 		self.side = ''
-		print name
 		if name.startswith('l_'):
 			self.side = 'l'
 		if name.startswith('r_'):
@@ -20,6 +19,8 @@ class rig_module(object):
 
 		self.controls = pm.PyNode(rig_transform(0, name=name+'Controls',
 		                                        parent=self.top).object)
+		self.controlsSec = pm.PyNode(rig_transform(0, name=name + 'ControlsSecondary',
+		                                        parent=self.controls).object)
 		self.skeleton = pm.PyNode(rig_transform(0, name=name+'Skeleton',
 		                                        parent=self.top).object)
 		self.parts = pm.PyNode(rig_transform(0, name=name+'Parts',

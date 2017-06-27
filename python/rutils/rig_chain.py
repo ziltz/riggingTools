@@ -5,7 +5,7 @@ __author__ = 'Jerry'
 
 import pymel.core as pm
 import maya.cmds as mc
-
+import string
 
 from rig_object import rig_object
 
@@ -42,3 +42,12 @@ def chainParent( list, reverse=0 ):
 		except TypeError:
 			pm.parent( chain[i], chain[i+1] )
 
+
+
+def rig_chainJointName(selection, name):
+	ABC = list(string.ascii_uppercase)
+
+	i = 0
+	for jnt in selection:
+		pm.rename(jnt, name +'J'+ ABC[i] + '_JNT')
+		i += 1

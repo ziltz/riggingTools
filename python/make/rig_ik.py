@@ -7,10 +7,16 @@ from rutils.rig_measure import *
 from rutils.rig_transform import *
 from rutils.rig_anim import *
 from make.rig_controls import *
+from rutils.rig_modules import *
+from rutils.rig_chain import *
 
 import pymel.core as pm
 import maya.mel as mm
 import maya.cmds as cmds
+import string
+
+ABC = list(string.ascii_uppercase)
+
 
 '''
 
@@ -325,3 +331,179 @@ def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretc
 
     print 'addStretchyIKJoints function end here ------------------------'
     return (upperBlend2Node, lowerBlend2Node, checkStretch_condition)
+
+
+'''
+
+ik fk chain spline for tail
+
+'''
+
+def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
+	numIkControls = defaultReturn(5, 'numIkControls', param=kwds)
+	numFkControls = defaultReturn(5, 'numFkControls', param=kwds)
+
+	parentRoot = defaultReturn('spineJA_JNT', 'parent', param=kwds)
+
+	module = rig_module(name)
+
+	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+	ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+	chainList = rig_chain(rootJnt).chain
+
+	numJoints = len(chainList)
+
+	ctrlPos = []
+	for i in range(0, numJoints):
+		if i % 5 == 0:
+			ctrlPos.append(chainList[i])
+
+	# make ik driver controls/joints
+	fkControls = []
+	ikControls = []
+	driverJntList = []
+	fkScale = 1.5
+	for i in range(0, numIkControls):
+		driverJnt = rig_transform(0, name=name+'DriverJ' + ABC[i], type='joint',
+		                          target=ctrlPos[i], parent=module.parts,
+		                          rotateOrder=2).object
+		driverJntList.append(driverJnt)
+
+		driverCtrl = rig_control(name=name+'Driver' + ABC[i], shape='box', modify=1, scale=ctrlSizeHalf,
+		                         colour='green', parentOffset=module.controlsSec, rotateOrder=2)
+		ikControls.append(driverCtrl)
+		pm.delete(pm.parentConstraint(driverJnt,driverCtrl.offset))
+		pm.parentConstraint(driverCtrl.con, driverJnt, mo=True)
+
+		lockTranslate = []
+		ctrlShape = 'circle'
+		if i == 0:
+			lockTranslate = ['tx', 'ty', 'tz']
+			ctrlShape = 'pyramid'
+		else:
+			lockTranslate = []
+		fkCtrl = rig_control(name=name+'FK'+ABC[i], shape=ctrlShape, modify=2,
+		                     targetOffset=ctrlPos[i], parentOffset=module.controls,
+		                     lockHideAttrs=lockTranslate,
+		                     scale=((ctrlSize[0])*fkScale,(ctrlSize[1])*fkScale,(ctrlSize[
+				2])*fkScale ))
+
+		if i == 0:
+			if pm.objExists(parentRoot):
+				pm.parentConstraint(parentRoot, fkCtrl.offset, mo=True)
+
+			if pm.objExists(parentRoot) and pm.objExists('worldSpace_GRP'):
+				constrainObject(fkCtrl.modify[0],
+				                [fkCtrl.offset, 'worldSpace_GRP'],
+				                fkCtrl.ctrl, ['parent', 'world'],
+				                type='orientConstraint')
+
+		pm.parentConstraint( fkCtrl.con, driverCtrl.offset, mo=True )
+
+		if i > 0:
+			parentOffset = fkControls[i - 1].con
+			pm.parent(fkCtrl.offset, parentOffset)
+
+		fkControls.append(fkCtrl)
+
+		fkScale = fkScale - 0.1
+
+	# shape controls
+	rootCtrl = fkControls[0]
+	pm.addAttr(rootCtrl.ctrl, ln='SHAPE', at='enum',
+	           enumName='___________',
+	           k=True)
+	rootCtrl.ctrl.SHAPE.setLocked(True)
+	pm.addAttr(rootCtrl.ctrl, longName='curl', at='float', k=True, min=-10,
+	           max=10, dv=0)
+	pm.addAttr(rootCtrl.ctrl, longName='curlSide', at='float', k=True, min=-10,
+	           max=10, dv=0)
+	for i in range(1, numIkControls):
+		rig_animDrivenKey(rootCtrl.ctrl.curl, (-10,0, 10),
+		                  fkControls[i].modify[0] + '.rotateX', (-90,0, 90 ))
+		rig_animDrivenKey(rootCtrl.ctrl.curlSide, (-10, 0, 10),
+		                  fkControls[i].modify[0] + '.rotateZ', (-90, 0, 90 ))
+
+
+	ik = rig_ik(name, rootJnt, chainList[-1], 'ikSplineSolver', numSpans=numIkControls)
+	pm.parent(ik.handle, ik.curve, module.parts)
+
+	lowerAim = rig_transform(0, name=name+'LowerAim', type='locator',
+	                              parent=module.parts, target=ikControls[1].con).object
+	upperAim = rig_transform(0, name=name+'UpperAim', type='locator',
+	                              parent=module.parts, target=ikControls[-2].con).object
+
+	pm.rotate(lowerAim, 0, 0, -90, r=True, os=True)
+	pm.rotate(upperAim, 0, 0, -90, r=True, os=True)
+
+	pm.parentConstraint(ikControls[1].con, lowerAim, mo=True)
+	pm.parentConstraint(ikControls[-2].con, upperAim, mo=True)
+
+	aimTop = mm.eval(
+		'rig_makePiston("' + lowerAim + '", "' + upperAim + '", "'+name+'Aim");')
+
+	pm.move( upperAim+'Up', 0, 30, 0,r=True,os=True )
+	pm.move(lowerAim + 'Up', 0, 20, 0, r=True, os=True)
+
+	# advanced twist
+	pm.setAttr(ik.handle + '.dTwistControlEnable', 1)
+	pm.setAttr(ik.handle + '.dWorldUpType', 2)  # object up start and end
+	pm.setAttr(ik.handle + '.dForwardAxis', 2)  # positive y
+	pm.setAttr(ik.handle + '.dWorldUpAxis', 6)  # positive x
+
+	pm.connectAttr(upperAim+'Up.worldMatrix[0]', ik.handle.dWorldUpMatrixEnd, f=True)
+	pm.connectAttr(lowerAim+'Up.worldMatrix[0]', ik.handle.dWorldUpMatrix, f=True)
+
+	pm.parent(aimTop, module.parts)
+
+	pm.select(ik.curve)
+	curveShape = pm.pickWalk(direction='down')
+	curveInfoNode = pm.arclen(curveShape[0], ch=True)
+	curveInfo = pm.rename(curveInfoNode, name + '_splineIk_curveInfo')
+	globalCurve = pm.duplicate(ik.curve)
+	globalCurve = pm.rename(globalCurve, name + 'global_splineIk_curve')
+	pm.select(globalCurve)
+	globalCurveShape = pm.pickWalk(direction='down')
+	globalCurveInfoNode = pm.arclen(globalCurveShape[0], ch=True)
+	globalCurveInfo = pm.rename(globalCurveInfoNode, name + 'global_splineIk_curveInfo')
+	pm.parent(globalCurve, module.parts)
+	pm.setAttr(globalCurve + '.inheritsTransform', 1)
+
+	distanceToStretch_PM = plusMinusNode(name + '_distanceToStretch', 'subtract',
+	                                     curveInfo, 'arcLength', globalCurveInfo, 'arcLength')
+
+	correctAdd_Minus_MD = multiplyDivideNode(name + '_correctAdd_Minus', 'multiply',
+	                                         input1=[-1, 0, 0],
+	                                         input2=[distanceToStretch_PM + '.output1D', 0, 0],
+	                                         output=[])
+
+	toggleStretch_ctrl_MD = multiplyDivideNode(name + '_toggleStretch_ctrl', 'multiply',
+	                                           input1=[0, 0, 0],
+	                                           input2=[correctAdd_Minus_MD + '.outputX', 0, 0],
+	                                           output=[])
+
+	distanceStretchCurve_PM = plusMinusNode(name + '_distanceStretchCurve', 'sum',
+	                                        curveInfo, 'arcLength', toggleStretch_ctrl_MD,
+	                                        'outputX')
+
+	globalCurveStretchyFix_MD = multiplyDivideNode(name + '_globalCurveStretchyFix', 'divide',
+	                                               input1=[distanceStretchCurve_PM + '.output1D', 0,
+
+	                                                       0],
+	                                               input2=[globalCurveInfo + '.arcLength', 1, 1],
+	                                               output=[])
+
+	pm.addAttr(fkControls[0].ctrl, longName='stretch', shortName='ts',
+	           attributeType="double",
+	           min=0, max=1, defaultValue=0, keyable=True)
+
+	connectReverse(input=(fkControls[0].ctrl + '.stretch', 0, 0),
+	               output=(toggleStretch_ctrl_MD + '.input1X', 0, 0))
+
+	for i in range(0, len(chainList) - 1):
+		pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', chainList[i] + '.scaleY',
+		               f=True)
+
+	pm.skinCluster(driverJntList, ik.curve, tsb=True)

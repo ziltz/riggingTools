@@ -64,7 +64,12 @@ def gizmoRigModules():
 		toesModule = biped.foot(side, ctrlSize=0.5)
 
 		biped.connectLegPelvis()
-	
+
+
+	# make tail
+	rig_ikChainSpline('tail', 'tailJA_JNT', ctrlSize=1, parent='pelvisJA_JNT')
+
+
 
 def gizmoFinish():
 	print 'Finishing gizmo'

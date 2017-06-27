@@ -67,12 +67,12 @@ class rig_biped(object):
 		self.armJoints = []
 		self.legJoints = []
 
-		# values : poleVector, hand, fk
+		# values : poleVector, hand, fk, fingers
 		self.armControls = {}
 		self.armTop = ''
 		self.shoulderControl = None
 
-		# values : poleVector, foot, fk
+		# values : poleVector, foot, fk, toes
 		self.legControls = {}
 		self.legTop = ''
 		self.pelvisControl = None
@@ -644,6 +644,12 @@ class rig_biped(object):
 		pm.connectAttr(headControl.ctrl + '.stretch', 'neckTop_CTRL.stretch',
 		               f=True)
 
+		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
+		headEndPos = pm.xform( 'headJEnd_JNT', translation=True, query=True, ws=True)
+		headLength = lengthVector(headPos, headEndPos)
+		pm.move(pm.PyNode(headControl.ctrl + '.cv[:]'), 0, headLength/2, 0, r=True,
+		        os=True)
+
 		# connect head to neck top
 		pm.parentConstraint( headControl.con, 'neckTopOffset_GRP', mo=True )
 
@@ -997,11 +1003,24 @@ class rig_biped(object):
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
 		                             rotateOrder=2, lockHideAttrs=['tx','ty','tz'])
 
+		self.armControls['fingers'] = fingersControl
+
 		pm.delete(pm.parentConstraint(handFng, fingersControl.offset))
 		pm.parentConstraint( fingersControl.con, handFngIK, mo=True )
 		pm.parentConstraint( handBallControl.con, fingersControl.offset, mo=True )
 
 		pm.connectAttr(module.top.ikFkSwitch, fingersControl.offset + '.visibility')
+
+		pm.addAttr(fingersControl.ctrl, ln='SHAPE', at='enum',
+		           enumName='___________',
+		           k=True)
+		fingersControl.ctrl.SHAPE.setLocked(True)
+		pm.addAttr(fingersControl.ctrl, longName='curl', at='float', k=True, min=-10,
+		           max=10, dv=0)
+		pm.addAttr(fingersControl.ctrl, longName='curlThumb', at='float', k=True, min=-10,
+		           max=10, dv=0)
+		pm.addAttr(fingersControl.ctrl, longName='splay', at='float', k=True, min=-10,
+		           max=10, dv=0)
 
 		constrainObject(fingersControl.modify,
 		                [ handControl.con ,fingersControl.offset, self.spineFullBodyCtrl.con,
@@ -1123,10 +1142,31 @@ class rig_biped(object):
 						pm.parentConstraint(sideName + 'handJA_JNT', fngCtrl.offset, mo=True)
 						pm.orientConstraint(sideName + 'handJB_JNT', fngCtrl.modify[0], mo=True, skip='x')
 
-				simpleControls(childrenFngs,
+				sc = simpleControls(childrenFngs,
 				               modify=2, scale=ctrlSize,
 				               parentOffset=module.controls,
 				               lockHideAttrs=skipAxis)
+
+				# fk control
+				armControl = self.armControls['fingers'].ctrl
+				if 'Thumb' in fng:
+					if pm.objExists(armControl.curlThumb):
+						for key in sc:
+							control = sc[key]
+							rig_animDrivenKey(armControl.curlThumb, (-10, 0, 10),
+							                  control.modify[0] + '.rotateZ', (-90, 0, 90 ))
+
+						rig_animDrivenKey(armControl.curlThumb, (-10, 0, 10),
+						                  fngCtrl.modify[1] + '.rotateZ', (-90, 0, 90 ))
+				else:
+					if pm.objExists(armControl.curl):
+						for key in sc:
+							control = sc[key]
+							rig_animDrivenKey(armControl.curl, (-10, 0, 10),
+							                  control.modify[0] + '.rotateZ', (-90, 0, 90 ))
+
+						rig_animDrivenKey(armControl.curl, (-10, 0, 10),
+						                  fngCtrl.modify[1] + '.rotateZ', (-90, 0, 90 ))
 
 				pm.parent( fng, module.skeleton )
 
@@ -1514,6 +1554,8 @@ class rig_biped(object):
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
 		                             rotateOrder=2, lockHideAttrs=['tx','ty','tz'])
 
+		self.legControls['toes'] = toesControl
+
 		pm.delete(pm.parentConstraint(toes, toesControl.offset))
 		pm.parentConstraint(toesControl.con, toesIK, mo=True)
 		pm.parentConstraint(footToesControl.con, toesControl.offset, mo=True)
@@ -1531,6 +1573,18 @@ class rig_biped(object):
 		toesLength = lengthVector(toesPos, endPos)
 
 		pm.move(toesControl.ctrl.cv, [0, 0, toesLength], relative=True)
+
+		pm.addAttr(toesControl.ctrl, ln='SHAPE', at='enum',
+		           enumName='___________',
+		           k=True)
+		toesControl.ctrl.SHAPE.setLocked(True)
+		pm.addAttr(toesControl.ctrl, longName='curl', at='float', k=True, min=-10,
+		           max=10, dv=0)
+		pm.addAttr(toesControl.ctrl, longName='curlThumb', at='float', k=True, min=-10,
+		           max=10, dv=0)
+		pm.addAttr(toesControl.ctrl, longName='splay', at='float', k=True, min=-10,
+		           max=10, dv=0)
+
 
 		'''
 		if side == 'l':
@@ -1656,12 +1710,44 @@ class rig_biped(object):
 				else:
 					if pm.objExists(sideName + 'footJB_JNT'):
 						pm.parentConstraint(sideName + 'footJB_JNT', toeCtrl.offset, mo=True)
-						pm.orientConstraint(sideName + 'toesJA_JNT', toeCtrl.modify[0], mo=True, skip='x')
+						if pm.objExists(sideName+'footToesOrient_LOC'):
+							pm.orientConstraint(sideName+'footToesOrient_LOC', toeCtrl.modify[0], mo=True,
+							                    skip='x')
+						else:
+							orientLoc = rig_transform( 0, name=sideName+'footToesOrient',
+							                           type='locator',
+							               target=side+'_toesJA_JNT',
+							               parent=side+'_toesJA_JNT').object
+							pm.delete(pm.orientConstraint( toeCtrl.modify[0], orientLoc ))
+							pm.orientConstraint(orientLoc, toeCtrl.modify[0],
+							                    mo=True,
+							                    skip='x')
 
-				simpleControls(childrenFngs,
+				sc = simpleControls(childrenFngs,
 				               modify=2, scale=ctrlSize,
 				               parentOffset=module.controls,
 				               lockHideAttrs=skipAxis)
+
+				# fk control
+				toesControl = self.legControls['toes'].ctrl
+				if 'Thumb' in toe:
+					if pm.objExists(toesControl.curlThumb):
+						for key in sc:
+							control = sc[key]
+							rig_animDrivenKey(toesControl.curlThumb, (-10, 0, 10),
+							                  control.modify[0] + '.rotateY', (-90, 0, 90 ))
+
+						rig_animDrivenKey(toesControl.curlThumb, (-10, 0, 10),
+						                  toeCtrl.modify[1] + '.rotateY', (-90, 0, 90 ))
+				else:
+					if pm.objExists( toesControl.curl ):
+						for key in sc:
+							control = sc[key]
+							rig_animDrivenKey(toesControl.curl, (-10, 0, 10),
+							                  control.modify[0] + '.rotateY', (-90, 0, 90 ))
+
+						rig_animDrivenKey(toesControl.curl, (-10, 0, 10),
+						                  toeCtrl.modify[1] + '.rotateY', (-90, 0, 90 ))
 
 				pm.parent(toe, module.skeleton)
 

@@ -19,6 +19,7 @@ class puppet(object):
 
 		self.character = defaultReturn('jerry', 'character', param=kwds)
 		self.rigBound = defaultReturn(None, 'rigBound', param=kwds)
+		self.rigVersion = defaultReturn(1, 'version', param=kwds)
 
 		pm.newFile(f=True)
 
@@ -74,6 +75,25 @@ class puppet(object):
 			self.globalCtrl.gimbal = createCtrlGimbal( self.globalCtrl ).ctrl
 
 			self.topNode = rig_transform(0, name=self.character + 'RigPuppetTop', child=self.globalCtrl.offset).object
+
+			topNode= pm.PyNode(self.topNode)
+
+			pm.addAttr(topNode, ln='rpAuthor', at='enum',
+			           enumName='JerryLee',
+			           k=True)
+			topNode.rpAuthor.setLocked(True)
+			pm.addAttr(topNode, ln='rpVersion', at='enum',
+			           enumName=str(self.rigVersion),
+			           k=True)
+			topNode.rpVersion.setLocked(True)
+
+			topNode.translate.setLocked(True)
+			topNode.rotate.setLocked(True)
+			topNode.scale.setLocked(True)
+			for cb in ('t', 'r', 's'):
+				for at in ('x', 'y', 'z'):
+					cbAttr = getattr(topNode, cb + at)
+					cbAttr.setKeyable(False)
 
 			try:
 				self.rigGrp = pm.parent('rig_GRP', self.globalCtrl.gimbal)[0]

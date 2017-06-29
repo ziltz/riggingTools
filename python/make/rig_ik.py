@@ -172,7 +172,7 @@ def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretc
                                 min=0, max=1, defaultValue=0, keyable=True )
     cmds.addAttr( _ikControl, longName='ikSoftBlend', shortName='iksb',attributeType="double",
                                 min=0, max=1, defaultValue=0.2, keyable=True )
-    cmds.addAttr( _ikControl, longName='elbowSlide', shortName='es',attributeType="double",
+    cmds.addAttr( _ikControl, longName='midSlide', shortName='es',attributeType="double",
                                 min=-1, max=1, defaultValue=0, keyable=True )
 
     # get upper and lower distance and sum them to store as fixed values
@@ -242,10 +242,10 @@ def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretc
                    stretchDist_GThan_totalDist_condition, 'outColorR', lowerDist_divide_totalDist_MD, 'outputX' )
 
     upper_slideSwitch_MD = multiDivideNode( nme+'upper_slideSwitch', 'multiply',
-                   upper_stretchDist_divUpLow_MD, 'outputX', _ikControl, 'elbowSlide' )
+                   upper_stretchDist_divUpLow_MD, 'outputX', _ikControl, 'midSlide' )
 
     lower_slideSwitch_MD = multiDivideNode( nme+'lower_slideSwitch', 'multiply',
-                   lower_stretchDist_divUpLow_MD, 'outputX', _ikControl, 'elbowSlide' )
+                   lower_stretchDist_divUpLow_MD, 'outputX', _ikControl, 'midSlide' )
 
 
     ###

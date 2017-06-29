@@ -1520,7 +1520,7 @@ class rig_biped(object):
 		                       target=side + '_footRollOut_LOC').object
 		pm.parent( footControl.con, rollOut )
 
-		pm.delete(pm.ls("?_footRoll*_LOC"))
+		pm.delete(pm.ls(side+"_footRoll*_LOC"))
 
 		pm.addAttr(footControl.ctrl, longName='rollTip', at='float', k=True, min=0,
 		           max=10, dv=0)

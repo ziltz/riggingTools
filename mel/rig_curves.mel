@@ -36,7 +36,8 @@ global proc rig_curvesSimpleWireSetup(string $name, string $crv1, string $crv2, 
 
 	parent $jntMid $grp;
 
-	parentConstraint -mo $jntStart $jntEnd $grp;
+	string $con = rig_stringFirst(`parentConstraint -mo $jntStart $jntEnd $grp`);
+	setAttr ($con+".interpType") 2; // shortest
 
 	skinCluster -tsb $jntStart $jntMid $jntEnd $lowCurve;
 

@@ -97,6 +97,26 @@ global proc string[] rig_returnConstrainers(string $obj)
 }
 
 
+global proc string[] rig_constraintReturnTargets(string $con)
+{
+
+	string $targetAttrString = ( $con+ ".target" );
+	string $connections[] = `listConnections $targetAttrString`;
+	string $connectionsFlattened[] = stringArrayRemoveDuplicates($connections);
+	string $targets[] = {};
+	for ( $f in $connectionsFlattened )
+	{
+		if ( $f != $con )
+		{
+			$targets[size($targets)] = $f;
+			print ( $f+ " is a target\n" );
+		}
+	}
+
+	return $targets;
+}
+
+
 global proc string rig_stringFirst(string $list[])
 {
 	return $list[0];;

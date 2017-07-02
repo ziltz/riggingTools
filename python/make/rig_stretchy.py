@@ -4,7 +4,7 @@ __author__ = 'Jerry'
 
 
 
-def makePiston( startName, endName, start, end, parent):
+def rig_makeStretchy( startName, endName, start, end, parent):
 	startLoc = rig_transform(0, name=startName, type='locator',
 	                             parent=parent, target=start).object
 	endLoc = rig_transform(0, name=endName, type='locator',

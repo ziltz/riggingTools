@@ -190,3 +190,57 @@ global proc rig_constrainBlockGeometry()
 	}
 
 }
+
+
+
+/*
+
+rig_chainBetweenTwoPoints("test", "locator1", "locator2", 5);
+
+*/
+global proc string[] rig_chainBetweenTwoPoints(string $name, string $start, string $end, int $numJoints)
+{
+	if ($name == "")
+		$name = "chain";
+
+	float $step = 1.0 / ($numJoints-1);
+
+	float $startStep = 1;
+	float $endStep = 0;
+	string $constraints[] = {};
+	string $joints[] = {};
+	for ($i=0;$i < $numJoints;$i++)
+	{
+		select -cl;
+		string $jnt = `joint -n ($name+$i+"_JNT")`;
+
+		string $con = rig_stringFirst( `pointConstraint $start $end $jnt`);
+		string $targets[] = rig_constraintReturnTargets( $con);
+		setAttr ($con+"."+$targets[0]+"W0") $startStep;
+		setAttr ($con+"."+$targets[1]+"W1") $endStep;
+
+		$startStep = $startStep - $step;
+		$endStep = $endStep + $step;
+
+		$constraints[size($constraints)] = $con;
+		$joints[size($joints)] = $jnt;
+	}
+
+
+	delete $constraints;
+
+	string $reverseJoints[] = {};
+	for ($i=$numJoints-1;$i > -1;$i--)
+	{
+		catchQuiet(`parent $joints[$i] $joints[$i-1]`);
+		$reverseJoints[size($reverseJoints)] = $joints[$i];
+	}
+
+	joint -e  -oj xzy -secondaryAxisOrient zup -ch -zso $joints[0];
+
+	setAttr ($joints[$numJoints-1]+".jointOrientX") 0;
+	setAttr ($joints[$numJoints-1]+".jointOrientY") 0;
+	setAttr ($joints[$numJoints-1]+".jointOrientZ") 0;
+
+	return $reverseJoints;
+}

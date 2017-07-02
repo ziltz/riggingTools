@@ -28,10 +28,9 @@ global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 		// get parent objects that are constraining
 		string $parents[] = rig_returnConstrainers($o);
 		if (size($parents) == 0)
-			error ("Please constrain objects to know parent constrainer.");
-		string $parentCon = $parents[0];
-		print ("parentCon = "+$parentCon+"\n");
-		$parentCons[size($parentCons)] = $parentCon;
+			warning ("Please constrain objects to know parent constrainer.");
+		if (`objExists $parents[0]`)
+			$parentCons[size($parentCons)] = $parents[0];
 		// delete constraint
 		delete $constraint;
 
@@ -72,7 +71,6 @@ global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 		{
 			aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $upLocs[$i] $aimLocs[$i] $aimLocs[0];
 		}
-
 		$i++;
 	}
 
@@ -82,14 +80,14 @@ global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 	{
 
 		parentConstraint -mo $aimLocs[$i] $o;
-		parentConstraint -mo $parentCons[$i] $offsets[$i];
+		if (`objExists $parentCons[$i]`)
+			parentConstraint -mo $parentCons[$i] $offsets[$i];
 		$i++;
 	}
 
 
 	string $group = `group -em -n ($name+"_GRP")`;
 	parent $offsets $obj1 $obj2 $group;
-
 	return $group;
 }
 

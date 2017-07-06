@@ -109,7 +109,6 @@ global proc string[] rig_constraintReturnTargets(string $con)
 		if ( $f != $con )
 		{
 			$targets[size($targets)] = $f;
-			print ( $f+ " is a target\n" );
 		}
 	}
 

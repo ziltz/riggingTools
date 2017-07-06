@@ -1,0 +1,152 @@
+
+
+/*
+
+interpPos
+'quarter', 'half'
+
+
+rig_interpolationJoint("l_arm", "l_clavicleJA_JNT", "l_armJA_JNT", "half");
+
+*/
+
+global proc string[] rig_interpolationJoint(string $name, string $parentObj, string $interpObj, string $interpPos)
+{
+	string $offset, $interpJnt;
+
+	if ( (`objExists $parentObj`) && (`objExists $interpObj`) )
+	{
+		$offset = `group -em -n ($name+"Interp_GRP")`;
+
+		select -cl;
+		$interpJnt = `joint -n ($name+"Interp_JNT")`;
+
+		parent $interpJnt $offset;
+		delete`parentConstraint $interpObj $offset`;
+		parentConstraint -mo $parentObj $offset;
+
+		string $con = rig_stringFirst(`orientConstraint $offset $interpObj $interpJnt`);
+		setAttr ($con+".interpType") 2; // shortest
+		string $targets[] = rig_constraintReturnTargets( $con);
+
+		if ($interpPos == "quarter")
+		{
+			setAttr ($con+"."+$targets[0]+"W0") 0.75;
+			setAttr ($con+"."+$targets[1]+"W1") 0.25;
+		}
+		if ($interpPos == "half")
+		{
+			setAttr ($con+"."+$targets[0]+"W0") 0.5;
+			setAttr ($con+"."+$targets[1]+"W1") 0.5;
+		}
+	}
+	else
+	{
+		warning ("parentObj or interpObj does not exist, skipping");
+	}
+
+	return {$offset, $interpJnt};
+}
+
+
+
+global proc string rig_interpolationJointBiped()
+{
+	string $interpTop = "interpJoints_GRP";
+	if (!`objExists $interpTop`)
+	{
+		string $grp = `group -em -n $interpTop `;
+		if (`objExists "rig_GRP"`)
+			parent $grp "rig_GRP";
+	}
+
+	// build list of top interp grps
+	string $interpGrps[] = {};
+
+	for ($side in {"l", "r"})
+	{
+		// clavicle
+		if ( (`objExists "spineJF_JNT"`) && (`objExists ($side+"_clavicleJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_clavicleHalf", "spineJF_JNT", $side+"_clavicleJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_clavicleQuarter", "spineJF_JNT", $side+"_clavicleJA_JNT", "quarter"));
+		}
+
+		// arm
+		if ( (`objExists ($side+"_clavicleJA_JNT")`) && (`objExists ($side+"_armJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_armHalf", $side+"_clavicleJA_JNT", $side+"_armJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_armQuarter", $side+"_clavicleJA_JNT", $side+"_armJA_JNT", "quarter"));
+		}
+
+		// elbow
+		if ( (`objExists ($side+"_armJA_JNT")`) && (`objExists ($side+"_elbowJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_elbowHalf", $side+"_armJA_JNT", $side+"_elbowJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_elbowQuarter", $side+"_armJA_JNT", $side+"_elbowJA_JNT", "quarter"));
+		}
+
+		// hand
+		if ( (`objExists ($side+"_elbowJA_JNT")`) && (`objExists ($side+"_handJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_handHalf", $side+"_elbowJA_JNT", $side+"_handJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_handQuarter", $side+"_elbowJA_JNT", $side+"_handJA_JNT", "quarter"));
+		}
+
+		// leg
+		if (  (`objExists "pelvisJA_JNT"`) && (`objExists($side+"_legJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_legHalf", "pelvisJA_JNT", $side+"_legJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_legQuarter", "pelvisJA_JNT", $side+"_legJA_JNT", "quarter"));
+		}
+
+		// knee
+		if ( (`objExists ($side+"_legJA_JNT")`) && (`objExists ($side+"_kneeJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] =rig_stringFirst(rig_interpolationJoint($side+"_kneeHalf", $side+"_legJA_JNT", $side+"_kneeJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] =rig_stringFirst(rig_interpolationJoint($side+"_kneeQuarter", $side+"_legJA_JNT", $side+"_kneeJA_JNT", "quarter"));
+		}
+
+		// foot
+		if ( (`objExists ($side+"_kneeJA_JNT")`) && (`objExists ($side+"_footJA_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_footHalf", $side+"_kneeJA_JNT", $side+"_footJA_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_footQuarter", $side+"_kneeJA_JNT", $side+"_footJA_JNT", "quarter"));
+		}
+
+		for ($digit in {"fng", "toe"})
+		{
+			for ($fng in { ($side+"_"+$digit+"Thumb"), ($side+"_"+$digit+"Ind"), ($side+"_"+$digit+"Mid"), ($side+"_"+$digit+"Ring"), ($side+"_"+$digit+"Pnky") })
+			{
+				if (`objExists ($fng+"JA_JNT")`)
+				{
+					string $part[] = {"JA_JNT", "JB_JNT", "JC_JNT"};
+					for ($i=0;$i<3;$i++)
+					{
+						if ($i==0)
+						{
+							if ($digit == "fng")
+								$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($fng+"AHalf", $side+"_handJA_JNT", $fng+$part[$i], "half"));
+							else
+								$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($fng+"AHalf", $side+"_footJA_JNT", $fng+$part[$i], "half"));
+						}
+						if ($i==1)
+						{
+							$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($fng+"BHalf", $fng+$part[$i-1], $fng+$part[$i], "half"));
+						}
+						if ($i==2)
+						{
+							$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($fng+"CHalf", $fng+$part[$i-1], $fng+$part[$i], "half"));
+						}
+					}
+					
+				}
+			}
+		}
+
+	}
+
+	parent $interpGrps $interpTop;
+
+	return $interpTop;
+}

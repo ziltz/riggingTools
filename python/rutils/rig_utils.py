@@ -105,5 +105,3 @@ def importLatestAsset(assetType=None, projectRoot=None, type='model'):
 
 
 
-
-

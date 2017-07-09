@@ -191,6 +191,14 @@ global proc rig_constrainBlockGeometry()
 }
 
 
+global proc string[] rig_arrayReverse( string $array[] )
+{
+	string $reversedArray[];
+	int $arraySize = `size $array`;
+
+	for( $n = 0; $n < $arraySize; $n++ ) $reversedArray[( $arraySize - 1 - $n )] = $array[$n];
+	return $reversedArray;
+}
 
 /*
 
@@ -215,6 +223,8 @@ global proc string[] rig_chainBetweenTwoPoints(string $name, string $start, stri
 
 		string $con = rig_stringFirst( `pointConstraint $start $end $jnt`);
 		string $targets[] = rig_constraintReturnTargets( $con);
+		if ($startStep < 0)
+			$startStep = 0;
 		setAttr ($con+"."+$targets[0]+"W0") $startStep;
 		setAttr ($con+"."+$targets[1]+"W1") $endStep;
 
@@ -241,5 +251,5 @@ global proc string[] rig_chainBetweenTwoPoints(string $name, string $start, stri
 	setAttr ($joints[$numJoints-1]+".jointOrientY") 0;
 	setAttr ($joints[$numJoints-1]+".jointOrientZ") 0;
 
-	return $reverseJoints;
+	return $joints;
 }

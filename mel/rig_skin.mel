@@ -1,0 +1,26 @@
+
+
+
+
+global proc rig_copySkinWeights(string $source, string $dest)
+{
+	
+	string $scDest = `findRelatedSkinCluster $dest`;
+
+	if ($scDest != "")
+	    catchQuiet(`delete $scDest`);
+
+	string $sc = `findRelatedSkinCluster $source`;
+
+	if (`objExists $sc`)
+	{
+		string $infs[] = `skinCluster -q -inf $sc`;
+
+		skinCluster -tsb $infs $dest;
+
+		copySkinWeights  -noMirror -surfaceAssociation closestPoint -influenceAssociation name -influenceAssociation oneToOne $source $dest; 
+	}
+	else{
+		warning ($source+" does not have a skinCluster"+"\n");
+	}
+}

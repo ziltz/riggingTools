@@ -19,7 +19,7 @@ class puppet(object):
 
 		self.character = defaultReturn('jerry', 'character', param=kwds)
 		self.rigBound = defaultReturn(None, 'rigBound', param=kwds)
-		self.rigVersion = defaultReturn(1, 'version', param=kwds)
+		self.rigVersion = defaultReturn(0, 'version', param=kwds)
 
 		pm.newFile(f=True)
 
@@ -35,6 +35,16 @@ class puppet(object):
 			pm.workspace(update=True)
 			projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/rigBound/'+self.character+'/'
 			print ' project root '+projectRoot+' found'
+
+			if self.rigVersion == 0:
+				puppetPath = pm.workspace(q=True,
+				                           rd=True) + 'scenes/release/rigPuppet/' + self.character + '/'
+				# find what is next puppet version
+				puppetList = []
+				os.chdir(puppetPath)
+				for f in glob.glob("*.ma"):
+					puppetList.append(f)
+				self.rigVersion = len(puppetList)+1
 
 			if self.rigBound is None:
 				#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
@@ -187,7 +197,7 @@ class puppet(object):
 						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
 						                     dv=0, v=0)
 						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
-						                     dv=0, v=0)
+						                     dv=1, v=0)
 						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
 						                     dv=2, v=1)
 					if 'lowMid' in lod:

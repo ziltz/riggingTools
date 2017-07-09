@@ -28,11 +28,11 @@ global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 		// get parent objects that are constraining
 		string $parents[] = rig_returnConstrainers($o);
 		if (size($parents) == 0)
-			warning ("Please constrain objects to know parent constrainer.");
+			print ("Please constrain objects to know parent constrainer."+"\n");
 		if (`objExists $parents[0]`)
 			$parentCons[size($parentCons)] = $parents[0];
 		// delete constraint
-		delete $constraint;
+		catchQuiet(`delete $constraint`);
 
 		// make duplicate locator;
 		string $aimLoc = rig_stringFirst(`duplicate -rr -n ($o+"Aim") $o`);

@@ -1,20 +1,6 @@
 __author__ = 'Jerry'
 
-'''
-try:
-	from rutils.rig_object import rig_object
-	from rutils.rig_utils import *
-	from other.webcolors import name_to_rgb
-	from rutils.rig_transform import rig_transform
-#reload(sys.modules['rig_transform'])
-#from rig_transform import rig_transform
-except ImportError:
-	from rig_object import rig_object
-	from rig_utils import *
-	from webcolors import name_to_rgb
-	from rig_transform import rig_transform
 
-'''
 
 from rutils.rig_utils import *
 from other.webcolors import name_to_rgb
@@ -70,6 +56,7 @@ class rig_control(object):
 		# constrain setup
 
 		self.constrain = defaultReturn(0, 'constrain', param=kwds)
+		self.directConnect = defaultReturn(0, 'directCon', param=kwds)
 		self.offsetConstrain = defaultReturn('', 'constrainOffset', param=kwds)
 
 		if pm.objExists(self.offsetConstrain):
@@ -77,12 +64,22 @@ class rig_control(object):
 
 		if self.constrain is not 0:
 			if type(self.constrain) is str: # single obj constrain
+				print 'single object constrain'
+				print 'direct connect = '+str(self.directConnect)
 				if pm.objExists(self.constrain):
-					pm.parentConstraint(self.con, self.constrain, mo=True)
+					if self.directConnect == 1:
+						for at in ('rx','ry','rz'):
+							pm.connectAttr( self.ctrl+'.'+at, self.constrain+'.'+at )
+					else:
+						pm.parentConstraint(self.con, self.constrain, mo=True)
 			else:
 				try: # check if pyNode obj
 					if self.constrain.exists():
-						pm.parentConstraint(self.con, self.constrain, mo=True)
+						if self.directConnect == 1:
+							for at in ('rx', 'ry', 'rz'):
+								pm.connectAttr(self.ctrl + '.' + at, self.constrain + '.' + at)
+						else:
+							pm.parentConstraint(self.con, self.constrain, mo=True)
 				except AttributeError: # if fail then it must be list
 					if type(self.constrain) is list:
 						for con in self.constrain:
@@ -449,7 +446,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 
 
-def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
+def fkControlChain( jointChain, modify=1, scale=[1,1,1], directCon=0):
 
 	controls = []
 
@@ -474,7 +471,8 @@ def fkControlChain( jointChain, modify=1, scale=[1,1,1]):
 		fkCtrl = rig_control( side=side, name=ctrlName, shape='box', modify=modify,
 		                      lockHideAttrs=['tx','ty','tz'], targetOffset=jnt,
 		                      constrain=pm.PyNode(jnt),
-		                      constrainOffset=constrainOffset,scale=scale )
+		                      constrainOffset=constrainOffset,scale=scale,
+		                      directCon=directCon )
 
 		controls.append(fkCtrl)
 		i += 1

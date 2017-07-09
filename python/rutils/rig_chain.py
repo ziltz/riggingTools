@@ -48,6 +48,22 @@ def rig_chainJointName(selection, name):
 	ABC = list(string.ascii_uppercase)
 
 	i = 0
+	prefixABC = ''
+	abcInd = 0
 	for jnt in selection:
-		pm.rename(jnt, name +'J'+ ABC[i] + '_JNT')
-		i += 1
+		if i < 26:
+			pm.rename(jnt, name +'J'+ prefixABC+ABC[i] + '_JNT')
+		else:
+			i = 0
+			prefixABC = ABC[abcInd]
+			abcInd +=1
+			pm.rename(jnt, name + 'J' + prefixABC + ABC[i] + '_JNT')
+
+		i+=1
+
+def rig_chainStraightedJointOrient(selection, axis='X'):
+
+	for jnt in selection:
+		pm.setAttr ( jnt+'.jointOrient'+axis, 0 )
+
+

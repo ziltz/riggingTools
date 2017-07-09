@@ -355,17 +355,29 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
 
 	numJoints = len(chainList)
 
+	'''
 	ctrlPos = []
 	for i in range(0, numJoints):
-		if i % 5 == 0:
+		if i % numFkControls == 0:
 			ctrlPos.append(chainList[i])
+	'''
+	endJnt = rootJnt.replace('JA_JNT', 'JEnd_JNT')
+	ctrlPos = mm.eval('rig_chainBetweenTwoPoints("'+name+'Pos", "'+rootJnt+'", "'+endJnt+'",'+str(numIkControls)+');')
+
+
+	#for jnt in ctrlPos:
+	pm.parent(ctrlPos, w=True)
+
+	for jnt in ctrlPos:
+		pm.delete(pm.orientConstraint(rootJnt, jnt))
+
 
 	# make ik driver controls/joints
 	fkControls = []
 	ikControls = []
 	driverJntList = []
 	fkScale = 1.5
-	for i in range(0, numIkControls):
+	for i in range(0, len(ctrlPos)):
 		driverJnt = rig_transform(0, name=name+'DriverJ' + ABC[i], type='joint',
 		                          target=ctrlPos[i], parent=module.parts,
 		                          rotateOrder=2).object
@@ -409,6 +421,8 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
 		fkControls.append(fkCtrl)
 
 		fkScale = fkScale - 0.1
+
+	pm.delete(ctrlPos)
 
 	# shape controls
 	rootCtrl = fkControls[0]
@@ -507,3 +521,5 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
 		               f=True)
 
 	pm.skinCluster(driverJntList, ik.curve, tsb=True)
+
+	return module

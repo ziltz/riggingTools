@@ -63,6 +63,9 @@ global proc string rig_interpolationJointBiped()
 	// build list of top interp grps
 	string $interpGrps[] = {};
 
+	$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint("headHalf", "neckJB_JNT", "headJA_JNT", "half"));
+	$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint("headQuarter", "neckJB_JNT", "headJA_JNT", "quarter"));
+
 	for ($side in {"l", "r"})
 	{
 		// clavicle

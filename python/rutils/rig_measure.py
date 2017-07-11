@@ -63,10 +63,31 @@ class rig_measure(object):
 		           at='float', k=True, dv=1)
 		self.distance.globalOriginalPercent.set(cb=True)
 
-		multiplyDivideNode(self.name + '_measurepcnt', 'divide',
+		'''
+		measurePnct = multiplyDivideNode(self.name + '_measurepcnt', 'divide',
 		                   input1=[self.distance.distance,self.distance.distance, 1],
 		                   input2=[self.distance.originalLength,self.distance.globalOriginalLength, 1],
 		                   output=[self.distance.originalPercent, self.distance.globalOriginalPercent])
+		'''
+		print 'hey'
+		measurePnct = multiplyDivideNode(self.name + '_measurepcnt', 'divide',
+		                                 input1=[self.distance.distance, self.distance.distance, 1],
+		                                 input2=[1, 1, 1],
+		                                 output=[self.distance.originalPercent,
+		                                         self.distance.globalOriginalPercent])
+
+		# make 0.001 the minimum
+		originalMin_con = conditionNode(self.name + '_origZeroMin', 'equal',
+		                                          (self.distance, 'originalLength' ), ('', 0 ),
+		                                          ( '', 0.001 ),
+		                                          ( self.distance, 'originalLength'  ))
+		globalOriginalMin_con = conditionNode(self.name + '_globalOrigZeroMin', 'equal',
+		                                (self.distance, 'globalOriginalLength' ), ('', 0 ),
+		                                ( '', 0.001 ),
+		                                ( self.distance, 'globalOriginalLength'  ))
+
+		pm.connectAttr( originalMin_con+'.outColorR', measurePnct+'.input2X' )
+		pm.connectAttr( globalOriginalMin_con + '.outColorR', measurePnct + '.input2Y')
 
 		if pm.objExists('rig_GRP'):
 			multiplyDivideNode(self.name + '_globalOriginalLength', 'multiply',

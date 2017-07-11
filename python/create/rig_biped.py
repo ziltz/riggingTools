@@ -751,7 +751,7 @@ class rig_biped(object):
 				childConAttr = con.getWeightAliasList()[1]
 				pm.addAttr(self.shoulderControl.ctrl, longName='followArm',
 				           at='float', k=True, min=0,
-				           max=10, defaultValue=5)
+				           max=10, defaultValue=3)
 				pm.setDrivenKeyframe(childConAttr,
 				                     cd=self.shoulderControl.ctrl.followArm,
 				                     dv=0,

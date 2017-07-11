@@ -171,7 +171,7 @@ def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretc
     cmds.addAttr( _ikControl, longName='ikStretch', shortName='iks',attributeType="double",
                                 min=0, max=1, defaultValue=0, keyable=True )
     cmds.addAttr( _ikControl, longName='ikSoftBlend', shortName='iksb',attributeType="double",
-                                min=0, max=1, defaultValue=0.2, keyable=True )
+                                min=0.001, max=1, defaultValue=0.2, keyable=True )
     cmds.addAttr( _ikControl, longName='midSlide', shortName='es',attributeType="double",
                                 min=-1, max=1, defaultValue=0, keyable=True )
 

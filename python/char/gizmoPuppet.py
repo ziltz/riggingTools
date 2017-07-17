@@ -133,13 +133,13 @@ def gizmoRigModules():
 
 	pm.parent( 'headJAWorld_GRP', facialModule.controlsSec )
 
-	pm.move(pm.PyNode('noseTwk_CTRL').cv, 0.3, 0, 0, r=True, os=True)
+	pm.move(pm.PyNode('noseTwk_CTRL').cv, 0.15, 0, 0, r=True, os=True)
 	pm.scale(pm.PyNode('noseTwk_CTRL').cv, 2.5, 2.5, 2.5)
 
 	# jaw control
 	jawControl = rig_control(name='jaw', shape='circle', scale=(2,2,2),
 	                         lockHideAttrs=['rx'],
-	                         parentOffset=facialModule.controls)
+	                         parentOffset=facialModule.controls, colour='white')
 
 	pm.rotate(jawControl.ctrl.cv, -90, 0, 0, r=True, os=True)
 	pm.move(jawControl.ctrl.cv, 2, 0, 0, r=True, os=True)
@@ -166,24 +166,69 @@ def gizmoRigModules():
 	upperLipCtrls = pm.ls("*upperLip*Twk*CTRL")
 	for c in upperLipCtrls:
 		pm.scale(c.cv, 0.6, 0.6, 0.6, r=True)
-		pm.move(c.cv, 0, 0, 0.1, r=True)
+		pm.move(c.cv, 0, 0, 0.3, r=True)
 		pm.move(c.cv, 0, 0.1, 0, r=True)
 
 	lowerLipCtrls = pm.ls("*lowerLip*Twk*CTRL")
 	for c in lowerLipCtrls:
 		pm.scale(c.cv, 0.6, 0.6, 0.6, r=True)
-		pm.move(c.cv, 0, 0, 0.2, r=True)
+		pm.move(c.cv, 0, 0, 0.3, r=True)
 		pm.move(c.cv, 0, -0.1, 0, r=True)
 
 	pm.setAttr( facialModule.parts+'.inheritsTransform', 0)
 
+	pm.parent('tongueControls_GRP', facialModule.controls)
 
-	'''
-	make eye and tongue control
+	# eye controls
 
-	r_eyeLocalModify_GRP constrain to an eye local joint instead of world
+	eyeModule = rig_module('eye')
+	pm.parent(eyeModule.top, 'rigModules_GRP')
 
-	'''
+	eyeControl = rig_control(name='eye', shape='circle', modify=1,
+	                         parentOffset=eyeModule.controls, scale=(1, 1, 1),
+	                         rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
+
+	pm.delete(pm.parentConstraint(  'eyeAim_LOC' ,eyeControl.offset ))
+	#pm.parentConstraint( 'headCon_GRP', eyeControl.offset, mo=True )
+
+	pm.rotate(eyeControl.ctrl.cv, 90, 0, 0, r=True, os=True)
+
+	pm.select(eyeControl.ctrl.cv[1], r=True )
+	pm.select(eyeControl.ctrl.cv[5], add=True )
+	pm.scale( 0,0 , 0, r=True)
+
+	constrainObject(eyeControl.offset,
+	                ['headCon_GRP', 'worldSpace_GRP'],
+	                eyeControl.ctrl, ['head', 'world'],
+	                type='parentConstraint')
+
+	pm.parent( 'eyeAim_LOC', eyeControl.con )
+	pm.hide('eyeAim_LOC')
+
+	for side in ('l', 'r'):
+		eyeBase = rig_transform(0, name=side + '_eyeBase', type='locator',
+		                          target=side+'_eyeJA_JNT', parent=eyeModule.parts).object
+		eyeTarget = rig_transform(0, name=side + '_eyeTarget', type='locator',
+		                        target='eyeAim_LOC', parent=eyeModule.parts).object
+
+		pm.parentConstraint('headJA_JNT', eyeBase, mo=True)
+		pm.parentConstraint('eyeAim_LOC', eyeTarget, mo=True)
+
+		eyeAimTop = mm.eval('rig_makePiston("' + eyeBase + '", "' + eyeTarget + '", '
+		                                                                             '"' + side +
+		                         '_eyeAim");')
+
+		pm.orientConstraint( side+'_eyeBase_JNT', side+'_eyeJA_JNT', mo=True )
+
+		pm.parent(eyeAimTop, eyeModule.parts)
+
+		'''
+		eyeControl = rig_control(side=side, name='eye', shape='circle', modify=1,
+		                             parentOffset=eyeModule.controls, scale=(1,1,1),
+		                             rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
+		'''
+
+
 
 
 def gizmoFinish():
@@ -198,5 +243,11 @@ def gizmoFinish():
 		pm.setAttr("displayModulesToggleControl."+s+"_fingers", 0)
 		pm.setAttr("displayModulesToggleControl."+s+"_toes", 0)
 
+
+	globalCtrl = pm.PyNode('global_CTRL')
+	for hiGrps in ('headJAWorld_GRP', 'headShapeWorld_GRP', 'jawOffset_GRP', 'tongueControls_GRP' ):
+		rig_animDrivenKey(globalCtrl.lodDisplay, (0.0, 1.0, 2.0),
+		                  hiGrps+ '.visibility', (0.0, 0.0, 1.0 ))
+		pm.dgdirty(allPlugs=True)
 
 	pm.delete('shapeLocs_GRP')

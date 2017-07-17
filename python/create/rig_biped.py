@@ -717,7 +717,7 @@ class rig_biped(object):
 		fkCtrls = self.armControls['fk']
 		hand = self.armControls['hand']
 
-		print 'self.shoulderControl '+str(self.shoulderControl.ctrl)
+		#print 'self.shoulderControl '+str(self.shoulderControl.ctrl)
 		pm.parentConstraint( self.shoulderControl.con , fkCtrls[0].offset,
 		                     mo=True )
 
@@ -1115,7 +1115,7 @@ class rig_biped(object):
 			if side != '':
 				fng = side + '_' + fng
 
-			print 'finger is '+fng
+			#print 'finger is '+fng
 			if pm.objExists(fng):
 
 				chainFingers = rig_chain( fng )

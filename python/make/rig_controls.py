@@ -40,12 +40,20 @@ class rig_control(object):
 		self.ctrl = self._returnShape(self.shape)
 		self.rotateOrder = defaultReturn(0,'rotateOrder', param=kwds)
 		self.colour = defaultReturn('yellow', 'colour', param=kwds)
+		self.secColour = defaultReturn(0, 'secColour', param=kwds)
 
-		if self.colour == 'yellow':
+		if self.secColour == 0:
+			if self.colour == 'yellow':
+				if self.side == ('l'):
+					self.colour = 'blue'
+				if self.side == ('r'):
+					self.colour = 'red'
+		else:
+			self.colour == 'green'
 			if self.side == ('l'):
-				self.colour = 'blue'
+				self.colour = 'deepskyblue'
 			if self.side == ('r'):
-				self.colour = 'red'
+				self.colour = 'magenta'
 
 		self.scale = defaultReturn((1,1,1) ,'scale', param=kwds)
 
@@ -57,6 +65,7 @@ class rig_control(object):
 
 		self.constrain = defaultReturn(0, 'constrain', param=kwds)
 		self.directConnect = defaultReturn(0, 'directCon', param=kwds)
+		self.directConnectAttrs = defaultReturn(['rx','ry','rz'], 'directConAttrs', param=kwds)
 		self.offsetConstrain = defaultReturn('', 'constrainOffset', param=kwds)
 
 		if pm.objExists(self.offsetConstrain):
@@ -68,7 +77,7 @@ class rig_control(object):
 				print 'direct connect = '+str(self.directConnect)
 				if pm.objExists(self.constrain):
 					if self.directConnect == 1:
-						for at in ('rx','ry','rz'):
+						for at in self.directConnectAttrs:
 							pm.connectAttr( self.ctrl+'.'+at, self.constrain+'.'+at )
 					else:
 						pm.parentConstraint(self.con, self.constrain, mo=True)
@@ -76,7 +85,7 @@ class rig_control(object):
 				try: # check if pyNode obj
 					if self.constrain.exists():
 						if self.directConnect == 1:
-							for at in ('rx', 'ry', 'rz'):
+							for at in self.directConnectAttrs:
 								pm.connectAttr(self.ctrl + '.' + at, self.constrain + '.' + at)
 						else:
 							pm.parentConstraint(self.con, self.constrain, mo=True)

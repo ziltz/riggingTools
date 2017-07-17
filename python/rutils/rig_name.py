@@ -39,3 +39,26 @@ def rig_nameMirror(obj):
 		name += '_'+o
 
 	return name
+
+def rig_nameGetBase(obj):
+	tokens = obj.split('_')
+
+	print tokens[1:-1]
+
+	checkSide = 1
+	if obj.startswith('l_'):
+		checkSide = 1
+	elif obj.startswith('r_'):
+		checkSide = 1
+	else:
+		checkSide = 0
+
+	newName = ''
+	for i in range(checkSide, len(tokens) - 1):
+
+		if i == len(tokens) - 2:
+			newName += tokens[i]
+		else:
+			newName += tokens[i] + '_'
+
+	return newName

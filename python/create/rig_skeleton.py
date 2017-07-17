@@ -84,6 +84,7 @@ def savePose(root='spineJA_JNT', pose='tPose'):
 			pm.addAttr(joint, longName=pose, attributeType='matrix')
 			setCurrentPose(joint, pose)
 
+	print 'Done saving '+pose+' on '+root
 
 def setCurrentPose(joint='spineJA_JNT', pose='tPose'):
 	joint = pm.PyNode(joint)
@@ -156,7 +157,7 @@ def loadPose(root='spineJA_JNT', pose='tPose'):
 			pm.setAttr(jnt.jointOrientY, matrix.a31)
 			pm.setAttr(jnt.jointOrientZ, matrix.a32)
 
-
+	print 'Done loading ' + pose + ' on ' + root
 
 
 def removePose(root='spineJA_JNT', pose='tPose'):
@@ -168,12 +169,16 @@ def removePose(root='spineJA_JNT', pose='tPose'):
 def listSkeletonHierarchy(root):
 
 	listJoints = cmds.listRelatives(root, type="joint", ad=True)
-	listJoints.insert(0, root)
 
 	skeleton = []
-	for jnt in listJoints:
-		if 'JEnd_JNT' not in jnt:
-			skeleton.append(jnt)
+	if listJoints:
+		listJoints.insert(0, root)
+
+		for jnt in listJoints:
+			if 'JEnd_JNT' not in jnt:
+				skeleton.append(jnt)
+	else:
+		skeleton.append(root)
 
 	return skeleton
 

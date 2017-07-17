@@ -141,7 +141,7 @@ def eyeCartoonyRig( _eyeMesh, _edgeList, _suffix ):
     extraGrp = pmc.group( eyeLoc, eyeLocAim, eyelidCurve, lowDensity_eyelidCurve, curveBaseWire, name=_suffix+'_eyelid_extras_grp' )
     pmc.setAttr( extraGrp+'.visibility', 0 )
 
-
+'''
 eyeCartoonyRig( eyeMesh, edgeSel, 'r_jupper' )
 
 upperEdgeSel = pmc.ls(sl=True)
@@ -279,3 +279,14 @@ for jnt in pmc.ls(sl=True):
     print type(offset)
     print dir(offset)
     pmc.delete(pmc.parentConstraint(jnt, offset, mo=False))
+
+
+
+
+
+
+'''
+
+
+
+

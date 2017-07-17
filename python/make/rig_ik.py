@@ -154,7 +154,7 @@ def rig_ikStretchySoftPop(side, name, chainIK, module, ikCtrl, ctrlSize, topGrp)
 	return endBlendLoc
 
 def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretchDist ):
-    print 'addStretchyIKJoints function starts here ------------------------'
+    #print 'addStretchyIKJoints function starts here ------------------------'
     # assign appropriate names
     nme = _name+'ikStretchy'
     upperDistDim = _distanceDim[0]
@@ -329,7 +329,7 @@ def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretc
     else:
         cmds.connectAttr( lowerBlend2Node+'.output', handJnt+'.translateX', f=True )
 
-    print 'addStretchyIKJoints function end here ------------------------'
+   # print 'addStretchyIKJoints function end here ------------------------'
     return (upperBlend2Node, lowerBlend2Node, checkStretch_condition)
 
 

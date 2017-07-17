@@ -69,7 +69,6 @@ class rig_measure(object):
 		                   input2=[self.distance.originalLength,self.distance.globalOriginalLength, 1],
 		                   output=[self.distance.originalPercent, self.distance.globalOriginalPercent])
 		'''
-		print 'hey'
 		measurePnct = multiplyDivideNode(self.name + '_measurepcnt', 'divide',
 		                                 input1=[self.distance.distance, self.distance.distance, 1],
 		                                 input2=[1, 1, 1],

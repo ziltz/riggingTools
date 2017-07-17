@@ -91,7 +91,27 @@ def connectNegative( obj1, obj2, name='connectNegative#' ):
 	return negativeNode
 
 
+def multDoubleLinear( in1, in2, out, name='multDoubleLinear#'):
 
+	mdl = pm.shadingNode('multDoubleLinear', asUtility=True)
+	mdlNode = pm.rename(mdl, name+'_MDL')
+
+	try:
+		pm.connectAttr(in1, mdlNode+'.input1', f=True)
+	except RuntimeError:
+		print 'cannot find attribute ' + str(in1)
+
+	try:
+		pm.connectAttr(in2, mdlNode + '.input2', f=True)
+	except RuntimeError:
+		print 'cannot find attribute ' + str(in2)
+
+	try:
+		pm.connectAttr( mdlNode + '.output',out, f=True)
+	except RuntimeError:
+		print 'cannot find attribute ' + str(out)
+
+	return mdlNode
 
 '''
 

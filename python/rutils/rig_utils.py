@@ -39,20 +39,6 @@ def rig_geoUnderGroupHierarchy(group=None):
 	pm.select(parents)
 	return parents
 
-# turn off inherit transforms on skincluster geometry under hierarchy
-def rig_skinClusterTransforms(group=None):
-	geos = rig_geoUnderGroupHierarchy(group)
-	for g in geos:
-		try:
-			skinCluster = pm.PyNode(mm.eval('findRelatedSkinCluster "' + g + '";'))
-			if skinCluster.exists:
-				print 'Found skinCluster on '+ g
-				pm.setAttr(g + '.inheritsTransform', 0)
-
-		except pm.MayaNodeError:
-			pass
-
-	print 'Done turning off inherit transforms on skinned geos'
 
 
 def connectAttrToVisObj(ctrl, attrName, obj, defaultValue=0):

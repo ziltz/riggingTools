@@ -41,10 +41,6 @@ def gizmoPrepareRig():
 
 	rig_bipedPrepare()
 
-	#mc.delete('tailJO_JNT')
-	#loadPose('tailJLTip_JNT', 'tPose')
-
-
 
 def gizmoRigModules():
 	print 'Create gizmo rig modules'
@@ -248,6 +244,6 @@ def gizmoFinish():
 	for hiGrps in ('headJAWorld_GRP', 'headShapeWorld_GRP', 'jawOffset_GRP', 'tongueControls_GRP' ):
 		rig_animDrivenKey(globalCtrl.lodDisplay, (0.0, 1.0, 2.0),
 		                  hiGrps+ '.visibility', (0.0, 0.0, 1.0 ))
-		pm.dgdirty(allPlugs=True)
 
 	pm.delete('shapeLocs_GRP')
+

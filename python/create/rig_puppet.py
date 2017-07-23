@@ -8,6 +8,7 @@ from make.rig_controls import *
 from rutils.rig_transform import rig_transform
 from create.rig_skeleton import loadPose, removePose
 from rutils.rig_anim import *
+from rutils.rig_skin import *
 
 import pymel.core as pm
 import maya.cmds as cmds

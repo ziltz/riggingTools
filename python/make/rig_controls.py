@@ -73,8 +73,8 @@ class rig_control(object):
 
 		if self.constrain is not 0:
 			if type(self.constrain) is str: # single obj constrain
-				print 'single object constrain'
-				print 'direct connect = '+str(self.directConnect)
+				#print 'single object constrain'
+				#print 'direct connect = '+str(self.directConnect)
 				if pm.objExists(self.constrain):
 					if self.directConnect == 1:
 						for at in self.directConnectAttrs:
@@ -364,6 +364,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	maintainOffset = defaultReturn(True,'mo', param=kwds)
 	constrainType = defaultReturn('parentConstraint', 'type', param=kwds)
 	skip = defaultReturn(None, 'skip', param=kwds)
+	skipTrans = defaultReturn(None, 'skipTrans', param=kwds)
+	skipRot = defaultReturn(None, 'skipRot', param=kwds)
 	#skipTranslate = defaultReturn(None, 'skipTranslate', param=kwds)
 	#skipRotate = defaultReturn(None, 'skipRotate', param=kwds)
 	interp = defaultReturn(0, 'interp', param=kwds)
@@ -392,12 +394,19 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 		try:
 			con = ''
 			if constrainType is 'parentConstraint':
-				if skip is None:
+				if skipTrans is None and skipRot is None:
 					con = pm.parentConstraint(constrainerList, obj,
 					                          mo=maintainOffset)
-				else:
+				elif skipTrans is not None and skipRot is not None:
 					con = pm.parentConstraint(constrainerList, obj,
-				                          mo=maintainOffset, skip=skip)
+					                          mo=maintainOffset, st=skipTrans,sr=skipRot)
+				else:
+					if skipTrans is None and skipRot is not None:
+						con = pm.parentConstraint(constrainerList, obj,
+					                          mo=maintainOffset, sr=skipRot)
+					else:
+						con = pm.parentConstraint(constrainerList, obj,
+						                          mo=maintainOffset, st=skipTrans)
 
 			if constrainType is 'orientConstraint':
 				if skip is None:
@@ -414,8 +423,10 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 				else:
 					con = pm.pointConstraint(constrainerList, obj,
 				                          mo=maintainOffset, skip=skip)
-
-			pm.setAttr(con.interpType, interp)
+			try:
+				pm.setAttr(con.interpType, interp)
+			except AttributeError:
+				print 'No interpType attribute'
 
 			if doSpace:
 				ctrl = pm.PyNode(ctrl)

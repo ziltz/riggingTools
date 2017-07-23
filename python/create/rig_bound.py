@@ -6,11 +6,11 @@ from rutils.rig_object import rig_object
 from rutils.rig_utils import *
 from make.rig_controls import *
 from rutils.rig_transform import rig_transform
-
+from create.rig_skeleton import *
 
 import pymel.core as pm
 import maya.cmds as cmds
-import glob, os
+import glob, os, collections
 
 '''
 
@@ -283,3 +283,19 @@ class bound(rig_object):
 		cmds.refresh()
 		
 		getattr(self.charModule, self.character + 'Finish')()
+
+
+'''
+
+do checks before releasing
+
+'''
+def rig_boundChecks():
+	rootJoint = cmds.listRelatives('skeleton_GRP', typ='joint')[0]
+	listJoints = listSkeletonHierarchy(rootJoint)
+	print listJoints
+	duplicates = [item for item, count in collections.Counter(listJoints).items() if count > 1]
+
+	if len(duplicates) > 0:
+		pm.warning( 'Found duplicate non-unique joint namings! ' )
+		print duplicates

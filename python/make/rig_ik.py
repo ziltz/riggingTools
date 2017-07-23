@@ -9,6 +9,8 @@ from rutils.rig_anim import *
 from make.rig_controls import *
 from rutils.rig_modules import *
 from rutils.rig_chain import *
+from rutils.rig_math import *
+
 
 import pymel.core as pm
 import maya.mel as mm
@@ -54,8 +56,29 @@ class rig_ik(object):
 		except IndexError:
 			print 'Not a spline IK'
 
-	def poleVectorConstraint(self):
-		return
+	def poleVector(self, name='', mid='', posMultiplier=1):
+
+		if name == '':
+			name = self.name
+
+		poleVector = rig_transform(0, name=name + 'PoleVector', type='locator').object
+		pm.delete(pm.parentConstraint( self.start, self.end, poleVector ))
+
+		pm.delete(pm.aimConstraint(mid, poleVector, mo=False))
+
+		startPos = pm.xform(self.start, translation=True, query=True, ws=True)
+		midPos = pm.xform(self.end, translation=True, query=True, ws=True)
+		poleVectorPos = pm.xform(poleVector, translation=True, query=True,
+		                         ws=True)
+
+		pvDistance = lengthVector(midPos, poleVectorPos)
+
+		pm.xform(poleVector, translation=[pvDistance*posMultiplier, 0, 0], os=True,
+		         r=True)
+
+		pm.poleVectorConstraint(poleVector, self.handle)  # create pv
+
+		return poleVector
 
 
 

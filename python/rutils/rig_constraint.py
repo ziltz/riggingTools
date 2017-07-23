@@ -22,3 +22,20 @@ def rig_constrainByType( type, targetObjects, conObject, **kwds ):
 			pm.pointConstraint(targetObjects, conObject, mo=maintainOffset)
 	except Exception as e:
 		print 'No Such object'
+
+
+
+def rig_constraintExportPrintCmds(group):
+
+	alltrans = pm.listRelatives(group, pa=True, c=True, ad=True, type='transform')
+
+	for con in alltrans:
+		if con.type() == 'parentConstraint':
+			try:
+				driver = con.getTargetList()[0]
+				drivenObj = pm.listConnections(con+'.constraintTranslateX')[0]
+				print 'pm.parentConstraint( "'+driver.stripNamespace()+'" ,"' \
+				                                                      ''+drivenObj.stripNamespace()+'" , mo=True)'
+			except IndexError:
+				print 'More than one driver on constraint '+con.stripNamespace()
+

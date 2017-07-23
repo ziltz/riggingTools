@@ -861,7 +861,7 @@ def kiddoChairSetup():
 
 	# generic controls for both sides
 	for side in ('l', 'r'):
-		sc = simpleControls([side+'_joystickJA_JNT'], scale=(0.5, 1.5, 0.5),
+		sc = simpleControls([side+'_joystickJA_JNT'], scale=(0.5, 0.8, 0.5),
 		                    lockHideAttrs=['tx', 'ty', 'tz'],
 		                    parentOffset=module.controls)
 
@@ -903,11 +903,13 @@ def kiddoChairSetup():
 		pm.move(sc[side+'_monitorBPanYJA_JNT'].ctrl.cv, (0, 0, 0.5), relative=True,
 		        objectSpace=True)
 
-		# free rotation monitor controls
-		sc = simpleControls([side+'_keyboardBJA_JNT', side+'_monitorBJA_JNT', side+'_monitorAJA_JNT'],
+		# free rotation monitor/keyboard controls
+		sc = simpleControls([side+'_keyboardBJA_JNT'],
 		                    scale=(0.2, 0.2, 0.2), lockHideAttrs=['tx', 'ty', 'tz'], shape='sphere',
 		                    parentOffset=module.controls)
-
+		sc = simpleControls([ side+'_monitorBJA_JNT', side+'_monitorAJA_JNT'],
+		                    scale=(0.2, 1.5, 2.0), lockHideAttrs=['tx', 'ty', 'tz'], shape='box',
+		                    parentOffset=module.controls)
 
 	# rotation z right monitor controls
 	sc = simpleControls(['r_monitorATiltZJA_JNT','r_monitorBTiltZJA_JNT'],

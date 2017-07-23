@@ -2,6 +2,9 @@
 
 /*
 
+TODO:
+	- fix position of interp joints to work with stretching of limbs
+
 interpPos
 'quarter', 'half'
 

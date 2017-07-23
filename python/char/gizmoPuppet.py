@@ -88,6 +88,67 @@ def gizmoRigModules():
 	                               numIkControls=12, numFkControls=12)
 
 
+	# tail upgrade
+	tailJnts = pm.listRelatives( 'tailskeleton_GRP', type='joint')
+	for i in range (1, len(tailJnts)):
+		tailNme = tailJnts[i].stripNamespace()
+		tailIK = tailJnts[i]
+		tailFK = tailNme.replace('IK', 'FK')
+		tailFK = tailFK.replace('_JNT', '')
+
+		constrainObject(tailFK+'Modify2_GRP',
+		                [tailIK ,tailFK+'Modify1_GRP'],
+		                tailFK+'_CTRL', ['IK', 'parent'], type='parentConstraint')
+
+	pm.parentConstraint( 'tailFKACon_GRP', 'tailBaseIKOffset_GRP', mo=True )
+
+	constrainObject(  'tailMidAIKOffset_GRP',
+	                ['tailFKACon_GRP','pelvisCon_GRP', 'worldSpace_GRP'],
+	                 'tailMidAIK_CTRL', ['base', 'pelvis', 'world'],
+	                 type='parentConstraint')
+
+	constrainObject('tailMidBIKOffset_GRP',
+	                ['tailFKACon_GRP', 'tailMidAIKCon_GRP' , 'pelvisCon_GRP', 'worldSpace_GRP'],
+	                'tailMidBIK_CTRL', ['base','FK', 'pelvis', 'world'],
+	                type='parentConstraint')
+
+	constrainObject('tailTipIKOffset_GRP',
+	                ['tailFKACon_GRP', 'tailMidBIKCon_GRP', 'pelvisCon_GRP', 'worldSpace_GRP'],
+	                'tailTipIK_CTRL', ['base', 'FK', 'pelvis', 'world'],
+	                type='parentConstraint')
+
+	tailPointer = rig_control(name='tailPointer', shape='pyramid',
+	                            scale=(1,2,1), lockHideAttrs=['rx', 'ry', 'rz'],
+	                            colour='white', parentOffset=tailModule.controls, rotateOrder=2)
+	pm.delete(pm.parentConstraint('tailHiJEnd_JNT', tailPointer.offset ))
+	constrainObject(tailPointer.offset,
+	                ['pelvisCon_GRP', 'spineFullBodyCon_GRP', 'worldSpace_GRP'],
+	                tailPointer.ctrl, ['pelvis', 'fullBody', 'world'], type='parentConstraint')
+
+	tailPointerBase = rig_transform(0, name='tailPointerBase', type='locator',
+	                        parent=tailModule.parts, target='tailFKA_CTRL').object
+	tailPointerTip = rig_transform(0, name='tailPointerTip', type='locator',
+	                        parent=tailModule.parts, target=tailPointer.con).object
+
+	pm.rotate(tailPointerBase, 0, 0, -90, r=True, os=True)
+	pm.rotate(tailPointerTip, 0, 0, -90, r=True, os=True)
+
+	pm.parentConstraint('pelvisCon_GRP', tailPointerBase, mo=True)
+	pm.parentConstraint(tailPointer.con, tailPointerTip, mo=True)
+
+	tailPointerTop = mm.eval(
+		'rig_makePiston("' + tailPointerBase + '", "' + tailPointerTip + '", "tailPointerAim");')
+
+	pm.orientConstraint( tailPointerBase.replace('LOC','JNT'), 'tailFKAModify2_GRP', mo=True )
+
+	pm.parent('tailMidAIKOffset_GRP', 'tailMidBIKOffset_GRP','tailTipIKOffset_GRP',
+	          tailModule.controls)
+	pm.parent(tailJnts, tailModule.skeleton)
+	pm.parent('tail_cMUS','tailBaseIKOffset_GRP',tailPointerTop, tailModule.parts)
+
+	pm.setAttr( tailModule.skeleton+'.inheritsTransform', 0 )
+
+
 	# build facial
 
 	facialModule = rig_module('facial')

@@ -124,7 +124,7 @@ def kiddoRigModules():
 	biped.spineConnection = 'upperWaistX_JA_JNT'
 	biped.pelvisConnection = 'lowerBodyJA_JNT'
 	biped.centerConnection = 'mainJA_JNT'
-	biped.fngThumb = 'thumbJA_JNT'
+	#biped.fngThumb = 'thumbJA_JNT'
 	biped.fngIndex = 'fngIndexJA_JNT'
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=10)

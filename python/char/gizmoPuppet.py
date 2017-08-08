@@ -279,13 +279,41 @@ def gizmoRigModules():
 
 		pm.parent(eyeAimTop, eyeModule.parts)
 
+
+		upperEyeControl = rig_control(side=side, name='eyeUpper', shape='circle', modify=1,
+		                         parentOffset=eyeModule.controlsSec, scale=(0.1, 0.1, 0.1),
+		                         constrain=side+'_upperEyeLidRotateOffset_GRP',
+		                         rotateOrder=2,directCon=1, lockHideAttrs=['tx', 'ty', 'tz', 'rx',
+		                                                               'ry'])
+
+		pm.delete(pm.parentConstraint( side+'_eyeLocalOffset_GRP', upperEyeControl.offset ))
+		pm.delete(pm.pointConstraint(side + '_eyeJA_JNT', upperEyeControl.offset))
+
+		lowerEyeControl = rig_control(side=side, name='eyeLower', shape='circle', modify=1,
+		                              parentOffset=eyeModule.controlsSec, scale=(0.1, 0.1, 0.1),
+		                              constrain=side + '_lowerEyeLidRotateOffset_GRP',
+		                              rotateOrder=2, directCon=1,
+		                              lockHideAttrs=['tx', 'ty', 'tz', 'rx',
+		                                             'ry'])
+
+		pm.delete(pm.parentConstraint(side + '_eyeLocalOffset_GRP', lowerEyeControl.offset))
+		pm.delete(pm.pointConstraint(side + '_eyeJA_JNT', lowerEyeControl.offset))
+
 		'''
 		eyeControl = rig_control(side=side, name='eye', shape='circle', modify=1,
 		                             parentOffset=eyeModule.controls, scale=(1,1,1),
 		                             rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
 		'''
 
+		# ear controls
+		chainEars = rig_chain(side+'_earJA_JNT').chain
+		earCtrls = fkControlChain([side+'_earJA_JNT', side+'_earJB_JNT',side+'_earJC_JNT'],
+		                          modify=0, scale=[0.8, 0.8, 0.8], directCon=0)
 
+		# parent ears to headJA_JNT
+
+		for ctrl in earCtrls:
+			pm.parent( ctrl.parent, 'headControlsSecondary_GRP' )
 
 
 def gizmoFinish():

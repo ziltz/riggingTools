@@ -80,6 +80,9 @@ class puppet(object):
 
 			loadPose(rootJoint, 'tPose')
 
+			pm.rename( 'globalOffset_GRP', 'globalOffset_GRPx' )
+			pm.rename( 'global_CTRL', 'global_CTRLx' )
+
 			self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
 			                              con=0, showAttrs=['sx', 'sy','sz'])
 
@@ -136,6 +139,13 @@ class puppet(object):
 
 			self.worldSpace = rig_transform(0, name= 'worldSpace',
 			                                parent=self.globalCtrl.gimbal).object
+
+
+			try:
+				pm.delete( "|*RigBoundTop_GRP" )
+			except pm.MayaNodeError:
+				print 'RigBound top node does not exist'
+
 
 			# create attributes on global ctrl
 			pm.addAttr(self.globalCtrl.ctrl, ln='puppetSettings', at='enum',
@@ -263,11 +273,7 @@ class puppet(object):
 				self.displayTransform.attr(at).set(k=False)
 				self.displayTransform.attr(at).setLocked(True)
 
-			try:
-				pm.delete( "|*RigBoundTop_GRP" )
-			except pm.MayaNodeError:
-				print 'RigBound top node does not exist'
-
+			
 			pm.connectAttr(self.globalCtrl.ctrl+'.scaleX', self.rigGrp.worldScale)
 			pm.hide(self.rigGrp, self.rigModel)
 

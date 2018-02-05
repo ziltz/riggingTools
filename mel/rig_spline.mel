@@ -1,0 +1,333 @@
+
+
+
+/*
+ * cMS_makeSpline() - Makes a muscle spline rig
+ *
+ */
+
+
+
+global proc string rig_makeSpline(string $baseName, int $nControls, string $controlType, int $detail,
+			int $nRead, string $readType, string $ctrls[], string $reads[], int $bConstrainMid
+			)
+{
+	string $alpha[] = {"A", "B","C", "D","E", "F","G", "H","I", "J","K", "L","M", "N","O", "P","Q", "R",
+					"S", "T","U", "V","W", "X","Y", "Z"};
+
+	int $i;
+	clear $ctrls ;
+	clear $reads ;
+	
+	string $zero[] ;
+	clear $zero ;
+	string $cons[] ;
+	clear $cons ;
+
+	//$baseName = capitalizeString($baseName) ;
+
+	
+	if (objExists($baseName+"_cMUSShape") || objExists($baseName+"SplineSetup_GRP"))
+		{
+		string $msg = (uiRes("m_cMuscleSplineUI.kConfirmMuscleSplineAlreadyExistMsg"));
+		$msg = `format -stringArg $baseName $msg`;
+		confirmDialog 
+			-t (uiRes("m_cMuscleSplineUI.kConfirmMuscleSplineAlreadyExist"))
+			-m $msg
+			-ma "left"
+			-button (uiRes("m_cMuscleSplineUI.kOK4"))
+			;
+		string $msg = (uiRes("m_cMuscleSplineUI.kMuscleSplineAlreadyExist"));
+		$msg = `format -stringArg $baseName $msg`;
+		error -sl 0 ($msg) ;	
+		}
+	
+
+	// Make master grps
+	string $grpMain = `group -em -w -n ($baseName+"SplineSetup_GRP")` ;
+	
+
+	// And spline
+	string $spline = `createNode "cMuscleSpline" -n ($baseName+"_cMUSShape")`;
+	// Lock Label Attrs
+	setAttr -lock 1 ($spline+".DISPLAY") ;
+	setAttr -lock 1 ($spline+".TANGENTS") ;
+	setAttr -lock 1 ($spline+".LENGTH") ;
+	string $xforms[] = `listRelatives -parent $spline` ;
+	string $xform = $xforms[0] ;
+	parent $xform $grpMain ;
+	setAttr ($xform+".inheritsTransform") 0 ;
+	setAttr -l 1 -k 0 ($xform+".tx") ;
+	setAttr -l 1 -k 0 ($xform+".ty") ;
+	setAttr -l 1 -k 0 ($xform+".tz") ;
+	setAttr -l 1 -k 0 ($xform+".rx") ;
+	setAttr -l 1 -k 0 ($xform+".ry") ;
+	setAttr -l 1 -k 0 ($xform+".rz") ;
+	setAttr -l 1 -k 0 ($xform+".sx") ;
+	setAttr -l 1 -k 0 ($xform+".sy") ;
+	setAttr -l 1 -k 0 ($xform+".sz") ;
+	connectAttr -f ("time1.outTime") ($spline+".inTime") ;
+	// Make these attrs nicely viewable by the user in the channel box.
+	addAttr -ln "curLen" -k 1 $spline ;
+	addAttr -ln "pctSquash" -k 1 $spline ;
+	addAttr -ln "pctStretch" -k 1 $spline ;
+	connectAttr -f ($spline+".outLen") ($spline+".curLen") ;
+	connectAttr -f ($spline+".outPctSquash") ($spline+".pctSquash") ;
+	connectAttr -f ($spline+".outPctStretch") ($spline+".pctStretch") ;
+
+		
+	string $grpCtrls = `group -em -w -n ($baseName+"SplineControls_GRP")` ;
+	parent $grpCtrls $grpMain ;
+	setAttr ($grpCtrls+".inheritsTransform") 1 ;
+	setAttr -l 1 -k 0 ($grpCtrls+".tx") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".ty") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".tz") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".rx") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".ry") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".rz") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".sx") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".sy") ;
+	setAttr -l 1 -k 0 ($grpCtrls+".sz") ;
+
+	
+	string $grpDriven = `group -em -w -n ($baseName+"SplineJoints_GRP")` ;
+	parent $grpDriven $grpMain ;
+	setAttr ($grpDriven+".inheritsTransform") 0 ;
+	setAttr -l 1 -k 0 ($grpDriven+".tx") ;
+	setAttr -l 1 -k 0 ($grpDriven+".ty") ;
+	setAttr -l 1 -k 0 ($grpDriven+".tz") ;
+	setAttr -l 1 -k 0 ($grpDriven+".rx") ;
+	setAttr -l 1 -k 0 ($grpDriven+".ry") ;
+	setAttr -l 1 -k 0 ($grpDriven+".rz") ;
+	setAttr -l 1 -k 0 ($grpDriven+".sx") ;
+	setAttr -l 1 -k 0 ($grpDriven+".sy") ;
+	setAttr -l 1 -k 0 ($grpDriven+".sz") ;
+
+
+	
+	// Now make the controls
+	//
+	for ($i=0; $i < $nControls; $i++)
+		{
+		string $c[] ;
+		//string $name = ("iControl"+$baseName+($i+1)) ;
+
+		string $name;
+		if ($i == 0)
+			$name = ($baseName+"BaseIK") ;
+
+		if ( ($i > 0 ) && ($i < $nControls) )
+			$name = ($baseName+"Mid"+$alpha[$i-1]+"IK") ;
+
+		if ($i == ($nControls-1) ) 
+			$name = ($baseName+"TipIK") ;
+
+		
+
+		switch ($controlType)
+			{
+			case "cube":
+				$ctrls[$i] = `curve -d 1 -p -0.25 0.25 0.25 -p 0.25 0.25 0.25 -p 0.25 0.25 -0.25 -p -0.25 0.25 -0.25 -p -0.25 0.25 0.25 -p -0.25 -0.25 0.25 -p -0.25 -0.25 -0.25 -p 0.25 -0.25 -0.25 -p 0.25 -0.25 0.25 -p -0.25 -0.25 0.25 -p 0.25 -0.25 0.25 -p 0.25 0.25 0.25 -p 0.25 0.25 -0.25 -p 0.25 -0.25 -0.25 -p -0.25 -0.25 -0.25 -p -0.25 0.25 -0.25 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -n ($name+"_CTRL")`;
+				break ;
+				
+			case "circleY":
+				$c = `circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 0.25 -d 3 -ut 0 -tol 0.01 -s 8 -ch 0 -n $name` ;
+				$ctrls[$i] = $c[0]; 
+				break ;
+
+
+			case "null":
+			default:
+				$ctrls[$i] = `group -em -w -n $name`;
+				break ;
+			}
+			
+		xform -a -ws -t 0 $i 0 $ctrls[$i] ;		// Place vertically
+		
+		// Make a ZERO grp
+		$zero[$i] = `group -em -w -n ($name+"Offset_GRP")` ;
+		xform -a -ws -t 0 $i 0 $zero[$i] ;
+		// Make a modify grp
+		$modify[$i] = `group -em -w -n ($name+"Modify_GRP")` ;
+		xform -a -ws -t 0 $i 0 $modify[$i] ;
+		// Make a con grp
+		$con[$i] = `group -em -w -n ($name+"Con_GRP")` ;
+		xform -a -ws -t 0 $i 0 $con[$i] ;
+
+		// Parent stuff up.
+		parent $zero[$i] $grpCtrls ;
+		parent $modify[$i] $zero[$i] ;
+		parent $ctrls[$i] $modify[$i] ;
+		parent $con[$i] $ctrls[$i] ;
+
+		
+		// Color pretty....
+		setAttr ($ctrls[$i]+".overrideEnabled") 1;		// on
+		setAttr ($ctrls[$i]+".overrideColor") 17 ;		// yellow
+
+		// Make middle ctrls jiggle by default.
+		float $jiggle = 1.0 ;
+		if ($i==0 || $i == $nControls-1)
+			$jiggle = 0.0 ;
+
+		addAttr -ln "tangentLength" -sn "tanlen" -min 0.0 -dv 1.0 -k 1 $ctrls[$i] ;
+		addAttr -ln "jiggle" -sn "jig" -dv $jiggle -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleX" -sn "jigx" -dv $jiggle -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleY" -sn "jigy" -dv (0.25*$jiggle) -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleZ" -sn "jigz" -dv $jiggle -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleImpact" -sn "jigimp" -dv (0.5*$jiggle) -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleImpactStart" -sn "jigimpst" -dv 1000 -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggleImpactStop" -sn "jigimpsp" -dv 0.001 -k 0 $ctrls[$i] ;
+		addAttr -ln "cycle" -sn "cyc" -min 1.0 -dv 12.0 -k 0 $ctrls[$i] ;
+		addAttr -ln "rest" -sn "rst" -min 1.0 -dv 24.0 -k 0 $ctrls[$i] ;
+
+		setAttr -l 1 -k 0 ($ctrls[$i]+".sx") ;
+		setAttr -l 1 -k 0 ($ctrls[$i]+".sy") ;
+		setAttr -l 1 -k 0 ($ctrls[$i]+".sz") ;
+		setAttr -l 1 -k 0 ($ctrls[$i]+".v") ;
+
+		
+		// And connect in
+		connectAttr -f ($ctrls[$i]+".worldMatrix") ($spline+".controlData["+$i+"].insertMatrix") ;
+		connectAttr -f ($ctrls[$i]+".tangentLength") ($spline+".controlData["+$i+"].tangentLength") ;
+		connectAttr -f ($ctrls[$i]+".jiggle") ($spline+".controlData["+$i+"].jiggle") ;
+		connectAttr -f ($ctrls[$i]+".jiggleX") ($spline+".controlData["+$i+"].jiggleX") ;
+		connectAttr -f ($ctrls[$i]+".jiggleY") ($spline+".controlData["+$i+"].jiggleY") ;
+		connectAttr -f ($ctrls[$i]+".jiggleZ") ($spline+".controlData["+$i+"].jiggleZ") ;
+		connectAttr -f ($ctrls[$i]+".jiggleImpact") ($spline+".controlData["+$i+"].jiggleImpact") ;
+		connectAttr -f ($ctrls[$i]+".jiggleImpactStart") ($spline+".controlData["+$i+"].jiggleImpactStart") ;
+		connectAttr -f ($ctrls[$i]+".jiggleImpactStop") ($spline+".controlData["+$i+"].jiggleImpactStop") ;
+		connectAttr -f ($ctrls[$i]+".cycle") ($spline+".controlData["+$i+"].cycle") ;
+		connectAttr -f ($ctrls[$i]+".rest") ($spline+".controlData["+$i+"].rest") ;
+		
+		} // end of each ctrl
+	
+		
+	string $blend = "" ;
+		
+	// For each in-between control we will use the constraint group above it and constrain it 
+	//	to the top and bottom movers....
+	//
+	for ($i=1; $bConstrainMid == 1 && $i < $nControls-1; ++$i)
+		{
+		float $pct = 1.0 * $i / ($nControls-1.0) ;	// What pct weight to the last top one?
+		
+		
+		// Point is just pct inbetween
+		pointConstraint -w (1.0-$pct) $ctrls[0] $cons[$i] ; 
+		pointConstraint -w ($pct) $ctrls[$nControls-1] $cons[$i] ;
+		
+		// For aim we want to balance an aim fwd and back...to do that we need to 
+		// use a grp fwd and a grp back, then orient between those the right amt.
+		// Since we can't mix an aim with a +Y and an aim with a -Y.
+		//
+		string $grpAimFwd = `group -em -w -n ("grpAimFwd"+$baseName+($i+1))` ;
+		cMBld_snap($ctrls[$i], $grpAimFwd, 1, 1 ) ; 
+		string $grpAimBack = `group -em -w -n ("grpAimBack"+$baseName+($i+1))` ;
+		cMBld_snap($ctrls[$i], $grpAimBack, 1, 1) ; 
+		
+		// Make em do right thing
+		string $aCons1[] = `aimConstraint -w 1 -aim 0 1 0 -u 1 0 0 -wu 1 0 0 -wut "objectrotation" -wuo $ctrls[($nControls-1)] $ctrls[($nControls-1)] $grpAimFwd` ;
+	    string $aCons2[] = `aimConstraint -w 1 -aim 0 -1 0 -u 1 0 0 -wu 1 0 0 -wut "objectrotation" -wuo $ctrls[0] $ctrls[0] $grpAimBack` ;
+
+		// Now drive the aims with the up info...
+		if ($i == 1)
+			{
+				// Only have to create the first time around....
+			if (objExists($spline+".upAxis") != true)
+				addAttr -at "enum" -ln ("upAxis") -enumName "X-Axis=0:Z-Axis=1" -k 1 $spline ;
+			$blend = `createNode "blendColors" -n ("blendColorsMuscleSplineAim"+$baseName)` ;
+			connectAttr -f ($spline+".upAxis") ($blend+".blender") ;
+			setAttr -type "float3" ($blend+".color1") 0 0 1 ;
+			setAttr -type "float3" ($blend+".color2") 1 0 0 ;
+			}
+		connectAttr -f ($blend+".output") ($aCons1[0]+".upVector") ;
+		connectAttr -f ($blend+".output") ($aCons1[0]+".worldUpVector") ;
+		connectAttr -f ($blend+".output") ($aCons2[0]+".upVector") ;
+		connectAttr -f ($blend+".output") ($aCons2[0]+".worldUpVector") ;
+		
+		// We also have to do a similar pt contraint on each aim
+		string $pConsFwd[] = `pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimFwd` ; 
+		string $pConsFwd[] = `pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimFwd` ;
+		string $pConsBack[] = `pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimBack` ; 
+		string $pConsBack[] = `pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimBack` ;
+		
+		
+		// Now set up orient
+		string $oCons[] ;
+		$oCons = `orientConstraint -w (1.0-$pct) $grpAimBack $cons[$i]` ;
+//		setAttr ($oCons[0]+".interpType") 0 ;	// No-Flip orient constraint mode...
+		setAttr ($oCons[0]+".interpType") 2 ;	// Shortest orient constraint mode...
+		$oCons = `orientConstraint -w ($pct) $grpAimFwd $cons[$i]` ;		
+//		setAttr ($oCons[0]+".interpType") 0 ;	// No-Flip orient constraint mode...
+		setAttr ($oCons[0]+".interpType") 2 ;	// Shortest orient constraint mode...
+
+		
+		// Make ZERO grps for aims, at end so zero at right spot.
+		string $grpAimFwdZERO = `group -em -w -n ("grpAimFwd"+$baseName+($i+1)+"ZERO")` ;
+		string $grpAimBackZERO = `group -em -w -n ("grpAimBack"+$baseName+($i+1)+"ZERO")` ;
+		cMBld_snap($grpAimFwd, $grpAimFwdZERO, 1, 1 ) ; 
+		cMBld_snap($grpAimBack, $grpAimBackZERO, 1, 1) ; 
+
+		// Parent these to right place.
+		parent $grpAimFwdZERO $zero[$i] ;
+		parent $grpAimFwd $grpAimFwdZERO ;
+		parent $grpAimBackZERO $zero[$i] ;
+		parent $grpAimBack $grpAimBackZERO ;
+		
+
+
+
+		}
+
+		
+		
+	// Now make the driven stuff
+	//
+	for ($i=0; $i < $nRead; ++$i)
+		{
+		float $u = $i / ($nRead-1.0) ;
+		string $name = ($baseName+"IK"+$alpha[$i]+"_JNT") ;
+		
+		switch ($readType)
+			{
+			case "joint":
+				$reads[$i] = `joint -n $name` ;
+				break ;
+
+			case "circleY":
+				$c = `circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s $detail -ch 0 -n $name` ;
+				$reads[$i] = $c[0]; 
+				break ;
+				
+			case "null":
+			default:
+				$reads[$i] = `group -em -w -n $name`;
+				break ;
+			
+			}
+		
+		select -cl ;
+		addAttr -ln "uValue" -min 0.0 -max 1.0 -dv $u -k 1 $reads[$i] ;
+		parent $reads[$i] $grpDriven ;
+		
+
+
+		// And connect in		
+		connectAttr -f ($reads[$i]+".uValue") ($spline+".readData["+$i+"].readU") ;
+		connectAttr -f ($reads[$i]+".rotateOrder") ($spline+".readData["+$i+"].readRotOrder") ;
+		connectAttr -f ($spline+".outputData["+$i+"].outTranslate") ($reads[$i]+".translate") ;
+		connectAttr -f ($spline+".outputData["+$i+"].outRotate") ($reads[$i]+".rotate") ;
+		}
+
+		
+		
+	float $len = `getAttr ($spline+".outLen")`;	// Get current length.
+	setAttr ($spline+".lenDefault") ($len) ;	// And make some nice settings
+	setAttr ($spline+".lenSquash") ($len*0.5) ;	
+	setAttr ($spline+".lenStretch") ($len*2.0) ;
+	
+	
+	select -r $grpMain ;
+	return $spline ;
+}

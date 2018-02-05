@@ -1798,7 +1798,9 @@ def rig_bipedPrepare():
 def rig_bipedFinalize():
 
 	# world space hands and feet
-	for s in ['l', 'r']:
-		pm.setAttr(s+'_foot_CTRL.space', 3)
-		pm.setAttr(s+'_hand_CTRL.space', 1)
-
+	try:
+		for s in ['l', 'r']:
+			pm.setAttr(s+'_foot_CTRL.space', 3)
+			pm.setAttr(s+'_hand_CTRL.space', 1)
+	except:
+		pass

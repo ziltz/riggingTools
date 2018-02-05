@@ -76,7 +76,7 @@ class bound(rig_object):
 			else:
 				self.model = modelPath + self.model + '.ma'
 
-			print 'model file path = '+self.rigBound
+			print 'model file path = '+self.model
 			# import model file
 			try:
 				filePath = cmds.file(self.model, i=True, ignoreVersion=True,
@@ -88,7 +88,7 @@ class bound(rig_object):
 			cmds.dgdirty(allPlugs=True)
 			cmds.refresh()
 			
-			skeletonPath = projectRoot + 'skeleton/'
+			skeletonPath = projectRoot + 'rigSkeleton/'
 			if self.skeleton is None:
 				fileList = []
 				os.chdir(skeletonPath)
@@ -102,7 +102,7 @@ class bound(rig_object):
 				self.skeleton = skeletonPath + self.skeleton + '.ma'
 			
 			print 'skeleton file path = ' + self.skeleton
-			# import model file
+			# import skeleton file
 			try:
 				filePath = cmds.file(self.skeleton, i=True, ignoreVersion=True,
 				                     ra=False, mergeNamespacesOnClash=False,
@@ -113,10 +113,8 @@ class bound(rig_object):
 			cmds.dgdirty(allPlugs=True)
 			cmds.refresh()
 
-			self.characterModel = pm.ls("|*GRP")
-			
 			# unparent skeleton
-			skeleton = pm.listRelatives('skeleton_GRP', typ='joint')
+			#skeleton = pm.listRelatives('skeleton_GRP', typ='joint')
 
 			self.globalCtrl = rig_control(name='global', colour='white', shape='arrows',
 			                              con=0, showAttrs=['sx', 'sy','sz'])
@@ -127,15 +125,19 @@ class bound(rig_object):
 				                            parent=self.globalCtrl.ctrl).object
 			pm.addAttr(self.rigGrp, longName='worldScale', at='float',
 			           k=True, min=0, defaultValue=1)
-			self.rigGrp.worldScale.set(cb=True)
-			pm.connectAttr( self.globalCtrl.ctrl.scaleX, self.rigGrp.worldScale )
+			#self.rigGrp.worldScale.set(cb=True)
+			pm.connectAttr( self.globalCtrl.ctrl.scaleX, self.rigGrp+'.worldScale' )
 
 			self.modelGrp = rig_transform(0, name='model', parent=self.topNode).object
+			self.modelGrp = pm.PyNode( self.modelGrp )
 
-			self.rigModel = rig_transform(0, name='rigModel', parent=self.model).object
+			self.rigModel = rig_transform(0, name='rigModel', parent=self.modelGrp).object
 
-			self.skeleton = rig_transform(0, name='skeleton', parent=self.globalCtrl.ctrl, child=skeleton).object
+			#self.skeleton = rig_transform(0, name='skeleton', parent=self.globalCtrl.ctrl, child=skeleton).object
+			self.skeleton = 'skeleton_GRP'
+			pm.parent( 'skeleton_GRP', self.globalCtrl.ctrl )
 
+			pm.parent( 'allModel_GRP', self.modelGrp )
 
 			# create attributes on global ctrl
 			pm.addAttr(self.globalCtrl.ctrl, ln='boundSettings', at='enum',
@@ -145,6 +147,8 @@ class bound(rig_object):
 
 			# model and skeleton vis
 			# model
+
+			print (self.modelGrp)
 			connectAttrToVisObj(self.globalCtrl.ctrl, 'modelVis', self.modelGrp,
 			                    defaultValue=1)
 			# skeleton

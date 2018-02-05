@@ -44,12 +44,16 @@ def chainParent( list, reverse=0 ):
 
 
 
-def rig_chainJointName(selection, name):
+def rig_chainJointName(selection, name, reverse=0):
 	ABC = list(string.ascii_uppercase)
 
 	i = 0
 	prefixABC = ''
 	abcInd = 0
+
+	if reverse:
+		selection.reverse()
+
 	for jnt in selection:
 		if i < 26:
 			pm.rename(jnt, name +'J'+ prefixABC+ABC[i] + '_JNT')

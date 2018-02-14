@@ -39,39 +39,50 @@ def cyroRigModules():
 	print 'Create cyro rig modules'
 
 	biped = rig_biped()
-	biped.elbowAxis = 'ry'
+	quad = rig_quadruped()
 
-	biped.spine(ctrlSize=6)
+	#biped.spine(ctrlSize=20)
+	quad.spine(ctrlSize=50)
 
-	biped.pelvis(ctrlSize=5)
+	quad.pelvis(ctrlSize=35)
 
 	# make neck
 	#biped.neck( ctrlSize=2.5 )
 
 	#biped.head(ctrlSize=5)
 
-	quad = rig_quadruped()
-	quad.spineFullBodyCtrl = biped.spineFullBodyCtrl
-	quad.spineUpperCtrl = biped.spineUpperCtrl
-	quad.spineLowerCtrl = biped.spineLowerCtrl
+	
+	biped.spineFullBodyCtrl = quad.spineFullBodyCtrl
+	biped.spineUpperCtrl = quad.spineUpperCtrl
+	biped.spineLowerCtrl = quad.spineLowerCtrl
 
+	biped.pelvisControl = quad.pelvisControl
+
+	#biped.switchLoc = quad.switchLoc
+
+	biped.elbowAxis = 'ry'
 
 	for side in ['l', 'r']:
-		armModule = biped.arm(side, ctrlSize=3)
+		armModule = biped.arm(side, ctrlSize=12)
 
-		fingersModule = biped.hand(side, ctrlSize=0.5)
+		fingersModule = biped.hand(side, ctrlSize=5)
 
-		shoulderModule = biped.shoulder(side, ctrlSize=2)
+		shoulderModule = biped.shoulder(side, ctrlSize=10)
 
 		biped.connectArmShoulder(side)
 
 		if side == 'l':
 			quad.switchLoc = biped.switchLoc
 		# make quadruped leg 
-		legModule = quad.leg(side, ctrlSize = 5)
+		legModule = quad.leg(side, ctrlSize = 30)
+
+		toesModule = quad.foot(side, ctrlSize=10)
+
+		quad.connectLegPelvis()
 
 
-	tail = rig_tail( rootJoint = 'tailJA_JNT' )
+
+	tail = rig_tail( rootJoint = 'tailJA_JNT', ctrlSize = 30 )
 	tail.make()
 
 

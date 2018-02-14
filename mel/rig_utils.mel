@@ -25,6 +25,11 @@ aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpT
 aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject hipUp_LOC;
 
 
+
+int $borders[] = `polyOptions -q -displayMapBorder`;float $borderWidth[] = `optionVar -q displayPolyBorderEdgeSize`;polyOptions -displayMapBorder (!$borders[0]) -sizeBorder $borderWidth[1];
+
+
+
 */
 
 
@@ -158,10 +163,15 @@ global proc string[] rig_geoUnderGroupHierarchy(string $group)
 }
 
 
-global proc rig_constrainBlockGeometry()
+/*
+
+rig_constrainBlockGeometry( "lowLOD_GRP");
+
+*/
+global proc rig_constrainBlockGeometry(string $grp)
 {
 
-	string $lowGeos[] = rig_geoUnderGroupHierarchy("lowLOD_GRP");
+	string $lowGeos[] = rig_geoUnderGroupHierarchy($grp);
 
 	for ($geo in $lowGeos)
 	{

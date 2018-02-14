@@ -12,6 +12,9 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 			int $nRead, string $readType, string $ctrls[], string $reads[], int $bConstrainMid
 			)
 {
+
+	catch(`loadPlugin "C:/Program Files/Autodesk/Maya2016/bin/plug-ins/MayaMuscle.mll"`);
+	
 	string $alpha[] = {"A", "B","C", "D","E", "F","G", "H","I", "J","K", "L","M", "N","O", "P","Q", "R",
 					"S", "T","U", "V","W", "X","Y", "Z"};
 

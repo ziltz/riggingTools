@@ -63,7 +63,7 @@ class rig_tail( object ):
 		listJoints.reverse()
 
 		# make cMus tail joints
-		cMus = mm.eval(
+		mm.eval(
 			'string $ctrls[];string $reads[];rig_makeSpline( "tail", 4, "cube", 8, 12, "joint", $ctrls, $reads, 0);')
 
 		# place them every thirds

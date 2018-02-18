@@ -370,6 +370,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	#skipRotate = defaultReturn(None, 'skipRotate', param=kwds)
 	interp = defaultReturn(0, 'interp', param=kwds)
 
+	spaceAttr = defaultReturn('space','spaceAttr', param=kwds)
+
 	doSpace = 1
 	if type(multipleConstrainer) is str:
 		doSpace = 0
@@ -378,7 +380,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	if doSpace:
 		for space in multipleConstrainer:
 			suffix = space.split('_')[-1:][0]
-			spaceName = space.replace('_'+suffix, '_'+obj+'Proxy')
+			#print 'spaceAttr = '+ spaceAttr
+			spaceName = space.replace('_'+suffix, '_'+obj+'Proxy'+spaceAttr)
 			loc = rig_transform(0, name=spaceName, type='locator',
 		                            parent=space, target=space).object
 			pm.delete(pm.orientConstraint( obj, loc ))
@@ -437,8 +440,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 					for i in range (1, len(enumName)):
 						enumList += ':'+enumName[i]
 
-					if not ctrl.hasAttr('space'):
-						pm.addAttr(ctrl, ln='space', at='enum', enumName=enumList, k=True)
+					if not ctrl.hasAttr(spaceAttr):
+						pm.addAttr(ctrl, ln=spaceAttr, at='enum', enumName=enumList, k=True)
 
 					valueDict = {}
 					for t in targets:
@@ -452,7 +455,10 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 					for v in valueDict:
 						for i in range (0,len(valueDict)):
-							pm.setDrivenKeyframe( v, cd=ctrl.space, dv=i, v=(valueDict[v])[i])
+							#print 'spaceAttr = '+ spaceAttr
+							ctrlSpace = getattr(ctrl, spaceAttr)
+							#print 'ctrlSpace = ' + ctrlSpace
+							pm.setDrivenKeyframe( v, cd=ctrlSpace, dv=i, v=(valueDict[v])[i])
 
 				else:
 					pm.error(' Unequal amount of constrainer to enum names ')

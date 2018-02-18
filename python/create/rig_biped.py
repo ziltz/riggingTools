@@ -1033,10 +1033,11 @@ class rig_biped(object):
 
 		fngLength = lengthVector(fingersPos, endPos  )*1.5
 
+		pm.rotate(fingersControl.ctrl.cv, [90, 0, 0], relative=True, objectSpace=True)
 		if side == 'l':
-			pm.move(fingersControl.ctrl.cv, [fngLength, 0, 0], relative=True)
+			pm.move(fingersControl.ctrl.cv, [fngLength, 0, 0], relative=True, os=True) # os = True
 		else:
-			pm.move(fingersControl.ctrl.cv, [fngLength*-1, 0, 0], relative=True)
+			pm.move(fingersControl.ctrl.cv, [fngLength*-1, 0, 0], relative=True, os=True)
 
 		# create ik stretchy and soft pop
 		endBlendLoc = rig_ikStretchySoftPop(side, name, chainIK, module, handControl,
@@ -1722,6 +1723,8 @@ class rig_biped(object):
 							pm.orientConstraint(orientLoc, toeCtrl.modify[0],
 							                    mo=True,
 							                    skip='x')
+
+				pm.setAttr( toeCtrl.modify[0]+".rotateOrder", 2 )
 
 				sc = simpleControls(childrenFngs,
 				               modify=2, scale=ctrlSize,

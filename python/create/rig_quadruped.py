@@ -392,8 +392,45 @@ class rig_quadruped(object):
 	def neck (self):
 		return
 
-	def head (self):
-		return
+	def head (self, ctrlSize=1.0):
+		name = 'head'
+
+		module = rig_module(name)
+		self.headModule = module
+
+		pm.parent('headJA_JNT', module.skeleton)
+
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		headControl = rig_control(name='head', shape='box', modify=1,
+		                          targetOffset='headJA_JNT', scale=ctrlSize,
+		                          colour='yellow', parentOffset=module.controls, rotateOrder=2)
+		headControl.gimbal = createCtrlGimbal(headControl)
+		headControl.pivot = createCtrlPivot(headControl)
+
+		constrainObject(headControl.offset,
+		                [ 'neckJEnd_JNT' , 'spineJF_JNT', self.spineFullBodyCtrl.con, 'worldSpace_GRP'],
+		                headControl.ctrl, ['neck', 'spineUpper', 'fullBody', 'world'],
+		                type='parentConstraint', spaceAttr='space')
+		constrainObject(headControl.modify,
+		                [ 'neckJEnd_JNT' , 'spineJF_JNT', 'worldSpace_GRP'],
+		                headControl.ctrl, ['neck', 'spineUpper', 'world'],
+		                type='orientConstraint',spaceAttr='orientSpace')
+
+		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
+		headEndPos = pm.xform( 'headJEnd_JNT', translation=True, query=True, ws=True)
+		headLength = lengthVector(headPos, headEndPos)
+		pm.move(pm.PyNode(headControl.ctrl + '.cv[:]'), 0, headLength/2, 0, r=True,
+		        os=True)
+
+		#pm.pointConstraint( 'neckJEnd_JNT', 'headJA_JNT', mo=True )
+		#pm.orientConstraint( headControl.con, 'headJA_JNT', mo=True )
+
+		pm.parentConstraint( headControl.con, 'headJA_JNT', mo=True )
+
+		return module
 
 	def shoulder (self, side):
 		return
@@ -494,6 +531,7 @@ class rig_quadruped(object):
 
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSizeEight = [ctrlSize / 8.0, ctrlSize / 8.0, ctrlSize / 8.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
 		self.legTop = rig_transform(0, name=side + '_legTop',
@@ -562,7 +600,7 @@ class rig_quadruped(object):
 		poleVector = rig_control(side=side, name='legPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
 		                         targetOffset=[leg, foot],
-		                         parentOffset=module.controls, scale=ctrlSizeQuarter)
+		                         parentOffset=module.controls, scale=ctrlSizeEight)
 
 		if side == 'r':
 			pm.rotate(poleVector.ctrl.cv, 90, 0, 0, r=True, os=True)
@@ -600,7 +638,7 @@ class rig_quadruped(object):
 
 		# ## MAKE FOOT CONTROL
 		footControl = rig_control(side=side, name='foot', shape='box', modify=2,
-		                          parentOffset=module.controls, lockHideAttrs=['rx', 'ry', 'rz'], scale=ctrlSize,
+		                          parentOffset=module.controls, lockHideAttrs=['rx', 'ry', 'rz'], scale=ctrlSizeHalf,
 		                          rotateOrder=2)
 
 		pm.delete(pm.pointConstraint(foot, footControl.offset))
@@ -640,7 +678,7 @@ class rig_quadruped(object):
 
 		# ## MAKE FOOT BALL CONTROL
 		footBallControl = rig_control(side=side, name='footBall', shape='cylinder', modify=2,
-		                              parentOffset=module.controls, scale=ctrlSizeQuarter,
+		                              parentOffset=module.controls, scale=ctrlSizeHalf,
 		                              rotateOrder=2, colour=secColour)
 
 		footBallControl.gimbal = createCtrlGimbal(footBallControl)
@@ -758,12 +796,12 @@ class rig_quadruped(object):
 
 		pm.connectAttr(module.top.ikFkSwitch, toesControl.offset + '.visibility')
 
-		'''
+		
 		constrainObject(toesControl.modify,
-		                [footControl.con, toesControl.offset, 'worldSpace_GRP'],
-		                toesControl.ctrl, ['foot', 'footBall', 'world'],
+		                [footBallControl.con, toesControl.offset, 'worldSpace_GRP'],
+		                toesControl.ctrl, ['footBall', 'footToes', 'world'],
 		                type='orientConstraint')
-		'''
+		
 
 		toesPos = pm.xform(toesControl.con, translation=True, query=True, ws=True)
 		endPos = pm.xform(side + '_toesJEnd_JNT', translation=True, query=True, ws=True)
@@ -1008,6 +1046,7 @@ class rig_quadruped(object):
 						if pm.objExists(sideName+'footToesOrient_LOC'):
 							pm.orientConstraint(sideName+'footToesOrient_LOC', toeCtrl.modify[0], mo=True,
 							                    skip='x')
+
 						else:
 							orientLoc = rig_transform( 0, name=sideName+'footToesOrient',
 							                           type='locator',
@@ -1017,6 +1056,8 @@ class rig_quadruped(object):
 							pm.orientConstraint(orientLoc, toeCtrl.modify[0],
 							                    mo=True,
 							                    skip='x')
+
+				pm.setAttr( toeCtrl.modify[0]+".rotateOrder", 2 )
 
 				sc = simpleControls(childrenFngs,
 				               modify=2, scale=ctrlSize,

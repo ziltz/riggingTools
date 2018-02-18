@@ -21,6 +21,7 @@ class rig_tail( object ):
 	def __init__(self, name = 'tail' , 
 						rootJoint = 'tailHiJA_JNT', 
 						parent ='pelvisJA_JNT' ,
+						parentName = 'pelvis',
 						spine ='spineFullBodyCon_GRP',
 						ctrlSize = 1,
 						numIKCtrls = 12,
@@ -29,6 +30,7 @@ class rig_tail( object ):
 		self.name = name
 		self.rootJoint = rootJoint
 		self.parent = parent
+		self.parentName = parentName
 		self.spine = spine
 		self.ctrlSize = ctrlSize
 		self.numIKCtrls = numIKCtrls
@@ -71,7 +73,7 @@ class rig_tail( object ):
 		'''
 		# make cMus tail joints
 		mm.eval(
-			'string $ctrls[];string $reads[];rig_makeSpline( "tail", 4, "cube", 8, '+str(self.numIKCtrls)+', "joint", $ctrls, $reads, 0);')
+			'string $ctrls[];string $reads[];rig_makeSpline( "'+self.name+'", 4, "cube", 8, '+str(self.numIKCtrls)+', "joint", $ctrls, $reads, 0);')
 
 		# place them every thirds
 		thirds = len(listJoints)/3
@@ -101,17 +103,17 @@ class rig_tail( object ):
 
 		constrainObject(  self.name+'MidAIKOffset_GRP',
 		                [self.name+'FKACon_GRP',self.parent, self.worldSpace],
-		                 self.name+'MidAIK_CTRL', ['base', 'pelvis', 'world'],
+		                 self.name+'MidAIK_CTRL', ['base', self.parentName, 'world'],
 		                 type='parentConstraint')
 
 		constrainObject(self.name+'MidBIKOffset_GRP',
 		                [self.name+'FKACon_GRP', self.name+'MidAIKCon_GRP' , self.parent, self.worldSpace],
-		                self.name+'MidBIK_CTRL', ['base','FK', 'pelvis', 'world'],
+		                self.name+'MidBIK_CTRL', ['base','FK', self.parentName, 'world'],
 		                type='parentConstraint')
 
 		constrainObject(self.name+'TipIKOffset_GRP',
 		                [self.name+'FKACon_GRP', self.name+'MidBIKCon_GRP', self.parent, self.worldSpace],
-		                self.name+'TipIK_CTRL', ['base', 'FK', 'pelvis', 'world'],
+		                self.name+'TipIK_CTRL', ['base', 'FK', self.parentName, 'world'],
 		                type='parentConstraint')
 
 		ctrlSizeHalf = [self.ctrlSize / 2.0, self.ctrlSize / 2.0, self.ctrlSize / 2.0]
@@ -129,10 +131,10 @@ class rig_tail( object ):
 		pm.delete(pm.parentConstraint( listJoints[len(listJoints)-2], tailPointer.offset ))
 		constrainObject(tailPointer.offset,
 		                [self.parent, self.spine, self.worldSpace],
-		                tailPointer.ctrl, ['pelvis', 'fullBody', 'world'], type='parentConstraint')
+		                tailPointer.ctrl, [self.parentName, 'fullBody', 'world'], type='parentConstraint')
 
 		tailPointerBase = rig_transform(0, name=self.name+'PointerBase', type='locator',
-		                        parent=tailModule.parts, target='tailFKA_CTRL').object
+		                        parent=tailModule.parts, target=self.name+'FKA_CTRL').object
 		tailPointerTip = rig_transform(0, name=self.name+'PointerTip', type='locator',
 		                        parent=tailModule.parts, target=tailPointer.con).object
 

@@ -480,8 +480,8 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     aimTop = mm.eval(
     	'rig_makePiston("' + lowerAim + '", "' + upperAim + '", "'+name+'Aim");')
 
-    pm.move( upperAim+'Up', 0, 30, 0,r=True,os=True )
-    pm.move(lowerAim + 'Up', 0, 20, 0, r=True, os=True)
+    pm.move( upperAim+'Up', 0, 30*ctrlSize[0], 0,r=True,os=True )
+    pm.move(lowerAim + 'Up', 0, 20*ctrlSize[0], 0, r=True, os=True)
 
     # advanced twist
     pm.setAttr(ik.handle + '.dTwistControlEnable', 1)

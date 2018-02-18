@@ -183,14 +183,17 @@ class rig_quadruped(object):
 		spineTop = pm.xform('spineJF_JNT', translation=True, query=True, ws=True)
 		spineBot = pm.xform('spineJA_JNT', translation=True, query=True, ws=True)
 		spineDistance = lengthVector(spineBot, spineTop)
-		pm.move(pm.PyNode( spineFullBody.ctrl+'.cv[:]' ), [0, spineDistance, -1*(spineDistance*2)],
+		pm.scale(pm.PyNode(spineFullBody.ctrl+'.cv[:]'), 0.5, 1, 0.5)
+		pm.rotate( pm.PyNode(spineFullBody.ctrl+'.cv[:]') , 90, 0,0,r=True,os=True )
+
+		pm.move(pm.PyNode( spineFullBody.ctrl+'.cv[:]' ), [0, spineDistance/1.5, 0],
 		        relative=True,
 		        worldSpace=True)
 		spineFullBody.gimbal = createCtrlGimbal(spineFullBody)
 		spineFullBody.pivot = createCtrlPivot(spineFullBody)
 
 
-		pm.scale(pm.PyNode(spineFullBody.ctrl+'.cv[:]'), 0.5, 1, 0.5)
+		
 
 		# spine lower
 		spineLower = rig_control(name='spineLower', shape='box', modify=1,
@@ -554,6 +557,7 @@ class rig_quadruped(object):
 		# create ik
 		ik = rig_ik(name, legIK, footIK, 'ikRPsolver')
 		pm.parent(ik.handle, module.parts)
+		pm.hide(ik.handle)
 
 		poleVector = rig_control(side=side, name='legPV', shape='pointer',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
@@ -596,7 +600,7 @@ class rig_quadruped(object):
 
 		# ## MAKE FOOT CONTROL
 		footControl = rig_control(side=side, name='foot', shape='box', modify=2,
-		                          parentOffset=module.controls, scale=ctrlSize,
+		                          parentOffset=module.controls, lockHideAttrs=['rx', 'ry', 'rz'], scale=ctrlSize,
 		                          rotateOrder=2)
 
 		pm.delete(pm.pointConstraint(foot, footControl.offset))
@@ -604,12 +608,13 @@ class rig_quadruped(object):
 		footControl.gimbal = createCtrlGimbal(footControl)
 		footControl.pivot = createCtrlPivot(footControl)
 
+		'''
 		constrainObject(footControl.offset,
 		                [self.pelvisConnection, self.centerConnection,self.spineFullBodyCtrl.con,
 		                 'worldSpace_GRP'],
 		                footControl.ctrl, ['pelvis', 'spineLower', 'fullBody' , 'world'],
 		                type='parentConstraint')
-
+		'''
 
 		pm.connectAttr(module.top.ikFkSwitch, footControl.offset + '.visibility')
 
@@ -685,6 +690,8 @@ class rig_quadruped(object):
 		                footToesControl.ctrl, ['foot', 'world'],
 		                type='orientConstraint')
 		'''
+
+		pm.parentConstraint( footToesControl.con, footControl.offset , mo=True)
 
 		pm.parent( footControl.offset, footBallControl.con )
 		
@@ -793,6 +800,7 @@ class rig_quadruped(object):
 		pm.parent( ankleReverseJnt, footBReverseJnt )
 		ankleIK = rig_ik( side+'_ankle' ,footBReverseJnt, ankleReverseJnt, 'ikRPsolver' )
 		#pm.parent(ankleIK.handle, module.parts)
+		pm.hide(ankleIK.handle)
 		pm.parent(ankleIK.handle, footToesControl.con)
 		anklePV = rig_transform(0, name=side + '_anklePV', type='locator',
 		                        parent=module.parts, target=footBallControl.con).object
@@ -818,6 +826,11 @@ class rig_quadruped(object):
 		pm.setAttr(legAimLoc+'.rotateZ', -90)
 
 		legAimTop = mm.eval('rig_makePiston("'+legAimLoc+'", "'+footAimLoc+'", "'+side+'_legAim");')
+
+		#legAimMod = rig_transform(0, name=side + '_legFootAimModify', type='group',
+		 #                           parent=side+'_footLegAim_LOC', target=side+'_footLegAim_LOC').object
+
+		#pm.parent( side+'_footLegAim_JNT', legAimMod )
 
 		pm.parent( legAimTop, module.parts )
 
@@ -863,7 +876,12 @@ class rig_quadruped(object):
 		'''
 		mm.eval('expression -o ("'+side+'_footLegAim_JNT") -s ("float $outputX = '+legDist_MD+'.outputX; float $degrees = 0;$degrees = -1*atand(1.0-$outputX);ry = $degrees*1.5;") -n ("'+side+'_legRotate_EXP") -ae 1 -uc all ;')
 
-		pm.parentConstraint( side+'_footLegAim_JNT', footControl.modify[0], mo=True )
+		footOrientLoc = rig_transform(0, name=side+'_footOrient', type='locator',
+		                          parent=side+'_footLegAim_JNT', target=footControl.con).object
+		pm.setAttr( footOrientLoc+'.tx', 0)
+		pm.setAttr( footOrientLoc+'.ty', 0)
+		pm.setAttr( footOrientLoc+'.tz', 0)
+		con = pm.parentConstraint( footControl.offset, footOrientLoc, footControl.modify[0], mo=True )
 		pm.parentConstraint( side+'_legFootAim_JNT', side+'_footLegAim_JNT', autoPVOffset, mo=True )
 
 		
@@ -873,7 +891,29 @@ class rig_quadruped(object):
 		                                    self.legTop)
 
 		#pm.pointConstraint(endBlendLoc, footToesControl.offset, mo=True)
-		
+
+		pm.addAttr(footBallControl.ctrl, ln='ikSettings', at='enum',
+	             enumName='___________',
+	             k=True)
+		footBallControl.ctrl.ikSettings.setLocked(True)
+
+		pm.addAttr( footBallControl.ctrl, longName='ikStretch', shortName='iks',attributeType="double",
+		                        min=0, max=1, defaultValue=0, keyable=True )
+		pm.addAttr( footBallControl.ctrl, longName='midSlide', shortName='es',attributeType="double",
+		                            min=-1, max=1, defaultValue=0, keyable=True )
+		pm.addAttr( footBallControl.ctrl, longName='ankleStiffness', shortName='aksti',attributeType="double",
+		                            min=0, max=1, defaultValue=0.5, keyable=True )
+
+		targets = con.getWeightAliasList()
+		pm.connectAttr( footBallControl.ctrl.ankleStiffness, targets[0] )
+		connectReverse( name=side+'_ankleOrient_reverseNode#', input=(targets[0],0,0), output=(targets[1],0,0) )
+
+		pm.connectAttr( footBallControl.ctrl.ikStretch, footControl.ctrl.ikStretch)
+		pm.connectAttr( footBallControl.ctrl.midSlide, footControl.ctrl.midSlide)
+		pm.setAttr( footControl.ctrl.ikSettings, k=False, cb=False )
+		pm.setAttr( footControl.ctrl.ikStretch, k=False, cb=False )
+		pm.setAttr( footControl.ctrl.ikSoftBlend, k=False, cb=False )
+		pm.setAttr( footControl.ctrl.midSlide, k=False, cb=False )
 
 		# create fk
 		print 'fk chain ' + str(chainFK)
@@ -1044,11 +1084,17 @@ def rig_quadPrepare():
 				print 'Skipping '+side+jnt+' as it does not exist'
 
 	try:
-		cmds.parent( 'neckJA_JNT', w=True)
+		cmds.parent( 'headJA_JNT', w=True)
 	except ValueError:
 		print 'Skipping neckJA_JNT as it does not exist'
 
-
+	try:
+		cmds.parent( 'neckJA_JNT', w=True)
+		neckEndJnt = rig_transform(0, name='neckJEnd', type='joint',
+    	                          target='headJA_JNT', parent='neckJF_JNT',
+    	                          rotateOrder=2).object
+	except ValueError:
+		print 'Skipping neckJA_JNT as it does not exist'
 
 def rig_quadFinalize():
 

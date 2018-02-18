@@ -32,7 +32,7 @@ def cyroPrepareRig():
 	#rig_transform(0, name='headJAWorld', target='headJALocal_GRP')
 	#rig_transform(0, name='headShapeWorld', target='headJALocal_GRP')
 
-	rig_bipedPrepare()
+	rig_quadPrepare()
 
 
 def cyroRigModules():
@@ -47,10 +47,17 @@ def cyroRigModules():
 	quad.pelvis(ctrlSize=35)
 
 	# make neck
-	#biped.neck( ctrlSize=2.5 )
+	#neckModule = rig_ikChainSpline( 'neck' , 'neckJA_JNT', ctrlSize=25, parent='spineJF_JNT',
+    #               numIkControls=4, numFkControls=4)
+	neckName = 'neck'
+	mm.eval(
+	'string $ctrls[];string $reads[];rig_makeSpline( "neck", 4, "cube", 8, 8, "joint", $ctrls, $reads, 0);')
+	pm.delete(pm.parentConstraint( 'neckStart_LOC', neckName+'BaseIKOffset_GRP' ))
+	pm.delete(pm.parentConstraint( 'neckMidA_LOC', neckName+'MidAIKOffset_GRP' ))
+	pm.delete(pm.parentConstraint( 'neckMidB_LOC', neckName+'MidBIKOffset_GRP' ))
+	pm.delete(pm.parentConstraint( 'neckEnd_LOC', neckName+'TipIKOffset_GRP' ))
 
 	#biped.head(ctrlSize=5)
-
 	
 	biped.spineFullBodyCtrl = quad.spineFullBodyCtrl
 	biped.spineUpperCtrl = quad.spineUpperCtrl
@@ -65,7 +72,7 @@ def cyroRigModules():
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=12)
 
-		fingersModule = biped.hand(side, ctrlSize=5)
+		fingersModule = biped.hand(side, ctrlSize=4)
 
 		shoulderModule = biped.shoulder(side, ctrlSize=10)
 
@@ -76,14 +83,15 @@ def cyroRigModules():
 		# make quadruped leg 
 		legModule = quad.leg(side, ctrlSize = 30)
 
-		toesModule = quad.foot(side, ctrlSize=10)
+		toesModule = quad.foot(side, ctrlSize=7)
 
 		quad.connectLegPelvis()
 
 
 
-	tail = rig_tail( rootJoint = 'tailJA_JNT', ctrlSize = 30 )
+	tail = rig_tail( rootJoint = 'tailJA_JNT',numIKCtrls= 8, numFKCtrls=8  ,  ctrlSize = 15 )
 	tail.make()
+
 
 
 	# make pubis and belly controls
@@ -91,7 +99,12 @@ def cyroRigModules():
 def cyroFinish():
 	print 'Finishing cyro'
 
-	rig_bipedFinalize()
+	rig_quadFinalize()
 
+	pm.setAttr("spineUpperPivot_CTRL.translateY", -30.535)
+	pm.setAttr("spineUpperPivot_CTRL.translateZ", 5.384)
 	#pm.setAttr("spineUpper_CTRL.stretch", 0.2)
+
+	pm.move( 'tailUpperAim_LOCUp', 0, 1000, 0,r=True,os=True )
+	pm.move('tailLowerAim_LOCUp', 0, 1000, 0, r=True, os=True)
 

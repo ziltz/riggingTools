@@ -34,6 +34,7 @@ class rig_tail( object ):
 		self.numIKCtrls = numIKCtrls
 		self.numFKCtrls = numFKCtrls
 		self.worldSpace = 'worldSpace_GRP'
+		self.dWorldUpAxis = 8 # closest x
 
 
 	# make tail
@@ -62,9 +63,15 @@ class rig_tail( object ):
 		listJoints.append(self.rootJoint)
 		listJoints.reverse()
 
+
+		'''
+		rig_makeSpline(string $baseName, int $nControls, string $controlType, int $detail,
+						int $nRead, string $readType, string $ctrls[], string $reads[], int $bConstrainMid
+			)
+		'''
 		# make cMus tail joints
 		mm.eval(
-			'string $ctrls[];string $reads[];rig_makeSpline( "tail", 4, "cube", 8, 12, "joint", $ctrls, $reads, 0);')
+			'string $ctrls[];string $reads[];rig_makeSpline( "tail", 4, "cube", 8, '+str(self.numIKCtrls)+', "joint", $ctrls, $reads, 0);')
 
 		# place them every thirds
 		thirds = len(listJoints)/3
@@ -75,7 +82,7 @@ class rig_tail( object ):
 		
 
 		tailModule = rig_ikChainSpline( self.name , self.rootJoint, ctrlSize=self.ctrlSize, parent=self.parent,
-		                               numIkControls=self.numIKCtrls, numFkControls=self.numFKCtrls)
+		                               numIkControls=self.numIKCtrls, numFkControls=self.numFKCtrls, dWorldUpAxis= self.dWorldUpAxis)
 
 
 		# tail upgrade
@@ -87,8 +94,8 @@ class rig_tail( object ):
 			tailFK = tailFK.replace('_JNT', '')
 
 			constrainObject(tailFK+'Modify2_GRP',
-			                [tailIK ,tailFK+'Modify1_GRP'],
-			                tailFK+'_CTRL', ['IK', 'parent'], type='parentConstraint')
+			                [tailFK+'Modify1_GRP',tailIK ],
+			                tailFK+'_CTRL', ['parent','IK'], type='parentConstraint')
 
 		pm.parentConstraint( self.name+'FKACon_GRP', self.name+'BaseIKOffset_GRP', mo=True )
 
@@ -107,9 +114,18 @@ class rig_tail( object ):
 		                self.name+'TipIK_CTRL', ['base', 'FK', 'pelvis', 'world'],
 		                type='parentConstraint')
 
-		tailPointer = rig_control(name=self.name+'Pointer', shape='pyramid',
-		                            scale=(1,2,1), lockHideAttrs=['rx', 'ry', 'rz'],
-		                            colour='white', parentOffset=tailModule.controls, rotateOrder=2)
+		ctrlSizeHalf = [self.ctrlSize / 2.0, self.ctrlSize / 2.0, self.ctrlSize / 2.0]
+		ctrlSizeQuarter = [self.ctrlSize / 4.0, self.ctrlSize / 4.0, self.ctrlSize / 4.0]
+		self.ctrlSize = [self.ctrlSize, self.ctrlSize, self.ctrlSize]
+
+	    # scale ctrls
+		for ctrl in (self.name+'MidAIK_CTRL', self.name+'MidBIK_CTRL', self.name+'TipIK_CTRL'):
+			c = pm.PyNode( ctrl )
+			pm.scale(c.cv, self.ctrlSize[0], self.ctrlSize[0], self.ctrlSize[0] )
+			pm.move(c.cv, [0, 2*self.ctrlSize[0], 0], relative=True, worldSpace=True)
+
+		tailPointer = rig_control(name=self.name+'Pointer', shape='pyramid', lockHideAttrs=['rx', 'ry', 'rz'],
+		                            colour='white', parentOffset=tailModule.controls, rotateOrder=2, scale=self.ctrlSize)
 		pm.delete(pm.parentConstraint( listJoints[len(listJoints)-2], tailPointer.offset ))
 		constrainObject(tailPointer.offset,
 		                [self.parent, self.spine, self.worldSpace],

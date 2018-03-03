@@ -371,8 +371,10 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	interp = defaultReturn(0, 'interp', param=kwds)
 
 	spaceAttr = defaultReturn('space','spaceAttr', param=kwds)
+	setSpace = defaultReturn(0, 'setSpace', param=kwds)
 
 	setVal = defaultReturn([],'setVal', param=kwds)
+	blendVal = defaultReturn(0, 'blendVal', param=kwds)
 
 	doSpace = 1
 	if type(multipleConstrainer) is str:
@@ -380,6 +382,10 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 	doSpace = defaultReturn(1, 'doSpace', param=kwds)
 	doBlend = defaultReturn(0, 'doBlend', param=kwds)
+
+	if doBlend == 1 and len(enumName) == 0:
+		for con in multipleConstrainer:
+			enumName.append('0')
 
 	constrainerList = []
 	#if doSpace:
@@ -440,7 +446,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 				print 'No interpType attribute'
 
 
-			if doSpace:
+			if doSpace or doBlend:
 				ctrl = pm.PyNode(ctrl)
 				if len(constrainerList) is len(enumName):
 					targets = con.getWeightAliasList()
@@ -452,7 +458,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 					if not ctrl.hasAttr(spaceAttr):
 						if doBlend:
 							pm.addAttr( ctrl, longName=spaceAttr,attributeType="double",
-                                min=0, max=1, defaultValue=0, keyable=True )
+                                min=0, max=1, defaultValue=blendVal, keyable=True )
 						else:
 							pm.addAttr(ctrl, ln=spaceAttr, at='enum', enumName=enumList, k=True)
 
@@ -473,6 +479,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 							#print 'ctrlSpace = ' + ctrlSpace
 							pm.setDrivenKeyframe( v, cd=ctrlSpace, dv=i, v=(valueDict[v])[i])
 
+					if setSpace > 0:
+						pm.setAttr( ctrl.stripNamespace()+'.'+spaceAttr, setSpace )
 				else:
 					pm.error(' Unequal amount of constrainer to enum names ')
 			elif len(setVal) > 0:
@@ -487,6 +495,8 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 				print m + ' does not exist'+'\n'
 	else:
 		print obj+' does not exist'+'\n'
+
+
 
 	return targets
 

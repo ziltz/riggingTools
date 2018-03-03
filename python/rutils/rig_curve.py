@@ -2,7 +2,8 @@
 import pymel.core as pm
 
 from rutils.rig_sort import rig_sortListByVectorAxis
-
+from other.webcolors import name_to_rgb
+from rutils.rig_transform import rig_transform
 
 
 
@@ -61,3 +62,40 @@ for c in cvs:
 	jnt.setTranslation(c)
 	count += 1
 '''
+
+
+
+def rig_curveBetweenTwoPoints(start,end, name='curveBetween' , degree=1, colour='white', parent='allModel_GRP'):
+
+	startPos = pm.xform( start, translation=True, query=True, ws=True)
+	endPos = pm.xform( end, translation=True, query=True, ws=True)
+
+	pm.select(cl=True)
+	startJnt = pm.joint(name=name+'Start_JNT')
+	pm.pointConstraint( start, startJnt )
+	pm.select(cl=True)
+	endJnt = pm.joint(name=name+'End_JNT')
+	pm.pointConstraint( end, endJnt )
+
+	curve = pm.curve( n=name+'_CRV', d=degree, p=(startPos, endPos), k=(0,1) )
+
+	sc = pm.skinCluster( (startJnt, endJnt),curve , tsb=True, dr=1)
+
+	pm.skinPercent( sc, curve.cv[0],tv=(startJnt, 1)  )
+	pm.skinPercent( sc, curve.cv[1],tv=(endJnt, 1)  )
+
+	col = name_to_rgb(colour)
+	curve.overrideColorRGB.set(col[0], col[1], col[2])
+
+	topGrp = 'puppetLinearCurves_GRP'
+	if not pm.objExists(topGrp):
+		topGrp = rig_transform(0, name='puppetLinearCurves', type='group',
+			                        parent=parent).object
+
+	pm.parent(curve,startJnt,endJnt, topGrp)
+	pm.setAttr(curve+".inheritsTransform", 0)
+	pm.setAttr(curve+".template", 1)
+
+	pm.hide( startJnt, endJnt )
+
+	return curve

@@ -9,6 +9,7 @@ from create.rig_biped import *
 from create.rig_quadruped import *
 
 from make.rig_tail import *
+from make.rig_controls import *
 
 import string
 
@@ -41,42 +42,9 @@ def cyroRigModules():
 	biped = rig_biped()
 	quad = rig_quadruped()
 
-	#biped.spine(ctrlSize=20)
 	quad.spine(ctrlSize=50)
 
 	quad.pelvis(ctrlSize=35)
-
-	# make neck
-	
-	#neckModule = rig_ikChainSpline( 'neck' , 'neckJA_JNT', ctrlSize=25, parent='spineJF_JNT',
-    #               numIkControls=4, numFkControls=4)
-
-	'''
-	neckName = 'neck'
-	neckSize = 15
-	mm.eval(
-	'string $ctrls[];string $reads[];rig_makeSpline( "neck", 4, "cube", 8, 10, "joint", $ctrls, $reads, 0);')
-	pm.delete(pm.parentConstraint( 'neckStart_LOC', neckName+'BaseIKOffset_GRP' ))
-	pm.delete(pm.parentConstraint( 'neckMidA_LOC', neckName+'MidAIKOffset_GRP' ))
-	pm.delete(pm.parentConstraint( 'neckMidB_LOC', neckName+'MidBIKOffset_GRP' ))
-	pm.delete(pm.parentConstraint( 'neckEnd_LOC', neckName+'TipIKOffset_GRP' ))
-	for ctrl in (neckName+'MidAIK_CTRL', neckName+'MidBIK_CTRL', neckName+'TipIK_CTRL'):
-			c = pm.PyNode( ctrl )
-			pm.scale(c.cv, neckSize, neckSize, neckSize )
-			pm.move(c.cv, [0, 2*neckSize, 0], relative=True, worldSpace=True)
-	
-	neckMod = rig_tail( name='neck', rootJoint = 'neckJA_JNT',parent='spineJF_JNT',parentName='spine',spine='spineUpperCon_GRP',
-							numIKCtrls= 10, numFKCtrls=10  ,  ctrlSize = 15 )
-	neckMod.splinePosList = [ 'neckStart_LOC', 'neckMidA_LOC', 'neckMidB_LOC', 'neckEnd_LOC'  ]
-	neckMod.make()
-	pm.setAttr("neckTipIK_CTRL.space", 1)
-	neckCtrls = cmds.ls('neckFK?_CTRL')
-	# set to ik space
-	for ctrl in neckCtrls:
-		pm.setAttr(ctrl+".space", 1)
-	
-	pm.parent( 'neckJA_JNT', 'neckSkeleton_GRP' )
-	'''
 
 	neckMod = quad.neck(ctrlSize=15, splinePosList=[ 'neckStart_LOC', 'neckMidA_LOC', 'neckMidB_LOC', 'neckEnd_LOC'  ])
 
@@ -98,16 +66,15 @@ def cyroRigModules():
 	jawLength = lengthVector(jawPos, jawEndPos)
 	pm.move(pm.PyNode(jawControl.ctrl + '.cv[:]'), jawLength/2,0, 0, r=True, os=True)
 
+	
 	biped.spineFullBodyCtrl = quad.spineFullBodyCtrl
 	biped.spineUpperCtrl = quad.spineUpperCtrl
 	biped.spineLowerCtrl = quad.spineLowerCtrl
 
 	biped.pelvisControl = quad.pelvisControl
 
-	#biped.switchLoc = quad.switchLoc
-
 	biped.elbowAxis = 'ry'
-
+	
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=12)
 
@@ -117,8 +84,11 @@ def cyroRigModules():
 
 		biped.connectArmShoulder(side)
 
+		cyroShoulderUpgrade(side=side, ctrlSize=10)
+
 		if side == 'l':
 			quad.switchLoc = biped.switchLoc
+		
 		# make quadruped leg 
 		legModule = quad.leg(side, ctrlSize = 30)
 
@@ -140,11 +110,11 @@ def cyroFinish():
 
 	rig_quadFinalize()
 
+	pm.setAttr("neckFocus_CTRL.focusNeck", 0.75)
 
-
-	pm.setAttr("spineUpperPivot_CTRL.translateY", -30.535)
-	pm.setAttr("spineUpperPivot_CTRL.translateZ", 5.384)
-	#pm.setAttr("spineUpper_CTRL.stretch", 0.2)
+	pm.setAttr("spineUpperPivot_CTRL.translateY", -17.164)
+	pm.setAttr("spineUpperPivot_CTRL.translateZ", 1.81)
+	pm.setAttr("spineUpper_CTRL.stretch", 0.2)
 
 	pm.move( 'tailUpperAim_LOCUp', 0, 1000, 0,r=True,os=True )
 	pm.move('tailLowerAim_LOCUp', 0, 1000, 0, r=True, os=True)
@@ -152,14 +122,106 @@ def cyroFinish():
 	pm.move(pm.PyNode( 'neckTipIK_CTRL.cv[:]'), 0 , 0, -5, r=True, os=True)
 	pm.move(pm.PyNode( 'neckMidBIK_CTRL.cv[:]'), 0 ,-8.5, -13, r=True, os=True)
 	pm.move(pm.PyNode( 'neckMidAIK_CTRL.cv[:]'), 0 , -1 , -23, r=True, os=True)
-
-	#pm.setAttr("neckSkeleton_GRP.inheritsTransform", 1)
 	
+	controlSet = pm.PyNode('cyroRigPuppetControlSet')
 	for s in ('l', 'r'):
 		pm.setAttr("displayModulesToggleControl."+s+"_fingers", 0)
 		pm.setAttr("displayModulesToggleControl."+s+"_toes", 0)
+
+		pm.setAttr(s+"_armPV_CTRL.space", 1)
+		#pm.setAttr(s+"_shoulder_CTRL.followArm", 1)
 
 		pm.rotate(pm.PyNode(s+'_handBall_CTRL').cv, 0, 90, 0, r=True, os=True)
 		pm.scale(pm.PyNode(s+'_handBall_CTRL').cv, 2, 2, 2)
 
 		pm.parentConstraint( s+'_anklePos_JNT', s+'_toeThumbModify1_GRP' ,mo=True )
+
+		controlSet.removeMembers([ s+'_shoulder_CTRL' ])
+
+
+def cyroShoulderUpgrade(side='', ctrlSize=1):
+	name = side+'_quadShoulder'
+
+	module = rig_module(name)
+
+	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+	ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+	shoulderControl = rig_control( side=side, name='quadShoulder', shape='pyramid',
+		                            targetOffset=side+'_clavicleJA_JNT', modify=1,
+		                            parentOffset=module.controls,lockHideAttrs=[
+				'rx','ry','rz'], scale =ctrlSize, rotateOrder=0 )
+
+	clavPos = pm.xform(side+'_clavicleJA_JNT', translation=True, query=True, ws=True)
+	armPos = pm.xform(side+'_scapulaJA_JNT', translation=True, query=True, ws=True)
+	clavLength = lengthVector( armPos, clavPos )
+	if side == 'l':
+		pm.move( pm.PyNode( shoulderControl.offset ), clavLength,0,0, r=True,
+		         os=True )
+	else:
+		pm.move(pm.PyNode(shoulderControl.offset), -1*clavLength, 0, 0, r=True,
+		        os=True)
+	pm.rotate( pm.PyNode( shoulderControl.offset ), 0,0,-90, r=True, os=True )
+	
+
+	pm.parentConstraint( 'spineJF_JNT', shoulderControl.offset, mo=True )
+
+	clavicleAim = rig_transform(0, name=side + '_clavicleAim', type='locator',
+		                            parent=module.parts, target=side+'_clavicleJA_JNT').object
+	armAim = rig_transform(0, name=side + '_quadShoulderAim', type='locator',
+	                        parent=module.parts).object
+
+
+	pm.pointConstraint( 'spineJF_JNT', clavicleAim,mo=True )
+	pm.pointConstraint( shoulderControl.con, armAim )
+
+	quadShoulderAimTop = mm.eval('rig_makePiston("'+clavicleAim+'", "'+armAim+'", "'+side+'_quadShoulderAim");')
+
+
+	#pm.orientConstraint( clavicleAim, side+'_shoulder_CTRL', mo=True )
+	
+	pm.delete(pm.listRelatives(side+'_shoulderOffset_GRP', type='constraint'))
+	pm.parentConstraint( clavicleAim, side+'_shoulderOffset_GRP', mo=True )
+
+	pm.addAttr(shoulderControl.ctrl, longName='followArm',
+				           at='float', k=True, min=0,
+				           max=10, defaultValue=1)
+
+	pm.connectAttr( shoulderControl.ctrl.followArm, side+'_shoulder_CTRL.followArm'  )
+
+	scapulaControl = rig_control( side=side, name='quadScapula', shape='box',
+		                            targetOffset=side+'_scapulaJEnd_JNT', modify=1,
+		                            parentOffset=module.controls,lockHideAttrs=[
+				'rx','ry','rz'], scale =ctrlSize, rotateOrder=0 )
+
+	pm.delete( pm.orientConstraint( side+'_scapulaJA_JNT', scapulaControl.offset ) )
+
+
+	scapulaAim = rig_transform(0, name=side + '_quadScapulaAim', type='locator',
+		                            parent=module.parts).object
+	scapulaEndAim = rig_transform(0, name=side + '_quadScapulaEndAim', type='locator',
+	                        parent=module.parts).object
+
+	pm.delete( pm.parentConstraint(side+'_scapulaJA_JNT', scapulaAim ) )
+	pm.pointConstraint( side+'_clavicleJA_JNT', scapulaAim,mo=True )
+	pm.pointConstraint( scapulaControl.con, scapulaEndAim )
+	pm.delete( pm.orientConstraint( side+'_scapulaJA_JNT', scapulaEndAim ) )
+
+	quadScapulaAimTop = mm.eval('rig_makePiston("'+scapulaAim+'", "'+scapulaEndAim+'", "'+side+'_quadScapulaAim");')
+
+	#pm.parentConstraint( side+'_clavicleJA_JNT', 'spineJE_JNT', scapulaControl.offset, mo=True )
+
+	constrainObject(  scapulaControl.offset,
+                [side+'_clavicleJA_JNT','spineJE_JNT'], '', [],
+                 type='parentConstraint', doSpace=0, setVal=(0.5,1))
+
+	pm.orientConstraint( scapulaAim, side+'_scapulaJA_JNT', mo=True )
+
+	pm.hide(side+'_shoulderOffset_GRP')
+
+	pm.parent( quadShoulderAimTop, quadScapulaAimTop, module.parts )
+
+
+	
+
+

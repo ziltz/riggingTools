@@ -893,12 +893,13 @@ class rig_biped(object):
 
 		pm.poleVectorConstraint(poleVector.con, ik.handle)  # create pv
 
+
 		#pm.move(poleVector.offset, [0, -pvDistance*40, 0], relative=True,
 		 #       objectSpace=True)
 
 		pvDistance = lengthVector(handPos, elbowPos)
-		#pm.move(poleVector.offset, [pvDistance*2, 0, 0], relative=True, objectSpace=True)
-		pm.move(poleVector.offset, [0, 0, -1*(pvDistance * 2)], relative=True,worldSpace=True)
+		pm.move(poleVector.offset, [pvDistance*2, 0, 0], relative=True, objectSpace=True)
+		#pm.move(poleVector.offset, [0, 0, -1*(pvDistance * 2)], relative=True,worldSpace=True)
 
 		pm.rotate(poleVector.ctrl.cv, 0, 0, 90, r=True, os=True)
 		if side == 'r':

@@ -389,8 +389,200 @@ class rig_quadruped(object):
 
 		return module
 
-	def neck (self):
-		return
+	def neck (self, ctrlSize, splinePosList=[]):
+		name = 'neck'
+		rootJoint = 'neckJA_JNT'
+		endJoint = 'neckJEnd_JNT'
+		fkStartNeck = 'neckFKACon_GRP'
+		parent = 'spineJF_JNT'
+		parentName = 'spine'
+		spine = 'spineUpperCon_GRP'
+		fullBody = 'spineFullBodyCon_GRP'
+		numIKCtrls = 10
+		numFKCtrls = 10
+		worldSpace = 'worldSpace_GRP'
+		dWorldUpAxis = 8 # closest x
+
+		ctrlDouble = [ctrlSize*2, ctrlSize*2, ctrlSize*2]
+		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
+		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
+		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
+
+		listJoints = cmds.listRelatives(rootJoint, type="joint", ad=True)
+		listJoints.append(rootJoint)
+		listJoints.reverse()
+
+		'''
+		rig_makeSpline(string $baseName, int $nControls, string $controlType, int $detail,
+						int $nRead, string $readType, string $ctrls[], string $reads[], int $bConstrainMid
+			)
+		'''
+		# make cMus tail joints
+		mm.eval(
+			'string $ctrls[];string $reads[];rig_makeSpline( "'+name+'", 4, "cube", 8, '+str(numIKCtrls)+', "joint", $ctrls, $reads, 0);')
+
+		# place them every thirds
+		if len(splinePosList) == 0:
+			thirds = len(listJoints)/3
+			pm.delete(pm.parentConstraint( rootJoint, name+'BaseIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[thirds], name+'MidAIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[thirds+thirds], name+'MidBIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[len(listJoints)-2], name+'TipIKOffset_GRP' ))
+		elif len(splinePosList) > 0:
+			pm.delete(pm.parentConstraint( splinePosList[0], name+'BaseIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( splinePosList[1], name+'MidAIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( splinePosList[2], name+'MidBIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( splinePosList[3], name+'TipIKOffset_GRP' ))
+
+		neckModule = rig_ikChainSpline( name , rootJoint, ctrlSize=ctrlSize[0], parent=parent,
+		                               numIkControls=numIKCtrls, numFkControls=numFKCtrls, dWorldUpAxis= dWorldUpAxis)
+
+		self.neckModule = neckModule
+
+		# make aim
+		#headProxy = rig_transform(0, name='headProxy', type='locator',
+		#                        parent=neckModule.parts, target='neckJEnd_JNT').object
+
+		headNeckControl = rig_control(name='headNeck', shape='pyramid', modify=2,
+		                            colour='white', parentOffset=neckModule.controls, rotateOrder=2, scale=ctrlDouble)
+		pm.delete(pm.parentConstraint( endJoint, headNeckControl.offset ))
+		constrainObject(headNeckControl.offset,
+		                [ fkStartNeck , parent, fullBody, 'worldSpace_GRP'],
+		                headNeckControl.ctrl, [ 'neckBase','spineUpper', 'fullBody', 'world'],
+		                type='parentConstraint', spaceAttr='space')
+		constrainObject(headNeckControl.modify[0],
+		                ['worldSpace_GRP' , parent, fullBody],
+		                headNeckControl.ctrl, [ 'world', 'spineUpper', 'fullBody'],
+		                type='orientConstraint',spaceAttr='orientSpace')
+
+		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
+		headEndPos = pm.xform( 'headJEnd_JNT', translation=True, query=True, ws=True)
+		headLength = lengthVector(headPos, headEndPos)
+		pm.move(pm.PyNode(headNeckControl.ctrl + '.cv[:]'), 0, headLength/3, 0, r=True,
+		        os=True)
+
+		aimPointerBase = rig_transform(0, name=name+'PointerBase', type='locator',
+		                        parent=neckModule.parts, target=parent).object
+		aimPointerTip = rig_transform(0, name=name+'PointerTip', type='locator',
+		                        parent=neckModule.parts, target=endJoint).object
+
+		pm.rotate(aimPointerBase, 0, 0, -90, r=True, os=True)
+		pm.rotate(aimPointerTip, 0, 0, -90, r=True, os=True)
+
+		pm.parentConstraint(parent, aimPointerBase, mo=True)
+		pm.parentConstraint(headNeckControl.con, aimPointerTip, mo=True)
+
+		aimPointerTop = mm.eval(
+			'rig_makePiston("' + aimPointerBase + '", "' + aimPointerTip + '", "'+name+'PointerAim");')
+
+
+		# neck upgrade
+		neckJnts = pm.listRelatives( name+'SplineJoints_GRP', type='joint')
+		for i in range (1, len(neckJnts)):
+			neckNme = neckJnts[i].stripNamespace()
+			neckIK = neckJnts[i]
+			neckFK = neckNme.replace('IK', 'FK')
+			neckFK = neckFK.replace('_JNT', '')
+
+			constrainObject(neckFK+'Modify2_GRP',
+			                [neckFK+'Modify1_GRP',neckIK ],
+			                'neckFKA_CTRL', ['FK','IK'], type='parentConstraint', spaceAttr='neckSpace')
+
+
+		# neck focus aim 
+		neckPos = pm.xform(rootJoint, translation=True, query=True, ws=True)
+		headEndPos = pm.xform( 'headJEnd_JNT', translation=True, query=True, ws=True)
+		neckLength = lengthVector(neckPos, headEndPos)
+
+		neckFocusBase = rig_transform(0, name=name+'FocusBase', type='locator',
+		                        parent=neckModule.parts, target=rootJoint).object
+		neckFocusTip = rig_transform(0, name=name+'FocusTip', type='locator',
+		                        parent=neckModule.parts, target=rootJoint).object
+
+		pm.rotate(neckFocusBase, 0, 0, -90, r=True, os=True)
+		pm.rotate(neckFocusTip, 0, 0, -90, r=True, os=True)
+
+		pm.move(neckFocusTip, -1*neckLength, 0, -1*neckLength/4, os=True, r=True, wd=True  )
+
+		pm.parentConstraint(parent, neckFocusBase, mo=True)
+		#pm.parentConstraint(headNeckControl.con, aimPointerTip, mo=True)
+		neckFocusControl = rig_control(name='neckFocus', shape='sphere', modify=1, lockHideAttrs=['rx','ry','rz'],
+		                            colour='white', parentOffset=neckModule.controls, rotateOrder=2, scale=ctrlSizeHalf)
+		pm.delete(pm.parentConstraint( neckFocusTip, neckFocusControl.offset))
+		pm.rotate(neckFocusControl.offset, 0, 0, 90, r=True, os=True)
+		pm.parentConstraint(neckFocusControl.con, neckFocusTip, mo=True)
+
+
+		constrainObject(neckFocusControl.offset,
+	                [ 'spineLowerCon_GRP', 'spineFullBodyCon_GRP','worldSpace_GRP'],
+	                neckFocusControl.ctrl, [ 'spineLower', 'fullBody', 'world'], type='parentConstraint', skipRot=['x','y','z'])
+
+		#aimConstraint -mo -weight 1 -aimVector 0 -1 0 -upVector 1 0 0 -worldUpType "objectrotation" -worldUpVector 1 0 0 -worldUpObject locator1;
+
+		pm.aimConstraint( 'spineJF_JNT', neckFocusControl.con, mo=True, w=1, aimVector=(0,-1,0), upVector=(1,0,0),
+                              worldUpType='vector', worldUpVector=(0,1,0) )
+		#pm.aimConstraint( neckFocusControl.ctrl, headNeckControl.modify[1], mo=True, w=1, aimVector=(0,-1,0), upVector=(1,0,0),
+         #                     worldUpType='vector', worldUpVector=(0,1,0) )
+
+		neckFocusTop = mm.eval(
+			'rig_makePiston("' + neckFocusBase + '", "' + neckFocusTip + '", "'+name+'Focus");')
+
+
+		pm.delete('neckFKAModify1_GRP_orientConstraint1')
+		pm.deleteAttr( 'neckFKA_CTRL', at='space' )
+		constrainObject('neckFKAModify1_GRP',
+	                [neckFocusBase, 'neckFKAOffset_GRP', 'worldSpace_GRP'],
+	                'neckFKA_CTRL', ['neckFocus', 'parent', 'world'], type='orientConstraint')
+
+		pm.parentConstraint( parent, name+'BaseIKOffset_GRP', mo=True )
+		constrainObject(  name+'BaseIKModify_GRP',
+                [name+'BaseIKOffset_GRP',aimPointerBase], '', [],
+                 type='orientConstraint', doSpace=0, skip=('y','z'), interp=2)
+
+		constrainObject(  name+'MidAIKOffset_GRP',
+                [name+'TipIKCon_GRP',name+'BaseIKCon_GRP'], '', [],
+                 type='parentConstraint', doSpace=0, setVal=(0.5, 1))
+		constrainObject(  name+'MidAIKModify_GRP',
+                [aimPointerBase,aimPointerTip], '', [],
+                 type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y'))
+
+		pm.parentConstraint( name+'TipIKCon_GRP', name+'MidBIKOffset_GRP', mo=True )
+		constrainObject(name+'MidBIKModify_GRP',
+		                [aimPointerBase, aimPointerTip], '', [],
+		                type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y') )
+
+		pm.parentConstraint( headNeckControl.con, name+'TipIKOffset_GRP', mo=True )
+		constrainObject(  name+'TipIKModify_GRP',
+                [name+'TipIKOffset_GRP',aimPointerTip], '', [],
+                 type='orientConstraint', doSpace=0, skip=('y','z'), interp=2)
+
+
+	    # scale ctrls
+		for ctrl in (name+'MidAIK_CTRL', name+'MidBIK_CTRL', name+'TipIK_CTRL'):
+			c = pm.PyNode( ctrl )
+			pm.scale(c.cv, ctrlSize[0], ctrlSize[0], ctrlSize[0] )
+			pm.move(c.cv, [0, 2*ctrlSize[0], 0], relative=True, worldSpace=True)
+
+
+
+		#pm.orientConstraint( aimPointerBase.replace('LOC','JNT'), name+'FKAModify2_GRP', mo=True )
+
+		pm.parent(name+'MidAIKOffset_GRP', name+'MidBIKOffset_GRP',
+		          neckModule.controls)
+		pm.parent(neckJnts, neckModule.skeleton)
+		pm.parent(name+'_cMUS',name+'BaseIKOffset_GRP',name+'TipIKOffset_GRP',aimPointerTop,neckFocusTop,neckModule.parts)
+		pm.parent(name+'SplineSetup_GRP',name+'BaseIKOffset_GRP',aimPointerTop, neckModule.parts)
+
+		pm.setAttr( neckModule.skeleton+'.inheritsTransform', 0 )
+
+		pm.setAttr("neckFKBOffset_GRP.visibility", 0)
+
+		pm.setAttr("neckFKA_CTRL.stretch", .5)
+		pm.setAttr("neckFKA_CTRL.neckSpace", 1)
+
+		pm.parent( 'neckJA_JNT', 'spineSkeleton_GRP' )
+
+		return neckModule
 
 	def head (self, ctrlSize=1.0):
 		name = 'head'
@@ -404,7 +596,7 @@ class rig_quadruped(object):
 		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
-		headControl = rig_control(name='head', shape='box', modify=1,
+		headControl = rig_control(name='head', shape='box', modify=1, lockHideAttrs=['tx','ty','tz'],
 		                          targetOffset='headJA_JNT', scale=ctrlSize,
 		                          colour='yellow', parentOffset=module.controls, rotateOrder=2)
 		headControl.gimbal = createCtrlGimbal(headControl)
@@ -415,8 +607,8 @@ class rig_quadruped(object):
 		                headControl.ctrl, ['neck', 'spineUpper', 'fullBody', 'world'],
 		                type='parentConstraint', spaceAttr='space')
 		constrainObject(headControl.modify,
-		                [ 'neckJEnd_JNT' , 'spineJF_JNT', 'worldSpace_GRP'],
-		                headControl.ctrl, ['neck', 'spineUpper', 'world'],
+		                ['headNeckCon_GRP', 'neckJEnd_JNT' , 'spineJF_JNT', 'worldSpace_GRP'],
+		                headControl.ctrl, ['headNeck','neck', 'spineUpper', 'world'],
 		                type='orientConstraint',spaceAttr='orientSpace')
 
 		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
@@ -1131,8 +1323,9 @@ def rig_quadPrepare():
 
 	try:
 		cmds.parent( 'neckJA_JNT', w=True)
+		lastNeckJnt = cmds.listRelatives('neckJA_JNT', typ='joint', ad=True)[0]
 		neckEndJnt = rig_transform(0, name='neckJEnd', type='joint',
-    	                          target='headJA_JNT', parent='neckJF_JNT',
+    	                          target='headJA_JNT', parent=lastNeckJnt,
     	                          rotateOrder=2).object
 	except ValueError:
 		print 'Skipping neckJA_JNT as it does not exist'

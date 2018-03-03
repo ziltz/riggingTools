@@ -37,6 +37,7 @@ class rig_tail( object ):
 		self.numFKCtrls = numFKCtrls
 		self.worldSpace = 'worldSpace_GRP'
 		self.dWorldUpAxis = 8 # closest x
+		self.splinePosList = []
 
 
 	# make tail
@@ -76,12 +77,17 @@ class rig_tail( object ):
 			'string $ctrls[];string $reads[];rig_makeSpline( "'+self.name+'", 4, "cube", 8, '+str(self.numIKCtrls)+', "joint", $ctrls, $reads, 0);')
 
 		# place them every thirds
-		thirds = len(listJoints)/3
-		pm.delete(pm.parentConstraint( self.rootJoint, self.name+'BaseIKOffset_GRP' ))
-		pm.delete(pm.parentConstraint( listJoints[thirds], self.name+'MidAIKOffset_GRP' ))
-		pm.delete(pm.parentConstraint( listJoints[thirds+thirds], self.name+'MidBIKOffset_GRP' ))
-		pm.delete(pm.parentConstraint( listJoints[len(listJoints)-2], self.name+'TipIKOffset_GRP' ))
-		
+		if len(self.splinePosList) == 0:
+			thirds = len(listJoints)/3
+			pm.delete(pm.parentConstraint( self.rootJoint, self.name+'BaseIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[thirds], self.name+'MidAIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[thirds+thirds], self.name+'MidBIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( listJoints[len(listJoints)-2], self.name+'TipIKOffset_GRP' ))
+		elif len(self.splinePosList) > 0:
+			pm.delete(pm.parentConstraint( self.splinePosList[0], self.name+'BaseIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( self.splinePosList[1], self.name+'MidAIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( self.splinePosList[2], self.name+'MidBIKOffset_GRP' ))
+			pm.delete(pm.parentConstraint( self.splinePosList[3], self.name+'TipIKOffset_GRP' ))
 
 		tailModule = rig_ikChainSpline( self.name , self.rootJoint, ctrlSize=self.ctrlSize, parent=self.parent,
 		                               numIkControls=self.numIKCtrls, numFkControls=self.numFKCtrls, dWorldUpAxis= self.dWorldUpAxis)

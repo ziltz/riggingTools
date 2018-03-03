@@ -372,27 +372,35 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 	spaceAttr = defaultReturn('space','spaceAttr', param=kwds)
 
+	setVal = defaultReturn([],'setVal', param=kwds)
+
 	doSpace = 1
 	if type(multipleConstrainer) is str:
 		doSpace = 0
 
+	doSpace = defaultReturn(1, 'doSpace', param=kwds)
+	doBlend = defaultReturn(0, 'doBlend', param=kwds)
+
 	constrainerList = []
-	if doSpace:
-		for space in multipleConstrainer:
-			suffix = space.split('_')[-1:][0]
-			#print 'spaceAttr = '+ spaceAttr
-			spaceName = space.replace('_'+suffix, '_'+obj+'Proxy'+spaceAttr)
-			loc = rig_transform(0, name=spaceName, type='locator',
-		                            parent=space, target=space).object
-			pm.delete(pm.orientConstraint( obj, loc ))
-			pm.hide(loc)
-			constrainerList.append(loc)
-	else:
-		constrainerList = multipleConstrainer[:]
+	#if doSpace:
+	for space in multipleConstrainer:
+		suffix = space.split('_')[-1:][0]
+		spaceName = space.replace('_'+suffix, '_'+obj+'Proxy'+spaceAttr)
+		loc = spaceName+'_LOC'
+		if pm.objExists(loc):
+			pm.delete(loc)
+		loc = rig_transform(0, name=spaceName, type='locator',
+	                            parent=space, target=space).object
+		pm.delete(pm.orientConstraint( obj, loc ))
+		pm.hide(loc)
+
+		constrainerList.append(loc)
+	#else:
+	#	constrainerList = multipleConstrainer[:]
 
 	obj = pm.PyNode(obj)
 
-
+	targets = ''
 	if pm.objExists(obj):
 		try:
 			con = ''
@@ -431,6 +439,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 			except AttributeError:
 				print 'No interpType attribute'
 
+
 			if doSpace:
 				ctrl = pm.PyNode(ctrl)
 				if len(constrainerList) is len(enumName):
@@ -441,7 +450,11 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 						enumList += ':'+enumName[i]
 
 					if not ctrl.hasAttr(spaceAttr):
-						pm.addAttr(ctrl, ln=spaceAttr, at='enum', enumName=enumList, k=True)
+						if doBlend:
+							pm.addAttr( ctrl, longName=spaceAttr,attributeType="double",
+                                min=0, max=1, defaultValue=0, keyable=True )
+						else:
+							pm.addAttr(ctrl, ln=spaceAttr, at='enum', enumName=enumList, k=True)
 
 					valueDict = {}
 					for t in targets:
@@ -462,6 +475,12 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 
 				else:
 					pm.error(' Unequal amount of constrainer to enum names ')
+			elif len(setVal) > 0:
+				targets = con.getWeightAliasList()
+				i = 0
+				for t in targets:
+					pm.setAttr( t, setVal[i] )
+					i += 1
 
 		except pm.MayaNodeError:
 			for m in constrainerList:
@@ -469,7 +488,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	else:
 		print obj+' does not exist'+'\n'
 
-
+	return targets
 
 
 def fkControlChain( jointChain, modify=1, scale=[1,1,1], directCon=0):

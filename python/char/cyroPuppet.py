@@ -47,27 +47,38 @@ def cyroRigModules():
 	quad.pelvis(ctrlSize=35)
 
 	# make neck
-	'''
+	
 	#neckModule = rig_ikChainSpline( 'neck' , 'neckJA_JNT', ctrlSize=25, parent='spineJF_JNT',
     #               numIkControls=4, numFkControls=4)
+
+	'''
 	neckName = 'neck'
+	neckSize = 15
 	mm.eval(
-	'string $ctrls[];string $reads[];rig_makeSpline( "neck", 4, "cube", 8, 8, "joint", $ctrls, $reads, 0);')
+	'string $ctrls[];string $reads[];rig_makeSpline( "neck", 4, "cube", 8, 10, "joint", $ctrls, $reads, 0);')
 	pm.delete(pm.parentConstraint( 'neckStart_LOC', neckName+'BaseIKOffset_GRP' ))
 	pm.delete(pm.parentConstraint( 'neckMidA_LOC', neckName+'MidAIKOffset_GRP' ))
 	pm.delete(pm.parentConstraint( 'neckMidB_LOC', neckName+'MidBIKOffset_GRP' ))
 	pm.delete(pm.parentConstraint( 'neckEnd_LOC', neckName+'TipIKOffset_GRP' ))
-	'''
+	for ctrl in (neckName+'MidAIK_CTRL', neckName+'MidBIK_CTRL', neckName+'TipIK_CTRL'):
+			c = pm.PyNode( ctrl )
+			pm.scale(c.cv, neckSize, neckSize, neckSize )
+			pm.move(c.cv, [0, 2*neckSize, 0], relative=True, worldSpace=True)
+	
 	neckMod = rig_tail( name='neck', rootJoint = 'neckJA_JNT',parent='spineJF_JNT',parentName='spine',spine='spineUpperCon_GRP',
-							numIKCtrls= 6, numFKCtrls=6  ,  ctrlSize = 15 )
+							numIKCtrls= 10, numFKCtrls=10  ,  ctrlSize = 15 )
+	neckMod.splinePosList = [ 'neckStart_LOC', 'neckMidA_LOC', 'neckMidB_LOC', 'neckEnd_LOC'  ]
 	neckMod.make()
 	pm.setAttr("neckTipIK_CTRL.space", 1)
 	neckCtrls = cmds.ls('neckFK?_CTRL')
 	# set to ik space
 	for ctrl in neckCtrls:
-		pm.setAttr(ctrl+".space", 0)
-
+		pm.setAttr(ctrl+".space", 1)
+	
 	pm.parent( 'neckJA_JNT', 'neckSkeleton_GRP' )
+	'''
+
+	neckMod = quad.neck(ctrlSize=15, splinePosList=[ 'neckStart_LOC', 'neckMidA_LOC', 'neckMidB_LOC', 'neckEnd_LOC'  ])
 
 	headMod = quad.head(ctrlSize=35)
 
@@ -129,6 +140,8 @@ def cyroFinish():
 
 	rig_quadFinalize()
 
+
+
 	pm.setAttr("spineUpperPivot_CTRL.translateY", -30.535)
 	pm.setAttr("spineUpperPivot_CTRL.translateZ", 5.384)
 	#pm.setAttr("spineUpper_CTRL.stretch", 0.2)
@@ -136,14 +149,11 @@ def cyroFinish():
 	pm.move( 'tailUpperAim_LOCUp', 0, 1000, 0,r=True,os=True )
 	pm.move('tailLowerAim_LOCUp', 0, 1000, 0, r=True, os=True)
 
-	pm.setAttr('neckFKFOffset_GRP.v', 0)
-
 	pm.move(pm.PyNode( 'neckTipIK_CTRL.cv[:]'), 0 , 0, -5, r=True, os=True)
 	pm.move(pm.PyNode( 'neckMidBIK_CTRL.cv[:]'), 0 ,-8.5, -13, r=True, os=True)
 	pm.move(pm.PyNode( 'neckMidAIK_CTRL.cv[:]'), 0 , -1 , -23, r=True, os=True)
 
-	pm.setAttr("neckFKA_CTRL.stretch", 1)
-	pm.setAttr("neckSkeleton_GRP.inheritsTransform", 1)
+	#pm.setAttr("neckSkeleton_GRP.inheritsTransform", 1)
 	
 	for s in ('l', 'r'):
 		pm.setAttr("displayModulesToggleControl."+s+"_fingers", 0)
@@ -151,3 +161,5 @@ def cyroFinish():
 
 		pm.rotate(pm.PyNode(s+'_handBall_CTRL').cv, 0, 90, 0, r=True, os=True)
 		pm.scale(pm.PyNode(s+'_handBall_CTRL').cv, 2, 2, 2)
+
+		pm.parentConstraint( s+'_anklePos_JNT', s+'_toeThumbModify1_GRP' ,mo=True )

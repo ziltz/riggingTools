@@ -287,6 +287,7 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 		
 	// Now make the driven stuff
 	//
+	string $worldScale = "rig_GRP.worldScale";
 	for ($i=0; $i < $nRead; ++$i)
 		{
 		float $u = $i / ($nRead-1.0) ;
@@ -321,6 +322,10 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 		connectAttr -f ($reads[$i]+".rotateOrder") ($spline+".readData["+$i+"].readRotOrder") ;
 		connectAttr -f ($spline+".outputData["+$i+"].outTranslate") ($reads[$i]+".translate") ;
 		connectAttr -f ($spline+".outputData["+$i+"].outRotate") ($reads[$i]+".rotate") ;
+		if (`objExists $worldScale`){
+			for ($at in {"sx","sy","sz"})
+				connectAttr -f $worldScale ($reads[$i]+"."+$at) ;
+		}
 		}
 
 		

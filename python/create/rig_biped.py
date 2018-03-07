@@ -9,6 +9,7 @@ from rutils.rig_transform import rig_transform
 from rutils.rig_nodes import *
 from rutils.rig_math import *
 from rutils.rig_anim import *
+from rutils.rig_curve import *
 
 import pymel.core as pm
 import maya.cmds as cmds
@@ -864,7 +865,7 @@ class rig_biped(object):
 		pm.parent(ik.handle, module.parts)
 
 
-		poleVector = rig_control(side=side, name='armPV', shape='pointer',
+		poleVector = rig_control(side=side, name='armPV', shape='box',
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
 		                         parentOffset=module.controls, scale=ctrlSizeQuarter )
@@ -999,6 +1000,7 @@ class rig_biped(object):
 		                poleVector.ctrl, ['auto', 'spineUpper', 'spineLower','fullBody', 'world'],
 		                type='parentConstraint')
 
+		rig_curveBetweenTwoPoints(poleVector.con, elbow, name=name+'PV')
 
 		fingersControl = rig_control(side=side, name='fingers', shape='pyramid', modify=1,
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
@@ -1084,7 +1086,7 @@ class rig_biped(object):
 
 		return module
 
-	def hand(self, side='', axis='rz',ctrlSize=1.0):
+	def hand(self, side='', axis='rz',ctrlSize=1.0, baseLimit=0.2):
 		abc = list(string.ascii_lowercase)
 
 		name = side + '_fingers'
@@ -1131,7 +1133,7 @@ class rig_biped(object):
 				               parentOffset=module.controls)
 
 				fngCtrl = sc[fng]
-				baseLimit = 0.2
+				#baseLimit = 0.2
 				pm.transformLimits( fngCtrl.ctrl, tx=(-1*baseLimit, baseLimit), etx=(1, 1))
 				pm.transformLimits( fngCtrl.ctrl, ty=(-1*baseLimit, baseLimit), ety=(1, 1))
 				pm.transformLimits( fngCtrl.ctrl, tz=(-1*baseLimit, baseLimit), etz=(1, 1))
@@ -1338,7 +1340,7 @@ class rig_biped(object):
 		ik = rig_ik(name, legIK, footIK, 'ikRPsolver')
 		pm.parent(ik.handle, module.parts)
 
-		poleVector = rig_control(side=side, name='legPV', shape='pointer',
+		poleVector = rig_control(side=side, name='legPV', shape='box',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
 		                         targetOffset=[leg, foot],
 		                         parentOffset=module.controls, scale=ctrlSizeQuarter)
@@ -1421,6 +1423,8 @@ class rig_biped(object):
 		                 'worldSpace_GRP'],
 		                poleVector.ctrl, ['auto', 'pelvis', 'spineLower', 'world'],
 		                type='parentConstraint')
+
+		rig_curveBetweenTwoPoints(poleVector.con, knee, name=name+'PV')
 
 		# ## MAKE FOOT BALL CONTROL
 		footBallControl = rig_control(side=side, name='footBall', shape='cylinder', modify=2,
@@ -1656,7 +1660,7 @@ class rig_biped(object):
 		return module
 
 
-	def foot(self, side = '', axis = 'ry', ctrlSize = 1.0):
+	def foot(self, side = '', axis = 'ry', ctrlSize = 1.0, baseLimit=0.2):
 		abc = list(string.ascii_lowercase)
 
 		name = side + '_toes'
@@ -1699,7 +1703,7 @@ class rig_biped(object):
 				                    parentOffset=module.controls)
 
 				toeCtrl = sc[toe]
-				baseLimit = 0.2
+				#baseLimit = 0.2
 				pm.transformLimits(toeCtrl.ctrl, tx=(-1 * baseLimit, baseLimit), etx=(1, 1))
 				pm.transformLimits(toeCtrl.ctrl, ty=(-1 * baseLimit, baseLimit), ety=(1, 1))
 				pm.transformLimits(toeCtrl.ctrl, tz=(-1 * baseLimit, baseLimit), etz=(1, 1))

@@ -255,12 +255,17 @@ class rig_quadruped(object):
 			                          rotateOrder=2).object
 			driverJntsList.append(driverJnt)
 
-			driverCtrl = rig_control(name='spineDriver'+ABC[i+1], shape='circle', modify=1,
+			driverCtrl = rig_control(name='spineDriver'+ABC[i+1], shape='box', modify=1,
 			                        targetOffset=spineChain[i], scale=ctrlSizeHalf,
 			                        colour='green', parentOffset=module.controlsSec, rotateOrder=2)
 			driverCtrlList[ 'spine'+ABC[i+1] ] = driverCtrl
 
 			pm.parentConstraint( driverCtrl.con, driverJnt, mo=True )
+
+			pm.scale(driverCtrl.ctrl.cv, 1, 0.2, 1, os=True, r=True)
+			pm.scale(driverCtrl.ctrl.cv, 1.5, 1, 1.5, os=True, r=True)
+
+		pm.hide('spineDriverBOffset_GRP')
 
 		# constrain control drivers
 		pm.parentConstraint( spineUpper.con, driverCtrlList['spineE'].offset, mo=True )
@@ -641,6 +646,8 @@ class rig_quadruped(object):
 		headLength = lengthVector(headPos, headEndPos)
 		pm.move(pm.PyNode(headControl.ctrl + '.cv[:]'), 0, headLength/2, 0, r=True,
 		        os=True)
+		pm.scale(pm.PyNode(headControl.ctrl + '.cv[:]'), 1, 0.5,1, r=True,
+		        os=True)
 
 		#pm.pointConstraint( 'neckJEnd_JNT', 'headJA_JNT', mo=True )
 		#pm.orientConstraint( headControl.con, 'headJA_JNT', mo=True )
@@ -855,7 +862,7 @@ class rig_quadruped(object):
 		pm.parent(ik.handle, module.parts)
 
 
-		poleVector = rig_control(side=side, name='armPV', shape='pointer',
+		poleVector = rig_control(side=side, name='armPV', shape='box',
 		                         modify=1, lockHideAttrs=['rx','ry','rz'],
 		                         targetOffset=[arm, hand],
 		                         parentOffset=module.controls, scale=ctrlSizeQuarter )
@@ -990,6 +997,7 @@ class rig_quadruped(object):
 		                poleVector.ctrl, ['auto', 'spineUpper', 'spineLower','fullBody', 'world'],
 		                type='parentConstraint')
 
+		rig_curveBetweenTwoPoints(poleVector.con, elbow, name=name+'PV')
 
 		fingersControl = rig_control(side=side, name='fingers', shape='pyramid', modify=1,
 		                             parentOffset=module.controls, scale=ctrlSizeQuarter,
@@ -1075,7 +1083,7 @@ class rig_quadruped(object):
 
 		return module
 
-	def hand(self, side='', axis='rz',ctrlSize=1.0):
+	def hand(self, side='', axis='rz',ctrlSize=1.0, baseLimit=0.2):
 		abc = list(string.ascii_lowercase)
 
 		name = side + '_fingers'
@@ -1122,7 +1130,7 @@ class rig_quadruped(object):
 				               parentOffset=module.controls)
 
 				fngCtrl = sc[fng]
-				baseLimit = 0.2
+				#baseLimit = 0.2
 				pm.transformLimits( fngCtrl.ctrl, tx=(-1*baseLimit, baseLimit), etx=(1, 1))
 				pm.transformLimits( fngCtrl.ctrl, ty=(-1*baseLimit, baseLimit), ety=(1, 1))
 				pm.transformLimits( fngCtrl.ctrl, tz=(-1*baseLimit, baseLimit), etz=(1, 1))
@@ -1262,6 +1270,7 @@ class rig_quadruped(object):
 
 		pm.parent(leg, module.skeleton)
 
+		ctrlSize2 = [ctrlSize / 1.5, ctrlSize / 1.5, ctrlSize / 1.5 ]
 		ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
 		ctrlSizeEight = [ctrlSize / 8.0, ctrlSize / 8.0, ctrlSize / 8.0]
@@ -1330,7 +1339,7 @@ class rig_quadruped(object):
 		pm.parent(ik.handle, module.parts)
 		pm.hide(ik.handle)
 
-		poleVector = rig_control(side=side, name='legPV', shape='pointer',
+		poleVector = rig_control(side=side, name='legPV', shape='box',
 		                         modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
 		                         targetOffset=[leg, foot],
 		                         parentOffset=module.controls, scale=ctrlSizeEight)
@@ -1408,11 +1417,11 @@ class rig_quadruped(object):
 		                poleVector.ctrl, ['auto', 'pelvis', 'spineLower', 'world'],
 		                type='parentConstraint')
 
-
+		rig_curveBetweenTwoPoints(poleVector.con, knee, name=name+'PV')
 
 		# ## MAKE FOOT BALL CONTROL
-		footBallControl = rig_control(side=side, name='footBall', shape='cylinder', modify=2,
-		                              parentOffset=module.controls, scale=ctrlSizeHalf,
+		footBallControl = rig_control(side=side, name='footBall', shape='box', modify=2,
+		                              parentOffset=module.controls, scale=ctrlSize2,
 		                              rotateOrder=2, colour=secColour)
 
 		footBallControl.gimbal = createCtrlGimbal(footBallControl)
@@ -1728,7 +1737,7 @@ class rig_quadruped(object):
 
 		return module
 
-	def foot(self, side = '', axis = 'ry', ctrlSize = 1.0):
+	def foot(self, side = '', axis = 'ry', ctrlSize = 1.0, baseLimit=0.2):
 		abc = list(string.ascii_lowercase)
 
 		name = side + '_toes'
@@ -1771,12 +1780,12 @@ class rig_quadruped(object):
 				                    parentOffset=module.controls)
 
 				toeCtrl = sc[toe]
-				baseLimit = 0.2
+				#baseLimit = 0.2
 				pm.transformLimits(toeCtrl.ctrl, tx=(-1 * baseLimit, baseLimit), etx=(1, 1))
 				pm.transformLimits(toeCtrl.ctrl, ty=(-1 * baseLimit, baseLimit), ety=(1, 1))
 				pm.transformLimits(toeCtrl.ctrl, tz=(-1 * baseLimit, baseLimit), etz=(1, 1))
 
-				pm.move(toeCtrl.ctrl.cv, [0, 0, 0.3], relative=True)
+				pm.move(toeCtrl.ctrl.cv, [0, 0, 1], relative=True)
 
 				if 'Thumb' in toe:
 					if pm.objExists(sideName + 'footJA_JNT'):
@@ -1822,9 +1831,20 @@ class rig_quadruped(object):
 							control = sc[key]
 							rig_animDrivenKey(toesControl.curl, (-10, 0, 10),
 							                  control.modify[0] + '.rotateY', (-90, 0, 90 ))
+							# move up toe control
+							if side == 'l':
+								pm.move(control.ctrl.cv, [5, 0, 0],os=True, relative=True,wd=True)
+							else:
+								pm.move(control.ctrl.cv, [-5, 0, 0],os=True, relative=True,wd=True)
 
 						rig_animDrivenKey(toesControl.curl, (-10, 0, 10),
 						                  toeCtrl.modify[1] + '.rotateY', (-90, 0, 90 ))
+
+						# move up toe control
+						if side == 'l':
+							pm.move(toeCtrl.ctrl.cv, [5, 0, 0],os=True, relative=True,wd=True)
+						else:
+							pm.move(toeCtrl.ctrl.cv, [-5, 0, 0],os=True, relative=True,wd=True)
 
 				pm.parent(toe, module.skeleton)
 

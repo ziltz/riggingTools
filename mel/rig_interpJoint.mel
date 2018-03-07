@@ -120,6 +120,13 @@ global proc string rig_interpolationJointBiped()
 			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_footQuarter", $side+"_kneeJA_JNT", $side+"_footJA_JNT", "quarter"));
 		}
 
+		// foot
+		if ( (`objExists ($side+"_footJA_JNT")`) && (`objExists ($side+"_footJB_JNT")`) )
+		{
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_footBHalf", $side+"_footJA_JNT", $side+"_footJB_JNT", "half"));
+			$interpGrps[size($interpGrps)] = rig_stringFirst(rig_interpolationJoint($side+"_footBQuarter", $side+"_footJA_JNT", $side+"_footJB_JNT", "quarter"));
+		}
+
 		for ($digit in {"fng", "toe"})
 		{
 			for ($fng in { ($side+"_"+$digit+"Thumb"), ($side+"_"+$digit+"Ind"), ($side+"_"+$digit+"Mid"), ($side+"_"+$digit+"Ring"), ($side+"_"+$digit+"Pnky") })

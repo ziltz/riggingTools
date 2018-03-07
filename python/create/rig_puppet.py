@@ -46,6 +46,7 @@ class puppet(object):
 				for f in glob.glob("*.ma"):
 					puppetList.append(f)
 				self.rigVersion = len(puppetList)+1
+				print 'rigVersion = '+str(self.rigVersion)
 
 			if self.rigBound is None:
 				#projectRoot = pm.workspace(q=True, rd=True) + 'scenes/release/rigBound/'
@@ -57,6 +58,7 @@ class puppet(object):
 				fileList.sort()
 				latestFile = fileList[-1:][0]
 				self.rigBound = projectRoot + latestFile
+				print 'latestFile = '+latestFile
 			#else:
 			#	self.rigBound = projectRoot + self.rigBound + '.ma'
 

@@ -78,7 +78,7 @@ def cyroRigModules():
 	for side in ['l', 'r']:
 		armModule = biped.arm(side, ctrlSize=12)
 
-		fingersModule = biped.hand(side, ctrlSize=4)
+		fingersModule = biped.hand(side, ctrlSize=4, baseLimit=1)
 
 		shoulderModule = biped.shoulder(side, ctrlSize=10)
 
@@ -92,7 +92,7 @@ def cyroRigModules():
 		# make quadruped leg 
 		legModule = quad.leg(side, ctrlSize = 30)
 
-		toesModule = quad.foot(side, ctrlSize=7)
+		toesModule = quad.foot(side, ctrlSize=7, baseLimit=1)
 
 		quad.connectLegPelvis()
 
@@ -189,6 +189,11 @@ def cyroShoulderUpgrade(side='', ctrlSize=1):
 
 	pm.connectAttr( shoulderControl.ctrl.followArm, side+'_shoulder_CTRL.followArm'  )
 
+	baseLimit = 15
+	pm.transformLimits(shoulderControl.ctrl, tx=(-1 * baseLimit, baseLimit), etx=(1, 1))
+	pm.transformLimits(shoulderControl.ctrl, ty=(-1 * baseLimit, baseLimit), ety=(1, 1))
+	pm.transformLimits(shoulderControl.ctrl, tz=(-1 * baseLimit, baseLimit), etz=(1, 1))
+
 	scapulaControl = rig_control( side=side, name='quadScapula', shape='box',
 		                            targetOffset=side+'_scapulaJEnd_JNT', modify=1,
 		                            parentOffset=module.controls,lockHideAttrs=[
@@ -214,6 +219,12 @@ def cyroShoulderUpgrade(side='', ctrlSize=1):
 	constrainObject(  scapulaControl.offset,
                 [side+'_clavicleJA_JNT','spineJE_JNT'], '', [],
                  type='parentConstraint', doSpace=0, setVal=(0.5,1))
+
+	baseLimit = 5
+	pm.transformLimits(scapulaControl.ctrl, tx=(-1 * baseLimit, baseLimit), etx=(1, 1))
+	pm.transformLimits(scapulaControl.ctrl, ty=(-1 * baseLimit, baseLimit), ety=(1, 1))
+	pm.transformLimits(scapulaControl.ctrl, tz=(-1 * baseLimit, baseLimit), etz=(1, 1))
+
 
 	pm.orientConstraint( scapulaAim, side+'_scapulaJA_JNT', mo=True )
 

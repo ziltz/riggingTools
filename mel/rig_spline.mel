@@ -169,16 +169,16 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 		setAttr ($ctrls[$i]+".overrideColor") 17 ;		// yellow
 
 		// Make middle ctrls jiggle by default.
-		float $jiggle = 1.0 ;
+		float $jiggle = 0.0 ;
 		if ($i==0 || $i == $nControls-1)
 			$jiggle = 0.0 ;
 
 		addAttr -ln "tangentLength" -sn "tanlen" -min 0.0 -dv 1.0 -k 1 $ctrls[$i] ;
-		addAttr -ln "jiggle" -sn "jig" -dv $jiggle -k 0 $ctrls[$i] ;
-		addAttr -ln "jiggleX" -sn "jigx" -dv $jiggle -k 0 $ctrls[$i] ;
-		addAttr -ln "jiggleY" -sn "jigy" -dv (0.25*$jiggle) -k 0 $ctrls[$i] ;
-		addAttr -ln "jiggleZ" -sn "jigz" -dv $jiggle -k 0 $ctrls[$i] ;
-		addAttr -ln "jiggleImpact" -sn "jigimp" -dv (0.5*$jiggle) -k 0 $ctrls[$i] ;
+		addAttr -ln "jiggle" -sn "jig" -dv $jiggle -k 1 $ctrls[$i] ;
+		addAttr -ln "jiggleX" -sn "jigx" -dv 1 -k 1 $ctrls[$i] ;
+		addAttr -ln "jiggleY" -sn "jigy" -dv (0.25*1) -k 1 $ctrls[$i] ;
+		addAttr -ln "jiggleZ" -sn "jigz" -dv 1 -k 1 $ctrls[$i] ;
+		addAttr -ln "jiggleImpact" -sn "jigimp" -dv (0.5*1) -k 0 $ctrls[$i] ;
 		addAttr -ln "jiggleImpactStart" -sn "jigimpst" -dv 1000 -k 0 $ctrls[$i] ;
 		addAttr -ln "jiggleImpactStop" -sn "jigimpsp" -dv 0.001 -k 0 $ctrls[$i] ;
 		addAttr -ln "cycle" -sn "cyc" -min 1.0 -dv 12.0 -k 0 $ctrls[$i] ;

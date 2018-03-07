@@ -245,3 +245,146 @@ global proc rig_twistChainBipedBind()
 
 
 }
+
+
+
+
+global proc rig_twistChainQuadruped()
+{
+
+	string $twistGrp = "twistChain_GRP";
+	if (!`objExists $twistGrp`)
+	{
+		string $grp = `group -em -n $twistGrp `;
+		if (`objExists "rig_GRP"`)
+			parent $grp "rig_GRP";
+	}
+
+	int $flip = 1;
+	for ($side in {"l", "r"})
+	{	
+		if ($side == "r")
+			$flip = -1;
+
+		// upper arm 
+		if ( (`objExists ($side+"_armJA_JNT")`) && (`objExists ($side+"_elbowJA_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_upperArmStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_upperArmEndTwist_LOC")`);
+			parentConstraint ($side+"_armJA_JNT") $startLoc;
+			delete`parentConstraint ($side+"_elbowJA_JNT") $endLoc`;
+			delete`orientConstraint  ($side+"_armJA_JNT") $endLoc`;
+			parentConstraint -mo ($side+"_elbowJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_armUpper"), $startLoc, $endLoc , 5 ));
+
+			rig_twistChainConstrain( $startLoc, $endLoc, $side+"_clavicleJA_JNT", 0, $flip);
+
+			parent $topGrp $twistGrp;
+		}
+
+		// lower arm 
+		if ( (`objExists ($side+"_handJA_JNT")`) && (`objExists ($side+"_elbowJA_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_lowerArmStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_lowerArmEndTwist_LOC")`);
+			delete`parentConstraint ($side+"_handJA_JNT") $startLoc`;
+			delete`orientConstraint  ($side+"_elbowJA_JNT") $startLoc`;
+			parentConstraint -mo ($side+"_elbowJA_JNT") $startLoc;
+			parentConstraint ($side+"_elbowJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_armLower"), $startLoc, $endLoc , 5 ));
+
+			delete`pointConstraint ($side+"_handJA_JNT") ($startLoc+"Up") `;
+			delete`pointConstraint ($side+"_handJA_JNT") ($endLoc+"Up") `;
+			
+			string $offset = `group -em -n ($endLoc+"UpOffset") `;
+			delete`parentConstraint ($side+"_handJA_JNT") $offset`;
+			string $upParent = rig_stringFirst(`listRelatives -p ($endLoc+"Up")`);
+			parent ($endLoc+"Up") $offset;
+			parent $offset $upParent;
+			orientConstraint -mo -skip y -skip z ($side+"_handJA_JNT") $offset;
+
+			setAttr ($offset+".rotateOrder") 5; // zyx
+
+			parent $topGrp $twistGrp;
+
+		}
+
+		// upper leg 
+		if ( (`objExists ($side+"_legJA_JNT")`) && (`objExists ($side+"_kneeJA_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_upperLegStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_upperLegEndTwist_LOC")`);
+			parentConstraint ($side+"_legJA_JNT") $startLoc;
+			delete`parentConstraint ($side+"_kneeJA_JNT") $endLoc`;
+			delete`orientConstraint  ($side+"_legJA_JNT") $endLoc`;
+			parentConstraint -mo ($side+"_kneeJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_legUpper"), $startLoc, $endLoc , 5 ));
+
+			rig_twistChainConstrain( $startLoc, $endLoc, "pelvisJA_JNT", 0, $flip);
+
+			parent $topGrp $twistGrp;
+
+		}
+
+		// lower leg 
+		if ( (`objExists ($side+"_footJA_JNT")`) && (`objExists ($side+"_kneeJA_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_lowerLegStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_lowerLegEndTwist_LOC")`);
+			delete`parentConstraint ($side+"_footJA_JNT") $startLoc`;
+			delete`orientConstraint  ($side+"_kneeJA_JNT") $startLoc`;
+			parentConstraint -mo ($side+"_kneeJA_JNT") $startLoc;
+			parentConstraint ($side+"_kneeJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_legLower"), $startLoc, $endLoc , 5 ));
+
+			delete`pointConstraint ($side+"_footJA_JNT") ($startLoc+"Up") `;
+			delete`pointConstraint ($side+"_footJA_JNT") ($endLoc+"Up") `;
+			orientConstraint -mo ($side+"_footJA_JNT") ($endLoc+"Up");
+
+			string $offset = `group -em -n ($endLoc+"UpOffset") `;
+			delete`parentConstraint ($side+"_footJA_JNT") $offset`;
+			string $upParent = rig_stringFirst(`listRelatives -p ($endLoc+"Up")`);
+			parent ($endLoc+"Up") $offset;
+			parent $offset $upParent;
+			orientConstraint -mo -skip y -skip z ($side+"_footJA_JNT") $offset;
+
+			setAttr ($offset+".rotateOrder") 5; // zyx
+
+			parent $topGrp $twistGrp;
+
+		}
+		
+		// ankle foot 
+		if ( (`objExists ($side+"_footJA_JNT")`) && (`objExists ($side+"_footJB_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_ankleStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_ankleEndTwist_LOC")`);
+			delete`parentConstraint ($side+"_footJB_JNT") $startLoc`;
+			delete`orientConstraint  ($side+"_footJA_JNT") $startLoc`;
+			parentConstraint -mo ($side+"_footJA_JNT") $startLoc;
+			parentConstraint ($side+"_footJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_ankle"), $startLoc, $endLoc , 3 ));
+
+			delete`pointConstraint ($side+"_footJB_JNT") ($startLoc+"Up") `;
+			delete`pointConstraint ($side+"_footJB_JNT") ($endLoc+"Up") `;
+			orientConstraint -mo ($side+"_footJB_JNT") ($endLoc+"Up");
+
+			string $offset = `group -em -n ($endLoc+"UpOffset") `;
+			delete`parentConstraint ($side+"_footJB_JNT") $offset`;
+			string $upParent = rig_stringFirst(`listRelatives -p ($endLoc+"Up")`);
+			parent ($endLoc+"Up") $offset;
+			parent $offset $upParent;
+			orientConstraint -mo -skip y -skip z ($side+"_footJB_JNT") $offset;
+
+			setAttr ($offset+".rotateOrder") 5; // zyx
+
+			parent $topGrp $twistGrp;
+
+		}
+
+	}	
+
+
+
+}
+

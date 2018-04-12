@@ -92,7 +92,12 @@ class rig_transform(object):
 		return mc.spaceLocator( n=self.name+"_LOC" )[0]
 
 	def _joint (self):
-		obj = mc.joint(n=self.name + "_JNT")
+		obj = ''
+		if '_JNT' in self.name:
+			obj = mc.joint(n=self.name)
+		else:
+			obj = mc.joint(n=self.name + "_JNT")
+		
 		if self.rotateOrder != '':
 			pm.setAttr(pm.PyNode(obj).rotateOrder, self.rotateOrder)
 		return obj

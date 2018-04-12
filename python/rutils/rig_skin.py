@@ -2,6 +2,7 @@
 
 
 import pymel.core as pm
+import maya.cmds as cmds
 import maya.mel as mm
 
 import re
@@ -60,3 +61,39 @@ def rig_skinClusterTransforms(group=None):
 			pass
 
 	print 'Done turning off inherit transforms on skinned geos'
+
+
+
+def rig_skinClusterFindMirrorMissing(sc=''):
+	rList = []
+	infs = cmds.skinCluster(sc, q=True, inf=True)
+
+	for i in infs:
+		if i.startswith('l_'):
+			right = i.replace('l_', 'r_')
+			skin = cmds.listConnections(right+'.worldMatrix[0]')
+			try:
+				if len(skin) > 0 and skin[0].startswith('skinCluster'):
+					print 'left'
+			except:
+				print right
+				rList.append(right)
+
+	cmds.select(rList)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -10,6 +10,7 @@ from rutils.rig_math import *
 from rutils.rig_modules import rig_module
 from rutils.rig_transform import rig_transform
 from rutils.rig_curve import *
+from rutils.rig_joint import *
 
 import pymel.core as pm
 import maya.cmds as cmds
@@ -414,9 +415,14 @@ class rig_quadruped(object):
 		ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
 		ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
-		listJoints = cmds.listRelatives(rootJoint, type="joint", ad=True)
-		listJoints.append(rootJoint)
-		listJoints.reverse()
+		listOrigJoints = cmds.listRelatives(rootJoint, type="joint", ad=True)
+		listOrigJoints.append(rootJoint)
+		listOrigJoints.reverse()
+
+		listJoints = rig_jointCopyChain(rootJoint, replaceName=('neck','neckSpline') )
+		
+		rootJoint = 'neckSplineJA_JNT'
+		endJoint = 'neckSplineJEnd_JNT'
 
 		'''
 		rig_makeSpline(string $baseName, int $nControls, string $controlType, int $detail,
@@ -547,7 +553,8 @@ class rig_quadruped(object):
 
 		constrainObject(headNeckControl.modify[1],
 	                [headNeckControl.modify[0],headFocusLoc ],
-	                neckFocusControl.ctrl, [], type='orientConstraint', doBlend=1, doSpace=0, spaceAttr='focusHead',blendVal=1)
+	                neckFocusControl.ctrl, [], type='orientConstraint', interp=2,
+	                doBlend=1, doSpace=0, spaceAttr='focusHead',blendVal=1)
 
         #aimConstraint -mo -weight 1 -aimVector 0 1 0 -upVector 1 0 0 -worldUpType "object" -worldUpObject neckFocusUp_LOC;
 
@@ -562,7 +569,8 @@ class rig_quadruped(object):
 		#pm.deleteAttr( 'neckFKA_CTRL', at='space' )
 		constrainObject('neckFKAModify2_GRP',
 	                ['neckFKAOffset_GRP',neckFocusBase ],
-	                neckFocusControl.ctrl, [], type='orientConstraint', doBlend=1, doSpace=0, spaceAttr='focusNeck',blendVal=1)
+	                neckFocusControl.ctrl, [], type='orientConstraint', interp=2,
+	                doBlend=1, doSpace=0, spaceAttr='focusNeck',blendVal=1)
 
 		pm.parentConstraint( parent, name+'BaseIKOffset_GRP', mo=True )
 		constrainObject(  name+'BaseIKModify_GRP',
@@ -607,10 +615,99 @@ class rig_quadruped(object):
 
 		pm.setAttr("neckFKBOffset_GRP.visibility", 0)
 
-		pm.setAttr("neckFKA_CTRL.stretch", .5)
+		pm.setAttr("neckFKA_CTRL.stretch", 1 )
 		pm.setAttr("neckFKA_CTRL.neckSpace", 1)
 
 		pm.parent( 'neckJA_JNT', 'spineSkeleton_GRP' )
+		pm.parent( 'neckSplineJA_JNT', 'spineSkeleton_GRP' )
+
+		# make fk rider 
+
+		neckFKACtrl = pm.PyNode('neckFKA_CTRL')
+		for at in ('curl', 'curlSide', 'neckSpace' ):
+			neckFKACtrl.attr(at).setKeyable(False)
+			neckFKACtrl.attr(at).setLocked(True)
+
+
+		chainNeck = rig_chain( 'neckJA_JNT' )
+
+		neckChildren = chainNeck.chain
+
+		neckChildren.pop(len(neckChildren)-1)
+		neckChildren.pop(0)
+
+		print 'neckChildren'+str(neckChildren)
+		#pm.error()
+		
+		sc = simpleControls(neckChildren,
+			   modify=1, scale=(40,1,40),directCon=1,parentCon=1,colour='green' )
+
+		offsetFKList = []
+		conFKList = []
+		j = 1
+		for jnt in listOrigJoints:
+			if j < len(listOrigJoints):
+				offset = rig_transform(0, name= jnt.replace('_JNT','FKOffset'),
+			                          target=jnt, parent='spineSkeleton_GRP').object
+				pm.parentConstraint( listJoints[j-1], offset, mo=True )
+
+				offsetName = listOrigJoints[j].replace('_JNT','Offset')
+
+				modFK = rig_transform(0, name= offsetName+'Mod',
+			                          target=listOrigJoints[j], parent=offset).object
+				conFK = rig_transform(0, name= offsetName+'Con',
+			                          target=listOrigJoints[j], parent=modFK).object
+
+				offsetFKList.append(offset)
+				conFKList.append(conFK)
+				j+=1
+
+		for i in range(0, len(offsetFKList)-1):
+			pm.parentConstraint(offsetFKList[i+1], conFKList[i], mo=True)
+
+		pm.parentConstraint(headNeckControl.con, conFKList[len(conFKList)-1], mo=True)
+
+		'''
+		j = 0
+		for jnt in sc:
+			control = sc[jnt]
+			for at in ['tx','ty','tz','rx','ry','rz']:
+				pm.connectAttr( conFKList[j]+'.'+at, control.modify+'.'+at )
+			pm.parent( neckChildren[j], control.con )
+			j += 1
+		'''
+
+		j = 0
+		for jnt in neckChildren:
+			control = sc[jnt]
+			for at in ['tx','ty','tz','rx','ry','rz']:
+				pm.connectAttr( conFKList[j]+'.'+at, control.modify+'.'+at )
+			pm.parent( jnt, control.con )
+
+			pm.move(control.ctrl + '.cv[:]', 0, 0, -10, r=True,
+		        os=True)
+
+			pm.select( control.ctrl+'.cv[1:2]' )
+			pm.select( control.ctrl+'.cv[6:7]', add=True )
+			pm.select( control.ctrl+'.cv[12:15]', add=True )
+
+			cmds.scale ( .5, 1, 1, r=True,scaleX=True )
+
+			j += 1
+
+		pm.parent('neckJA_JNT',offsetFKList[0] )
+
+		offsetEnd = rig_transform(0, name= 'neckJEnd_JNTOffset',
+			                          target='neckJEnd_JNT', parent='neckJHCon_GRP').object
+		modEnd = rig_transform(0, name= 'neckJEnd_JNTModify',
+			                          target='neckJEnd_JNT', parent=offsetEnd).object
+		pm.parent('neckJEnd_JNT', modEnd)
+		for at in ['tx','ty','tz','rx','ry','rz']:
+			pm.connectAttr( conFKList[len(conFKList)-1]+'.'+at, modEnd+'.'+at )
+
+		pm.parentConstraint('neckJA_JNT', 'neckJBOffset_GRP',mo=True)
+
+		pm.parent('neckJBOffset_GRP', 'neckControls_GRP')
 
 		return neckModule
 
@@ -636,10 +733,12 @@ class rig_quadruped(object):
 		                [ 'neckJEnd_JNT' , 'spineJF_JNT', self.spineFullBodyCtrl.con, 'worldSpace_GRP'],
 		                headControl.ctrl, ['neck', 'spineUpper', 'fullBody', 'world'],
 		                type='parentConstraint', spaceAttr='space')
+		'''
 		constrainObject(headControl.modify,
 		                ['headNeckCon_GRP', 'neckJEnd_JNT' , 'spineJF_JNT', 'worldSpace_GRP'],
 		                headControl.ctrl, ['headNeck','neck', 'spineUpper', 'world'],
 		                type='orientConstraint',spaceAttr='orientSpace')
+		'''
 
 		headPos = pm.xform('headJA_JNT', translation=True, query=True, ws=True)
 		headEndPos = pm.xform( 'headJEnd_JNT', translation=True, query=True, ws=True)
@@ -653,6 +752,9 @@ class rig_quadruped(object):
 		#pm.orientConstraint( headControl.con, 'headJA_JNT', mo=True )
 
 		pm.parentConstraint( headControl.con, 'headJA_JNT', mo=True )
+
+		#headControl.ctrl.attr('orientSpace').setKeyable(False)
+		#headControl.ctrl.attr('orientSpace').setLocked(True)
 
 		return module
 

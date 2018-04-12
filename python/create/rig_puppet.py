@@ -228,6 +228,9 @@ class puppet(object):
 						pm.setDrivenKeyframe(lodGRP.visibility, cd=self.globalCtrl.ctrl.lodDisplay,
 						                     dv=2, v=1)
 
+			if cmds.objExists('allModel_GRP'):
+				cmds.setAttr("allModel_GRP.visibility", 1)
+
 			# scale global control
 			self.bbox = self.model.boundingBox()
 			width = self.bbox.width() * 0.3

@@ -241,6 +241,8 @@ class rig_control(object):
 '''
 def simpleControls(joints=None, **kwds ):
 
+	parentCon = defaultReturn(0, 'parentCon', param=kwds)
+
 	jointList = joints
 	if type(joints) is str or type(joints) is unicode:
 		jointList = [joints]
@@ -253,6 +255,7 @@ def simpleControls(joints=None, **kwds ):
 	except KeyError:
 		pass
 
+	conParent = ''
 	for jnt in jointList:
 		parent = None
 
@@ -280,12 +283,26 @@ def simpleControls(joints=None, **kwds ):
 		if side:
 			name = naming.replace( side+'_', '' )
 
-		control = rig_control(side=side, name=name, shape=ctrlShape,
+		if parentCon:
+			parent = None
+
+		control = ''
+
+		if parentCon:
+			control = rig_control(side=side, name=name, shape=ctrlShape,
+		                      targetOffset=jnt, constrainOffset=parent,
+		                      constrain=jnt, parentOffset=conParent,
+		                      **kwds)
+			conParent = control.con
+		else:
+			control = rig_control(side=side, name=name, shape=ctrlShape,
 		                      targetOffset=jnt, constrainOffset=parent,
 		                      constrain=jnt,
 		                      **kwds)
 
 		controlDict[jnt] = control
+
+		
 
 	return controlDict
 
@@ -386,6 +403,7 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	if doBlend == 1 and len(enumName) == 0:
 		for con in multipleConstrainer:
 			enumName.append('0')
+		interp = 2 # make shortest interp
 
 	constrainerList = []
 	#if doSpace:

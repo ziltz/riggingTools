@@ -23,6 +23,13 @@ def cyroPrepareRig():
 
 
 def cyroRigModules():
+
+
+	'''
+	setAttr "r_upperArmEndTwist_LOCUp_aimConstraint1.upVectorX" 1;
+
+	'''
+
 	print 'Create cyro bound modules'
 
 

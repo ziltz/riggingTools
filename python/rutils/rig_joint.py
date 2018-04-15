@@ -30,6 +30,7 @@ def rig_jointAssignLabel(list=[]):
 			cmds.setAttr(jnt+'.side', 0)
 			cmds.setAttr(jnt+'.otherType', 'label_'+jnt, type='string' )
 
+		cmds.setAttr(jnt+".type", 18)
 
 
 '''

@@ -101,9 +101,16 @@ def cyroRigModules():
 	tail = rig_tail( rootJoint = 'tailJA_JNT',numIKCtrls= 8, numFKCtrls=8  ,  ctrlSize = 15 )
 	tail.make()
 
+	pubisControl = rig_control(name='pubis', shape='box', scale=(25,25,25),
+	                         parentOffset='spineControlsSecondary_GRP', colour='white')
+	pm.delete(pm.parentConstraint( 'pubisJA_JNT' ,pubisControl.offset))
+	pm.parentConstraint('pelvisJA_JNT', pubisControl.offset, mo=True)
+	pm.parentConstraint(pubisControl.con, 'pubisJA_JNT', mo=True)
 
+	pm.move(pubisControl.ctrl.cv, 36, 0, 0, r=True, os=True)
+	pm.scale(pubisControl.ctrl.cv, 1, 0.5 ,1 )
 
-	# make pubis and belly controls
+	# belly controls
 
 def cyroFinish():
 	print 'Finishing cyro'
@@ -137,6 +144,11 @@ def cyroFinish():
 		pm.parentConstraint( s+'_anklePos_JNT', s+'_toeThumbModify1_GRP' ,mo=True )
 
 		controlSet.removeMembers([ s+'_shoulder_CTRL' ])
+
+	'''
+	select -r curveShape68.cv[1:2] curveShape68.cv[6:7] curveShape68.cv[12:15] curveShape69.cv[1:2] curveShape69.cv[6:7] curveShape69.cv[12:15] ;
+move -r -os -wd 0 9.132614 0.639246 ;
+	'''
 
 
 def cyroShoulderUpgrade(side='', ctrlSize=1):

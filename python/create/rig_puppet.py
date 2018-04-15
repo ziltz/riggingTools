@@ -169,7 +169,7 @@ class puppet(object):
 			           k=True, min=0,
 			           max=1, defaultValue=1)
 			self.globalCtrl.ctrl.controlsVis.set(cb=True)
-
+			
 			# referencing and selecting
 			pm.addAttr(self.globalCtrl.ctrl, ln='model', at='enum',
 			           enumName='Selectable:Reference',
@@ -410,6 +410,9 @@ class puppet(object):
 		for layer in displayLayers:
 			if layer.stripNamespace() not in 'defaultLayer':
 				pm.delete(layer)
+
+		if cmds.objExists('puppetLinearCurves_GRP'):
+				pm.connectAttr( self.globalCtrl.ctrl.controlsVis, 'puppetLinearCurves_GRP.v')
 
 		getattr(self.charModule, self.character + 'Finish')()
 

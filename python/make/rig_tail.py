@@ -38,6 +38,7 @@ class rig_tail( object ):
 		self.worldSpace = 'worldSpace_GRP'
 		self.dWorldUpAxis = 8 # closest x
 		self.splinePosList = []
+		self.module = ''
 
 
 	# make tail
@@ -164,4 +165,4 @@ class rig_tail( object ):
 		pm.setAttr( tailModule.skeleton+'.inheritsTransform', 0 )
 
 
-
+		self.module = tailModule

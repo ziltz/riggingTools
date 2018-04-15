@@ -107,7 +107,21 @@ class rig_makeStretchy( object ):
 
 		pm.connectAttr(self.startJnt.stretch, bldColor.blender)
 
-	
+		# bulge 
+		pm.addAttr(self.startJnt, longName='bulge',
+		           at='float', k=True, dv=1)
+		bulge_PM = plusMinusNode(name + 'Bulge_plusMinus', 'subtract',
+		                                     '', 2, self.startJnt, 'scaleX')
+		bldColorBulge = pm.shadingNode('blendColors', asUtility=True,
+		                          name=name + '_blendBulge')
+		pm.connectAttr(bulge_PM+'.output1D', bldColorBulge + '.color1R',
+		               f=True)
+		pm.setAttr (  bldColorBulge + '.color2R', 1 )
+		pm.connectAttr(bldColorBulge + '.outputR',self.startJnt+'.scaleY',
+		               f=True)
+		pm.connectAttr(bldColorBulge + '.outputR',self.startJnt+'.scaleZ',
+		               f=True)
+		pm.connectAttr(self.startJnt.bulge, bldColorBulge.blender)
 
 
 def rig_stretchyMirror(topGroup):

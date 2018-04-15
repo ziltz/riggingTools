@@ -246,6 +246,10 @@ class rig_quadruped(object):
 		           k=True)
 		spineUpper.ctrl.MOTION.setLocked(True)
 
+		# duplicate chain
+
+		splineJoints = rig_jointCopyChain('spineJB_JNT', replaceName=('spine','spineSpline') )
+
 		spineChain = rig_chain(self.centerConnection).chainChildren
 
 		driverJntsList = []
@@ -266,18 +270,37 @@ class rig_quadruped(object):
 			pm.scale(driverCtrl.ctrl.cv, 1, 0.2, 1, os=True, r=True)
 			pm.scale(driverCtrl.ctrl.cv, 1.5, 1, 1.5, os=True, r=True)
 
+			drivenOffset = rig_transform(0, name='spineDriven'+ABC[i+1]+'Offset',
+			                          target=spineChain[i], parent=module.parts,
+			                          rotateOrder=2).object
+			drivenCon = rig_transform(0, name='spineDriven'+ABC[i+1]+'Con',
+			                          target=spineChain[i], parent=drivenOffset,
+			                          rotateOrder=2).object
+			pm.parentConstraint( splineJoints[i], drivenOffset, mo=True )
+			pm.parentConstraint( drivenCon, spineChain[i], mo=True )
+			for at in ( 'rx','ry','rz' ):
+				attr = getattr( driverCtrl.ctrl, at)
+				pm.connectAttr( attr, drivenCon+'.'+at )
+
 		pm.hide('spineDriverBOffset_GRP')
 
 		# constrain control drivers
-		pm.parentConstraint( spineUpper.con, driverCtrlList['spineE'].offset, mo=True )
+		#pm.parentConstraint( spineUpper.con, driverCtrlList['spineE'].offset, mo=True )
+		con = pm.parentConstraint(spineUpper.con,spineLower.con, driverCtrlList['spineE'].offset, mo=True)
 		pm.parentConstraint( spineUpper.con, driverCtrlList['spineF'].offset, mo=True )
 
 		pm.parentConstraint(spineLower.con, driverCtrlList['spineB'].offset, mo=True)
 		pm.parentConstraint(spineLower.con, driverCtrlList['spineC'].offset, mo=True)
 		pm.parentConstraint(spineUpper.con,spineLower.con, driverCtrlList['spineD'].offset, mo=True)
 
+		# set spineE 
+		pm.setAttr(con.interpType, 2 )
+		targets = con.getWeightAliasList()
+		pm.setAttr( targets[1], 0.5 )
+
 		# create spline ik
-		ik = rig_ik(name, 'spineJB_JNT', 'spineJF_JNT', 'ikSplineSolver', numSpans=5)
+		#ik = rig_ik(name, 'spineJB_JNT', 'spineJF_JNT', 'ikSplineSolver', numSpans=5)
+		ik = rig_ik(name, 'spineSplineJB_JNT', 'spineSplineJF_JNT', 'ikSplineSolver', numSpans=5)
 		pm.parent(ik.handle, ik.curve, module.parts)
 		#// Result: [u'spine2_ik_Handle', u'effector6', u'curve2'] //
 
@@ -385,8 +408,8 @@ class rig_quadruped(object):
 		connectReverse(input=(spineUpper.ctrl + '.stretch', 0, 0),
 		               output=(toggleStretch_ctrl_MD + '.input1X', 0, 0))
 
-		for i in range(0, len(spineChain)-1 ):
-			pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', spineChain[i] + '.scaleY',
+		for i in range(0, len(splineJoints)-1 ):
+			pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', splineJoints[i] + '.scaleY',
 			               f=True)
 
 		pm.skinCluster(driverJntsList, ik.curve, tsb=True)
@@ -683,6 +706,7 @@ class rig_quadruped(object):
 			for at in ['tx','ty','tz','rx','ry','rz']:
 				pm.connectAttr( conFKList[j]+'.'+at, control.modify+'.'+at )
 			pm.parent( jnt, control.con )
+			pm.setAttr(jnt+'.v', 0)
 
 			pm.move(control.ctrl + '.cv[:]', 0, 0, -10, r=True,
 		        os=True)
@@ -706,7 +730,9 @@ class rig_quadruped(object):
 			pm.connectAttr( conFKList[len(conFKList)-1]+'.'+at, modEnd+'.'+at )
 
 		pm.parentConstraint('neckJA_JNT', 'neckJBOffset_GRP',mo=True)
-
+		pm.setAttr('neckJA_JNT.v', 0)
+		pm.setAttr('neckJEnd_JNT.v', 0)
+		
 		pm.parent('neckJBOffset_GRP', 'neckControls_GRP')
 
 		return neckModule

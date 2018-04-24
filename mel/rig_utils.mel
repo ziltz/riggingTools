@@ -72,6 +72,36 @@ global proc string rig_objOffset(string $obj)
 	return $grp;
 }
 
+global proc string rig_objModify(string $obj)
+{
+	string $grp = `group -em -n ($obj+"Modify")`;
+	delete`parentConstraint $obj $grp`;
+	string $parent[] = `listRelatives -p $obj`;
+	if (size($parent) > 0)
+		parent $grp $parent[0];
+	parent $obj $grp;
+
+	return $grp;
+}
+
+global proc string[] rig_returnDeformers(string $obj, string $defType)
+{
+	string $defs[] = `findRelatedDeformer("skin_C_body_GV")`;
+
+	string $listDef[] = {};
+	for ($d in $defs)
+	{
+		string $type = `objectType $d`;
+		if (`gmatch $type $defType`)
+		    $listDef[size($listDef)] = $d;
+	}
+
+	return $listDef;
+
+}
+
+
+
 /*
 pass in object that has constraint node
 

@@ -20,7 +20,12 @@ import char.cyroPuppet as charPuppet
 reload(charPuppet)
 charPuppet.build()
 
+charPuppet.buildScene()
+
 '''
+
+def buildScene():
+	puppet( character='cyro',buildInScene=1 )
 
 def build():
 	puppet( character='cyro' )
@@ -145,9 +150,19 @@ def cyroFinish():
 
 		controlSet.removeMembers([ s+'_shoulder_CTRL' ])
 
+	hiDeltaMush = mm.eval('rig_returnDeformers("skin_C_body_GV", "deltaMush")')
+	if len(hiDeltaMush) > 0:
+		cNode = conditionNode( 'hiDeltaMush', 'equal', ('',0), ('', 2), ('', 1), ('', 0) )
+		pm.connectAttr( "global_CTRL.lodDisplay", cNode+'.secondTerm')
+		pm.connectAttr( cNode+'.outColorR', hiDeltaMush[0]+'.envelope')
+	
+	pm.delete('combineSkinningCut_GEO')
+
 	'''
 	select -r curveShape68.cv[1:2] curveShape68.cv[6:7] curveShape68.cv[12:15] curveShape69.cv[1:2] curveShape69.cv[6:7] curveShape69.cv[12:15] ;
 move -r -os -wd 0 9.132614 0.639246 ;
+select -r curveShape67.cv[1:2] curveShape67.cv[6:7] curveShape67.cv[12:15] ;
+move -r -os -wd 0 12.489067 4.494289 ;
 	'''
 
 

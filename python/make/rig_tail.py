@@ -57,6 +57,8 @@ class rig_tail( object ):
 	string $reads[];
 	string $spline = rig_makeSpline("tail", 4, "cube", 8, 12, "joint", $ctrls, $reads, 0) ;
 
+	makeCurvesDynamic 2 { "1", "0", "1", "1", "0"};
+
 
 	'''
 

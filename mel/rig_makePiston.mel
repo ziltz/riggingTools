@@ -66,10 +66,12 @@ global proc string rig_makePiston(string $obj1, string $obj2, string $name)
 		if ($i == 0)
 		{
 			aimConstraint -offset 0 0 0 -weight 1 -aimVector -1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $upLocs[$i] $aimLocs[$i] $aimLocs[1];
+			rig_objModify($aimLocs[1]);
 		}
 		else
 		{
 			aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $upLocs[$i] $aimLocs[$i] $aimLocs[0];
+			rig_objModify($aimLocs[0]);
 		}
 		$i++;
 	}

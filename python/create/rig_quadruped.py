@@ -605,12 +605,12 @@ class rig_quadruped(object):
                  type='parentConstraint', doSpace=0, setVal=(0.5, 1))
 		constrainObject(  name+'MidAIKModify_GRP',
                 [aimPointerBase,aimPointerTip], '', [],
-                 type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y'))
+                 type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y'), interp=2)
 
 		pm.parentConstraint( name+'TipIKCon_GRP', name+'MidBIKOffset_GRP', mo=True )
 		constrainObject(name+'MidBIKModify_GRP',
 		                [aimPointerBase, aimPointerTip], '', [],
-		                type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y') )
+		                type='parentConstraint', doSpace=0, skipTrans=('x','z'), skipRot=('y'), interp=2 )
 
 		pm.parentConstraint( headNeckControl.con, name+'TipIKOffset_GRP', mo=True )
 		constrainObject(  name+'TipIKModify_GRP',

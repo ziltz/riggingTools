@@ -21,8 +21,10 @@ class puppet(object):
 		self.character = defaultReturn('jerry', 'character', param=kwds)
 		self.rigBound = defaultReturn(None, 'rigBound', param=kwds)
 		self.rigVersion = defaultReturn(0, 'version', param=kwds)
+		self.buildInScene = defaultReturn(0, 'buildInScene', param=kwds)
 
-		pm.newFile(f=True)
+		if self.buildInScene == 0:
+			pm.newFile(f=True)
 
 		print "START: rigPuppet build "+self.character
 		pm.timer(s=True)
@@ -62,17 +64,18 @@ class puppet(object):
 			#else:
 			#	self.rigBound = projectRoot + self.rigBound + '.ma'
 
-			print 'rigBound file path = '+self.rigBound
-			# import rigBound file
-			try:
-				#filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True,
-				# typ="mayaAscii", o=True)
-				filePath = cmds.file(self.rigBound, i=True, ignoreVersion=True,
-				                     ra = False, mergeNamespacesOnClash =False,
-				                     typ="mayaAscii", loadReferenceDepth='none')
+			if self.buildInScene == 0:
+				print 'rigBound file path = '+self.rigBound
+				# import rigBound file
+				try:
+					#filePath = cmds.file(self.rigBound, f=True, ignoreVersion=True,
+					# typ="mayaAscii", o=True)
+					filePath = cmds.file(self.rigBound, i=True, ignoreVersion=True,
+					                     ra = False, mergeNamespacesOnClash =False,
+					                     typ="mayaAscii", loadReferenceDepth='none')
 
-			except RuntimeError:
-				print self.rigBound + ' file not found'
+				except RuntimeError:
+					print self.rigBound + ' file not found'
 
 			cmds.dgdirty(allPlugs=True)
 			cmds.refresh()
@@ -336,9 +339,6 @@ class puppet(object):
 	def finishRig(self):
 		print 'Finishing core rig'
 
-		cmds.dgdirty(allPlugs=True)
-		cmds.refresh()
-
 		# add controls to set and display toggle
 		pm.select(cl=True)
 		controlSet = pm.sets( n=self.character+'RigPuppetControlSet' )
@@ -419,6 +419,8 @@ class puppet(object):
 		# turn off inherit transforms on skinned geo
 		rig_skinClusterTransforms(group='model_GRP')
 
+		cmds.dgdirty(allPlugs=True)
+		cmds.refresh()
 
 # make default human puppet
 def defaultRigPuppet(self, rig_puppet):

@@ -1,6 +1,9 @@
 
 /*
 
+TODO:
+    - Check orientation of aim vectors
+
 aim two pistons to each other
 
 - pass in two locators with parentConstraint on each

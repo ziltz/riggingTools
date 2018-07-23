@@ -242,6 +242,7 @@ class rig_control(object):
 def simpleControls(joints=None, **kwds ):
 
 	parentCon = defaultReturn(0, 'parentCon', param=kwds)
+	constrainJoints = defaultReturn(1, 'constrainJoints', param=kwds)
 
 	jointList = joints
 	if type(joints) is str or type(joints) is unicode:
@@ -288,16 +289,20 @@ def simpleControls(joints=None, **kwds ):
 
 		control = ''
 
+		conJoint = jnt
+		if not constrainJoints:
+			conJoint = 0
+
 		if parentCon:
 			control = rig_control(side=side, name=name, shape=ctrlShape,
 		                      targetOffset=jnt, constrainOffset=parent,
-		                      constrain=jnt, parentOffset=conParent,
+		                      constrain=conJoint, parentOffset=conParent,
 		                      **kwds)
 			conParent = control.con
 		else:
 			control = rig_control(side=side, name=name, shape=ctrlShape,
 		                      targetOffset=jnt, constrainOffset=parent,
-		                      constrain=jnt,
+		                      constrain=conJoint,
 		                      **kwds)
 
 		controlDict[jnt] = control

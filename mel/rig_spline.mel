@@ -40,9 +40,9 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 			-ma "left"
 			-button (uiRes("m_cMuscleSplineUI.kOK4"))
 			;
-		string $msg = (uiRes("m_cMuscleSplineUI.kMuscleSplineAlreadyExist"));
-		$msg = `format -stringArg $baseName $msg`;
-		error -sl 0 ($msg) ;	
+		string $msg2 = (uiRes("m_cMuscleSplineUI.kMuscleSplineAlreadyExist"));
+		$msg2 = `format -stringArg $baseName $msg2`;
+		error -sl 0 ($msg2) ;	
 		}
 	
 
@@ -250,20 +250,19 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 		connectAttr -f ($blend+".output") ($aCons2[0]+".worldUpVector") ;
 		
 		// We also have to do a similar pt contraint on each aim
-		string $pConsFwd[] = `pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimFwd` ; 
-		string $pConsFwd[] = `pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimFwd` ;
-		string $pConsBack[] = `pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimBack` ; 
-		string $pConsBack[] = `pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimBack` ;
+		pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimFwd ; 
+		pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimFwd ;
+		pointConstraint -w (1.0-$pct) $ctrls[0] $grpAimBack ; 
+		pointConstraint -w ($pct) $ctrls[$nControls-1] $grpAimBack ;
 		
 		
 		// Now set up orient
-		string $oCons[] ;
-		$oCons = `orientConstraint -w (1.0-$pct) $grpAimBack $cons[$i]` ;
+		string $oCons[] = `orientConstraint -w (1.0-$pct) $grpAimBack $cons[$i]` ;
 //		setAttr ($oCons[0]+".interpType") 0 ;	// No-Flip orient constraint mode...
 		setAttr ($oCons[0]+".interpType") 2 ;	// Shortest orient constraint mode...
-		$oCons = `orientConstraint -w ($pct) $grpAimFwd $cons[$i]` ;		
+		string $oCons2[] = `orientConstraint -w ($pct) $grpAimFwd $cons[$i]` ;		
 //		setAttr ($oCons[0]+".interpType") 0 ;	// No-Flip orient constraint mode...
-		setAttr ($oCons[0]+".interpType") 2 ;	// Shortest orient constraint mode...
+		setAttr ($oCons2[0]+".interpType") 2 ;	// Shortest orient constraint mode...
 
 		
 		// Make ZERO grps for aims, at end so zero at right spot.

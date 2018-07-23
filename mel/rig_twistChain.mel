@@ -41,17 +41,17 @@ global proc string[] rig_twistChain(string $name, string $start ,string $end, in
 		parent $joints[$i] $grp;
 
 		// point constrain offset grp 
-		string $con = rig_stringFirst( `pointConstraint $startJnt $endJnt $grp`);
-		string $targets[] = rig_constraintReturnTargets( $con);
-		setAttr ($con+"."+$targets[0]+"W0") $startStep;
-		setAttr ($con+"."+$targets[1]+"W1") $endStep;
+		string $conPoint = rig_stringFirst( `pointConstraint $startJnt $endJnt $grp`);
+		string $targetsPoint[] = rig_constraintReturnTargets( $conPoint);
+		setAttr ($conPoint+"."+$targetsPoint[0]+"W0") $startStep;
+		setAttr ($conPoint+"."+$targetsPoint[1]+"W1") $endStep;
 
 		// orient constraint from start and end loc 
-		string $con = rig_stringFirst( `orientConstraint -mo $startJnt $endJnt $joints[$i]`);
-		string $targets[] = rig_constraintReturnTargets( $con);
-		setAttr ($con+"."+$targets[0]+"W0") $startStep;
-		setAttr ($con+"."+$targets[1]+"W1") $endStep;
-		setAttr ($con+".interpType") 2; // shortest
+		string $conOrient = rig_stringFirst( `orientConstraint -mo $startJnt $endJnt $joints[$i]`);
+		string $targetsOrient[] = rig_constraintReturnTargets( $conOrient);
+		setAttr ($conOrient+"."+$targetsOrient[0]+"W0") $startStep;
+		setAttr ($conOrient+"."+$targetsOrient[1]+"W1") $endStep;
+		setAttr ($conOrient+".interpType") 2; // shortest
 
 		$startStep = $startStep - $step;
 		$endStep = $endStep + $step;

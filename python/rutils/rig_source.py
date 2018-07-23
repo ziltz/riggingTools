@@ -45,7 +45,7 @@ def rig_sourceAll( riggingDir='C:/dev/riggingTools/' ):
 	
 	devPath = riggingDir+'python/'
 	if platform.system() == 'Darwin':
-		riggingDir = '/Users/jerry/Documents/riggingTools/'
+		riggingDir = '/Users/jerry/Documents/dev/riggingTools/'
 		devPath = riggingDir +'python/'
 		
 	if devPath not in sys.path:
@@ -66,7 +66,7 @@ def rig_sourceAll( riggingDir='C:/dev/riggingTools/' ):
 def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):
 	print("Sourcing all mel files")
 	if platform.system() == 'Darwin':
-		dir = '/Users/jerry/Documents/riggingTools/mel/'
+		dir = '/Users/jerry/Documents/dev/riggingTools/mel/'
 	os.chdir(dir)
 	for file in glob.glob(ext):
 		print( "- " + file +" ....")
@@ -75,7 +75,7 @@ def rig_sourceMelFiles(dir='C:/dev/riggingTools/mel/', ext='*.mel'):
 def rig_sourcePythonFiles(dir='C:/dev/riggingTools/python/', ext='*.py'):
 	print("Sourcing all python files")
 	if platform.system() == 'Darwin':
-		dir = '/Users/jerry/Documents/riggingTools/python/'
+		dir = '/Users/jerry/Documents/dev/riggingTools/python/'
 	print 'Using directory = '+ dir
 	for root, dirs, files in os.walk(dir):
 		currentDir = root.replace(dir, '')

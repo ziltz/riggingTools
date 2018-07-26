@@ -90,3 +90,5 @@ def rig_sourcePythonFiles(dir='C:/dev/riggingTools/python/', ext='*.py'):
 							mod = importlib.import_module(path, package='riggingTools.python')
 							print path
 							reload(mod)
+
+							

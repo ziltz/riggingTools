@@ -103,8 +103,14 @@ def cyroRigModules():
 
 
 
-	tail = rig_tail( rootJoint = 'tailJA_JNT',numIKCtrls= 8, numFKCtrls=8  ,  ctrlSize = 15 )
+	tail = rig_tail( rootJoint = 'tailJA_JNT',
+						numIKCtrls = 8, 
+						numFKCtrls = 8,  
+						ctrlSize = 15,
+						makeDynamic = 1 )
 	tail.make()
+	pm.parent('tailDynA_JNT', 'pelvisJA_JNT')
+	# fix dyn tail and con joints, constrain dyn offset
 
 	pubisControl = rig_control(name='pubis', shape='box', scale=(25,25,25),
 	                         parentOffset='spineControlsSecondary_GRP', colour='white')

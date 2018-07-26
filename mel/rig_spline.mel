@@ -1,6 +1,7 @@
 
 
 
+
 /*
  * cMS_makeSpline() - Makes a muscle spline rig
  *
@@ -13,8 +14,15 @@ global proc string rig_makeSpline(string $baseName, int $nControls, string $cont
 			)
 {
 
-	catch(`loadPlugin "C:/Program Files/Autodesk/Maya2016/bin/plug-ins/MayaMuscle.mll"`);
-	
+	string $platform = `about -operatingSystem`;
+	string $version = `about -v`;
+	if ($platform == "mac"){
+		catch(`loadPlugin ("/Applications/Autodesk/maya"+$version+"/Maya.app/Contents/MacOS/plug-ins/MayaMuscle.bundle")`);
+	}
+	else{
+		catch(`loadPlugin ("C:/Program Files/Autodesk/Maya"+$version+"/bin/plug-ins/MayaMuscle.mll")`);
+	}
+
 	string $alpha[] = {"A", "B","C", "D","E", "F","G", "H","I", "J","K", "L","M", "N","O", "P","Q", "R",
 					"S", "T","U", "V","W", "X","Y", "Z"};
 

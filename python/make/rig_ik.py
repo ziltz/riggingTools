@@ -30,151 +30,159 @@ ikSpringSolver
 '''
 class rig_ik(object):
 
-	def __init__(self, name, start, end, solver='ikSCsolver', **kwds):
+    def __init__(self, name, start, end, solver='ikSCsolver', **kwds):
 
-		self.name = name
-		self.start = start
-		self.end = end
-		self.solver = solver
+        self.name = name
+        self.start = start
+        self.end = end
+        self.solver = solver
 
-		self.numSpans = defaultReturn(1, 'numSpans', param=kwds)
+        self.numSpans = defaultReturn(1, 'numSpans', param=kwds)
+        self.curve = defaultReturn('', 'curve', param=kwds)
+        self.createCurve = defaultReturn(True, 'createCurve', param=kwds)
 
-		if self.solver == 'ikSpringSolver':
-			mm.eval("ikSpringSolver;")
-		
-		ikData = pm.ikHandle(n=self.name+'_ikHandle', sj=self.start, ee=self.end,
-		                     solver=self.solver, ns=self.numSpans)
-		self.handle = ikData[0]
-		self.effector = ikData[1]
-		self.curve = ''
-		try:
-			self.curve = pm.rename( ikData[2], self.name+'SplineIK_CRV')
-			pm.parent(self.curve, w=True)
-			pm.setAttr(self.curve + '.inheritsTransform', 0)
-			pm.setAttr(self.handle + '.twistType', 2) # ease out
-			pm.setAttr(self.handle + '.rootTwistMode', 1)  # root twist mode
-		except IndexError:
-			print 'Not a spline IK'
+        if self.solver == 'ikSpringSolver':
+            mm.eval("ikSpringSolver;")
+        
+        if self.curve:
+            ikData = pm.ikHandle(n=self.name+'_ikHandle', sj=self.start, ee=self.end,
+                                 solver=self.solver, ns=self.numSpans, curve=self.curve, ccv=self.createCurve)
+        else:
+            ikData = pm.ikHandle(n=self.name+'_ikHandle', sj=self.start, ee=self.end,
+                                 solver=self.solver, ns=self.numSpans, ccv=self.createCurve)
 
-	def poleVector(self, name='', mid='', posMultiplier=1):
+        self.handle = ikData[0]
+        self.effector = ikData[1]
+        
+        if not self.curve:
+            try:
+                self.curve = pm.rename( ikData[2], self.name+'SplineIK_CRV')
+                pm.parent(self.curve, w=True)
+                pm.setAttr(self.curve + '.inheritsTransform', 0)
+                pm.setAttr(self.handle + '.twistType', 2) # ease out
+                pm.setAttr(self.handle + '.rootTwistMode', 1)  # root twist mode
+            except IndexError:
+                print 'Not a spline IK'
 
-		if name == '':
-			name = self.name
+    def poleVector(self, name='', mid='', posMultiplier=1):
 
-		poleVector = rig_transform(0, name=name + 'PoleVector', type='locator').object
-		pm.delete(pm.parentConstraint( self.start, self.end, poleVector ))
+        if name == '':
+            name = self.name
 
-		pm.delete(pm.aimConstraint(mid, poleVector, mo=False))
+        poleVector = rig_transform(0, name=name + 'PoleVector', type='locator').object
+        pm.delete(pm.parentConstraint( self.start, self.end, poleVector ))
 
-		startPos = pm.xform(self.start, translation=True, query=True, ws=True)
-		midPos = pm.xform(self.end, translation=True, query=True, ws=True)
-		poleVectorPos = pm.xform(poleVector, translation=True, query=True,
-		                         ws=True)
+        pm.delete(pm.aimConstraint(mid, poleVector, mo=False))
 
-		pvDistance = lengthVector(midPos, poleVectorPos)
+        startPos = pm.xform(self.start, translation=True, query=True, ws=True)
+        midPos = pm.xform(self.end, translation=True, query=True, ws=True)
+        poleVectorPos = pm.xform(poleVector, translation=True, query=True,
+                                 ws=True)
 
-		pm.xform(poleVector, translation=[pvDistance*posMultiplier, 0, 0], os=True,
-		         r=True)
+        pvDistance = lengthVector(midPos, poleVectorPos)
 
-		pm.poleVectorConstraint(poleVector, self.handle)  # create pv
+        pm.xform(poleVector, translation=[pvDistance*posMultiplier, 0, 0], os=True,
+                 r=True)
 
-		return poleVector
+        pm.poleVectorConstraint(poleVector, self.handle)  # create pv
+
+        return poleVector
 
 
 
 def rig_ikStretchySoftPop(side, name, chainIK, module, ikCtrl, ctrlSize, topGrp):
 
-	# assign appropriate names
-	startJnt = chainIK[0]
-	midJnt = chainIK[1]
-	endJnt = chainIK[2]
+    # assign appropriate names
+    startJnt = chainIK[0]
+    midJnt = chainIK[1]
+    endJnt = chainIK[2]
 
-	nme = name
-	if name.startswith('l_'):
-		nme = name.replace('l_', '')
-	if name.startswith('r_'):
-		nme = name.replace('r_', '')
+    nme = name
+    if name.startswith('l_'):
+        nme = name.replace('l_', '')
+    if name.startswith('r_'):
+        nme = name.replace('r_', '')
 
-	midPinControl = rig_control(side=side, name=nme+'MidPin', shape='sphere', modify=1,
-	                             parentOffset=module.controlsSec, scale=ctrlSize,
-	                             rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
+    midPinControl = rig_control(side=side, name=nme+'MidPin', shape='sphere', modify=1,
+                                 parentOffset=module.controlsSec, scale=ctrlSize,
+                                 rotateOrder=2, lockHideAttrs=['rx', 'ry', 'rz'])
 
-	pm.delete(pm.parentConstraint( midJnt, midPinControl.offset  ))
-	pm.parentConstraint( topGrp, midPinControl.offset, mo=True )
+    pm.delete(pm.parentConstraint( midJnt, midPinControl.offset  ))
+    pm.parentConstraint( topGrp, midPinControl.offset, mo=True )
 
-	startMeasure = rig_transform(0, name=name + '_startMeasure', type='locator',
-	                         parent=module.parts, target=topGrp).object
+    startMeasure = rig_transform(0, name=name + '_startMeasure', type='locator',
+                             parent=module.parts, target=topGrp).object
 
-	pm.pointConstraint( topGrp, startMeasure )
-	pm.aimConstraint(ikCtrl.con, startMeasure)
+    pm.pointConstraint( topGrp, startMeasure )
+    pm.aimConstraint(ikCtrl.con, startMeasure)
 
-	endMeasure = rig_transform(0, name=name + '_endMeasure', type='locator',
-	                             parent=module.parts, target=ikCtrl.gimbal.ctrl).object
+    endMeasure = rig_transform(0, name=name + '_endMeasure', type='locator',
+                                 parent=module.parts, target=ikCtrl.gimbal.ctrl).object
 
-	pm.pointConstraint( ikCtrl.con, endMeasure )
+    pm.pointConstraint( ikCtrl.con, endMeasure )
 
-	measureGrp = rig_transform(0, name=name + '_measureSetup',
-	                           parent=module.parts).object
+    measureGrp = rig_transform(0, name=name + '_measureSetup',
+                               parent=module.parts).object
 
-	upperDist = rig_measure(name=name+'Upper', start=startMeasure, end=midPinControl.con,
-	                        parent=measureGrp)
-	lowerDist = rig_measure(name=name + 'Lower', start=midPinControl.con, end=endMeasure,
-	                        parent=measureGrp)
-	totalDist = rig_measure(name=name + 'Total', start=startMeasure, end=endMeasure,
-	                        parent=measureGrp)
+    upperDist = rig_measure(name=name+'Upper', start=startMeasure, end=midPinControl.con,
+                            parent=measureGrp)
+    lowerDist = rig_measure(name=name + 'Lower', start=midPinControl.con, end=endMeasure,
+                            parent=measureGrp)
+    totalDist = rig_measure(name=name + 'Total', start=startMeasure, end=endMeasure,
+                            parent=measureGrp)
 
-	endBlendLoc = rig_transform(0, name=name + '_endBlend', type='locator',
-	                             parent=module.parts, target=endJnt).object
+    endBlendLoc = rig_transform(0, name=name + '_endBlend', type='locator',
+                                 parent=module.parts, target=endJnt).object
 
-	endSoftOffset = rig_transform(0, name=name + '_endSoftOffset',
-	                              parent=module.parts, target=endJnt).object
+    endSoftOffset = rig_transform(0, name=name + '_endSoftOffset',
+                                  parent=module.parts, target=endJnt).object
 
-	pm.parentConstraint( startMeasure, endSoftOffset )
-	endSoftLoc = rig_transform(0, name=name + '_endSoft', type='locator',
-	                           parent=endSoftOffset, target=ikCtrl.gimbal.ctrl).object
+    pm.parentConstraint( startMeasure, endSoftOffset )
+    endSoftLoc = rig_transform(0, name=name + '_endSoft', type='locator',
+                               parent=endSoftOffset, target=ikCtrl.gimbal.ctrl).object
 
-	#wristPC = pm.pointConstraint(endSoftLoc, endBlendLoc, mo=True, w=0)
-	#stretchPC = pm.pointConstraint(endMeasure, endBlendLoc, mo=True, w=1)
-	stretchPC = pm.pointConstraint(endMeasure,endSoftLoc, endBlendLoc, mo=True)
-	stretchTargets = stretchPC.getWeightAliasList()
-	pm.setAttr( stretchTargets[1], 0 )
-	#pm.pointConstraint( endBlendLoc, ikCtrl.con, mo=True)
+    #wristPC = pm.pointConstraint(endSoftLoc, endBlendLoc, mo=True, w=0)
+    #stretchPC = pm.pointConstraint(endMeasure, endBlendLoc, mo=True, w=1)
+    stretchPC = pm.pointConstraint(endMeasure,endSoftLoc, endBlendLoc, mo=True)
+    stretchTargets = stretchPC.getWeightAliasList()
+    pm.setAttr( stretchTargets[1], 0 )
+    #pm.pointConstraint( endBlendLoc, ikCtrl.con, mo=True)
 
-	endBlendDist = rig_measure(name=name + 'EndBlend', start=startMeasure, end=endBlendLoc,
-	                           parent=measureGrp)
-	endSoftBlendDist = rig_measure(name=name + 'SoftEndBlend', start=endSoftLoc, end=endBlendLoc,
-	                               parent=measureGrp)
+    endBlendDist = rig_measure(name=name + 'EndBlend', start=startMeasure, end=endBlendLoc,
+                               parent=measureGrp)
+    endSoftBlendDist = rig_measure(name=name + 'SoftEndBlend', start=endSoftLoc, end=endBlendLoc,
+                                   parent=measureGrp)
 
-	pm.addAttr(ikCtrl.ctrl, ln='ikSettings', at='enum',
-	             enumName='___________',
-	             k=True)
-	ikCtrl.ctrl.ikSettings.setLocked(True)
-	blendAttrNodes_and_checkStretchCond = addStretchyIKJoints(name, chainIK, (upperDist.distance,
-	                                                                    lowerDist.distance,
-	                                                                    totalDist.distance),
-	                                                          ikCtrl.ctrl,
-	                                                          (endBlendDist.distance,
-	                                                           endSoftBlendDist.distance))
+    pm.addAttr(ikCtrl.ctrl, ln='ikSettings', at='enum',
+                 enumName='___________',
+                 k=True)
+    ikCtrl.ctrl.ikSettings.setLocked(True)
+    blendAttrNodes_and_checkStretchCond = addStretchyIKJoints(name, chainIK, (upperDist.distance,
+                                                                        lowerDist.distance,
+                                                                        totalDist.distance),
+                                                              ikCtrl.ctrl,
+                                                              (endBlendDist.distance,
+                                                               endSoftBlendDist.distance))
 
-	# create sdk for elbow pin
-	upperBlendNode = blendAttrNodes_and_checkStretchCond[0]
-	lowerBlendNode = blendAttrNodes_and_checkStretchCond[1]
-	checkStretch_condition = blendAttrNodes_and_checkStretchCond[2]
-	cmds.connectAttr(checkStretch_condition + '.outColorR', endSoftLoc + '.translateX', f=True)
-	pm.addAttr(midPinControl.ctrl, longName='pin', attributeType="double",
-	             min=0, max=10, defaultValue=0, keyable=True)
+    # create sdk for elbow pin
+    upperBlendNode = blendAttrNodes_and_checkStretchCond[0]
+    lowerBlendNode = blendAttrNodes_and_checkStretchCond[1]
+    checkStretch_condition = blendAttrNodes_and_checkStretchCond[2]
+    cmds.connectAttr(checkStretch_condition + '.outColorR', endSoftLoc + '.translateX', f=True)
+    pm.addAttr(midPinControl.ctrl, longName='pin', attributeType="double",
+                 min=0, max=10, defaultValue=0, keyable=True)
 
-	rig_animDrivenKey(midPinControl.ctrl.pin, (0, 10),
-	                  upperBlendNode + '.attributesBlender', (0, 1 ))
-	rig_animDrivenKey(midPinControl.ctrl.pin, (0, 10),
-	                  lowerBlendNode + '.attributesBlender', (0, 1 ))
+    rig_animDrivenKey(midPinControl.ctrl.pin, (0, 10),
+                      upperBlendNode + '.attributesBlender', (0, 1 ))
+    rig_animDrivenKey(midPinControl.ctrl.pin, (0, 10),
+                      lowerBlendNode + '.attributesBlender', (0, 1 ))
 
-	rig_animDrivenKey(ikCtrl.ctrl.ikStretch, (0, 1),
-	                  stretchTargets[1], (1, 0 ))
-	rig_animDrivenKey(ikCtrl.ctrl.ikStretch, (1, 0),
-	                  stretchTargets[0], (1, 0 ))
+    rig_animDrivenKey(ikCtrl.ctrl.ikStretch, (0, 1),
+                      stretchTargets[1], (1, 0 ))
+    rig_animDrivenKey(ikCtrl.ctrl.ikStretch, (1, 0),
+                      stretchTargets[0], (1, 0 ))
 
-	return endBlendLoc
+    return endBlendLoc
 
 def addStretchyIKJoints( _name, _jntList, _distanceDim, _ikControl, _wristStretchDist ):
     #print 'addStretchyIKJoints function starts here ------------------------'
@@ -379,8 +387,8 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     '''
     ctrlPos = []
     for i in range(0, numJoints):
-    	if i % numFkControls == 0:
-    		ctrlPos.append(chainList[i])
+        if i % numFkControls == 0:
+            ctrlPos.append(chainList[i])
     '''
     endJnt = defaultReturn(rootJnt.replace('JA_JNT', 'JEnd_JNT'), 'endJnt', param=kwds)
 
@@ -391,7 +399,7 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     pm.parent(ctrlPos, w=True)
 
     for jnt in ctrlPos:
-    	pm.delete(pm.orientConstraint(rootJnt, jnt))
+        pm.delete(pm.orientConstraint(rootJnt, jnt))
 
 
     # make ik driver controls/joints
@@ -400,49 +408,49 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     driverJntList = []
     fkScale = 1.5
     for i in range(0, len(ctrlPos)):
-    	driverJnt = rig_transform(0, name=name+'DriverJ' + ABC[i], type='joint',
-    	                          target=ctrlPos[i], parent=module.parts,
-    	                          rotateOrder=2).object
-    	driverJntList.append(driverJnt)
+        driverJnt = rig_transform(0, name=name+'DriverJ' + ABC[i], type='joint',
+                                  target=ctrlPos[i], parent=module.parts,
+                                  rotateOrder=2).object
+        driverJntList.append(driverJnt)
 
-    	driverCtrl = rig_control(name=name+'Driver' + ABC[i], shape='box', modify=1, scale=ctrlSizeHalf,
-    	                         colour='green', parentOffset=module.controlsSec, rotateOrder=2)
-    	ikControls.append(driverCtrl)
-    	pm.delete(pm.parentConstraint(driverJnt,driverCtrl.offset))
-    	pm.parentConstraint(driverCtrl.con, driverJnt, mo=True)
+        driverCtrl = rig_control(name=name+'Driver' + ABC[i], shape='box', modify=1, scale=ctrlSizeHalf,
+                                 colour='green', parentOffset=module.controlsSec, rotateOrder=2)
+        ikControls.append(driverCtrl)
+        pm.delete(pm.parentConstraint(driverJnt,driverCtrl.offset))
+        pm.parentConstraint(driverCtrl.con, driverJnt, mo=True)
 
-    	lockTranslate = []
-    	ctrlShape = 'circle'
-    	if i == 0:
-    		lockTranslate = ['tx', 'ty', 'tz']
-    		ctrlShape = 'pyramid'
-    	else:
-    		lockTranslate = []
-    	fkCtrl = rig_control(name=name+'FK'+ABC[i], shape=ctrlShape, modify=2,
-    	                     targetOffset=ctrlPos[i], parentOffset=module.controls,
-    	                     lockHideAttrs=lockTranslate,
-    	                     scale=((ctrlSize[0])*fkScale,(ctrlSize[1])*fkScale,(ctrlSize[
-    			2])*fkScale ))
+        lockTranslate = []
+        ctrlShape = 'circle'
+        if i == 0:
+            lockTranslate = ['tx', 'ty', 'tz']
+            ctrlShape = 'pyramid'
+        else:
+            lockTranslate = []
+        fkCtrl = rig_control(name=name+'FK'+ABC[i], shape=ctrlShape, modify=2,
+                             targetOffset=ctrlPos[i], parentOffset=module.controls,
+                             lockHideAttrs=lockTranslate,
+                             scale=((ctrlSize[0])*fkScale,(ctrlSize[1])*fkScale,(ctrlSize[
+                2])*fkScale ))
 
-    	if i == 0:
-    		if pm.objExists(parentRoot):
-    			pm.parentConstraint(parentRoot, fkCtrl.offset, mo=True)
+        if i == 0:
+            if pm.objExists(parentRoot):
+                pm.parentConstraint(parentRoot, fkCtrl.offset, mo=True)
 
-    		if pm.objExists(parentRoot) and pm.objExists('worldSpace_GRP'):
-    			constrainObject(fkCtrl.modify[0],
-    			                [fkCtrl.offset, 'worldSpace_GRP'],
-    			                fkCtrl.ctrl, ['parent', 'world'],
-    			                type='orientConstraint')
+            if pm.objExists(parentRoot) and pm.objExists('worldSpace_GRP'):
+                constrainObject(fkCtrl.modify[0],
+                                [fkCtrl.offset, 'worldSpace_GRP'],
+                                fkCtrl.ctrl, ['parent', 'world'],
+                                type='orientConstraint')
 
-    	pm.parentConstraint( fkCtrl.con, driverCtrl.offset, mo=True )
+        pm.parentConstraint( fkCtrl.con, driverCtrl.offset, mo=True )
 
-    	if i > 0:
-    		parentOffset = fkControls[i - 1].con
-    		pm.parent(fkCtrl.offset, parentOffset)
+        if i > 0:
+            parentOffset = fkControls[i - 1].con
+            pm.parent(fkCtrl.offset, parentOffset)
 
-    	fkControls.append(fkCtrl)
+        fkControls.append(fkCtrl)
 
-    	fkScale = fkScale - 0.1
+        fkScale = fkScale - 0.1
 
     pm.delete(ctrlPos)
 
@@ -457,10 +465,10 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     pm.addAttr(rootCtrl.ctrl, longName='curlSide', at='float', k=True, min=-10,
                max=10, dv=0)
     for i in range(1, numIkControls):
-    	rig_animDrivenKey(rootCtrl.ctrl.curl, (-10,0, 10),
-    	                  fkControls[i].modify[0] + '.rotateX', (-90,0, 90 ))
-    	rig_animDrivenKey(rootCtrl.ctrl.curlSide, (-10, 0, 10),
-    	                  fkControls[i].modify[0] + '.rotateZ', (-90, 0, 90 ))
+        rig_animDrivenKey(rootCtrl.ctrl.curl, (-10,0, 10),
+                          fkControls[i].modify[0] + '.rotateX', (-90,0, 90 ))
+        rig_animDrivenKey(rootCtrl.ctrl.curlSide, (-10, 0, 10),
+                          fkControls[i].modify[0] + '.rotateZ', (-90, 0, 90 ))
 
 
     ik = rig_ik(name, rootJnt, chainList[-1], 'ikSplineSolver', numSpans=numIkControls)
@@ -478,7 +486,7 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     pm.parentConstraint(ikControls[-2].con, upperAim, mo=True)
 
     aimTop = mm.eval(
-    	'rig_makePiston("' + lowerAim + '", "' + upperAim + '", "'+name+'Aim");')
+        'rig_makePiston("' + lowerAim + '", "' + upperAim + '", "'+name+'Aim");')
 
     pm.move( upperAim+'Up', 0, 30*ctrlSize[0], 0,r=True,os=True )
     pm.move(lowerAim + 'Up', 0, 20*ctrlSize[0], 0, r=True, os=True)
@@ -539,8 +547,8 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
                    output=(toggleStretch_ctrl_MD + '.input1X', 0, 0))
 
     for i in range(0, len(chainList) - 1):
-    	pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', chainList[i] + '.scaleY',
-    	               f=True)
+        pm.connectAttr(globalCurveStretchyFix_MD + '.outputX', chainList[i] + '.scaleY',
+                       f=True)
 
     pm.skinCluster(driverJntList, ik.curve, tsb=True)
 

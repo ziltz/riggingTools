@@ -12,6 +12,11 @@ from rutils.rig_transform import rig_transform
 from rutils.rig_chain import *
 from rutils.rig_joint import *
 
+import collections
+import string
+
+ABC = list(string.ascii_uppercase)
+
 '''
 
 numJoints = 39
@@ -247,17 +252,17 @@ class rig_tail( object ):
         if self.makeDynamic:
             for i in range (0, len(tailJnts)):
                 tailNme = tailJnts[i].stripNamespace()
-                tailDyn = tailNme.replace('IK', 'Dyn')
+                tailDyn = tailNme.replace('IK', 'DynJ')
                 tailDyn = tailDyn.replace('_JNT', '')
                 tailDyn = rig_transform(0, name=tailDyn, type='joint',target=tailJnts[i] ).object
                 dynJnts.append(tailDyn)
-                pm.addAttr(fkBaseCtrl, ln='Dynamics', at='enum',
-                       enumName='___________',
-                       k=True)
-                pm.addAttr( fkBaseCtrl, longName='dynamicBlend',attributeType="double",
-                                min=0, max=10, defaultValue=0, keyable=True )
-                pm.addAttr( fkBaseCtrl, longName='stiffness',attributeType="double",
-                                min=0, max=10, defaultValue=5, keyable=True )
+            pm.addAttr(fkBaseCtrl, ln='Dynamics', at='enum',
+                   enumName='___________',
+                   k=True)
+            pm.addAttr( fkBaseCtrl, longName='dynamicBlend',attributeType="double",
+                            min=0, max=10, defaultValue=0, keyable=True )
+            pm.addAttr( fkBaseCtrl, longName='stiffness',attributeType="double",
+                            min=0, max=10, defaultValue=5, keyable=True )
 
         for i in range (1, len(tailJnts)):
             tailNme = tailJnts[i].stripNamespace()
@@ -360,10 +365,6 @@ class rig_tail( object ):
             chainParent( dynJnts, reverse=0 )
             dynJnts.reverse()
             finalChain = rig_jointCopyChain(dynJnts[0], replaceName=('Dyn','Final') )
-            for d in dynJnts:
-                print 'dynJnt = '+d
-            print str(dynJnts)
-            print str(finalChain)
 
             mc.select(self.name+"SplineIK_CRV")
             mm.eval('makeCurvesDynamic 2 { "1", "0", "1", "1", "0"};')
@@ -417,9 +418,20 @@ class rig_tail( object ):
             sc = simpleControls(dynJnts, modify=1, constrainJoints=0, parentCon=1, colour='red' )
             pm.parent ( sc[dynJnts[0]].offset, tailModule.controlsSec )
 
+            collections.OrderedDict(sorted(sc.items(), key=lambda t: t[0]))
+
             i = 0
-            for jnt in sc:
-                pm.parent( finalChain[i], sc[jnt].con )
+            for jnt in finalChain:
+                driverJnt = jnt.replace('Final', 'Driver')
+                dynJnt = jnt.replace('Final', 'Dyn')
+                pm.parent( jnt, sc[dynJnt].con )
+                con = pm.parentConstraint( driverJnt, dynJnt, sc[dynJnt].offset ,mo=True )
+                pm.setAttr(con.interpType, 2)
+                targets = con.getWeightAliasList()
+                rig_animDrivenKey(fkBaseCtrl.dynamicBlend, (0, 10),
+                                              targets[0], (1, 0 ))
+                rig_animDrivenKey(fkBaseCtrl.dynamicBlend, (0, 10),
+                                              targets[1], (0, 1 ))
                 i += 1
 
             chainList = rig_chain(self.origRootJoint).chain
@@ -436,6 +448,8 @@ class rig_tail( object ):
             pm.connectAttr(self.name+'LowerAim_LOCUp.worldMatrix[0]', ik.handle.dWorldUpMatrix, f=True)
 
             pm.skinCluster(finalChain, ik.curve, tsb=True)
+
+            pm.setAttr(self.name+'Dyn_CRV.inheritsTransform', 0)
 
             pm.parent( dynJnts[0], 'nucleus1', hairSystem, ikData.handle, ikData.curve ,tailModule.parts)
             pm.delete('hairSystem1OutputCurves')

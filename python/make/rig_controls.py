@@ -524,7 +524,9 @@ def constrainObject( obj, multipleConstrainer, ctrl='',enumName=[], **kwds):
 	return targets
 
 
-def fkControlChain( jointChain, modify=1, scale=[1,1,1], directCon=0):
+def fkControlChain( jointChain, modify=1, scale=[1,1,1], directCon=0, **kwds):
+
+	lockHide = defaultReturn(['tx','ty','tz'],'lockHide', param=kwds)
 
 	controls = []
 
@@ -547,7 +549,7 @@ def fkControlChain( jointChain, modify=1, scale=[1,1,1], directCon=0):
 		scale[2] = scale[2] * 0.8
 
 		fkCtrl = rig_control( side=side, name=ctrlName, shape='box', modify=modify,
-		                      lockHideAttrs=['tx','ty','tz'], targetOffset=jnt,
+		                      lockHideAttrs=lockHide, targetOffset=jnt,
 		                      constrain=pm.PyNode(jnt),
 		                      constrainOffset=constrainOffset,scale=scale,
 		                      directCon=directCon )

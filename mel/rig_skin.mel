@@ -26,3 +26,31 @@ global proc rig_copySkinWeights(string $source, string $destin[])
 		}
 	}
 }
+
+
+global proc rig_copySkinWeightsMax(string $source, string $destin[], int $maxInfs)
+{
+	for ($dest in $destin)
+	{
+		string $scDest = `findRelatedSkinCluster $dest`;
+
+		if ($scDest != "")
+		    catchQuiet(`delete $scDest`);
+
+		string $sc = `findRelatedSkinCluster $source`;
+
+		if (`objExists $sc`)
+		{
+			string $infs[] = `skinCluster -q -inf $sc`;
+
+			string $newSc[] = `skinCluster -tsb $infs $dest` ;
+			skinCluster -e -maximumInfluences $maxInfs $newSc[0];
+			setAttr ($newSc[0]+".maintainMaxInfluences") 1;
+
+			copySkinWeights  -noMirror -surfaceAssociation closestPoint -influenceAssociation name -influenceAssociation oneToOne $source $dest; 
+		}
+		else{
+			warning ($source+" does not have a skinCluster"+"\n");
+		}
+	}
+}

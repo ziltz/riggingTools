@@ -230,6 +230,42 @@ global proc rig_constrainBlockGeometry(string $grp)
 
 }
 
+/*
+
+rig_skinBlockGeometry( "lowLOD_GRP");
+
+*/
+global proc rig_skinBlockGeometry(string $grp)
+{
+
+	string $lowGeos[] = rig_geoUnderGroupHierarchy($grp);
+
+	for ($geo in $lowGeos)
+	{
+		print ("geo = "+$geo+"\n");
+		string $con = rig_stringFirst(`listRelatives -typ "constraint" $geo`);
+		string $sc = `findRelatedSkinCluster $geo`;
+		if ( (!`objExists $con`) && (!`objExists $sc`) )
+		{
+			string $jntName = `substitute "JNTBLOCK" $geo "JNT"`;
+
+			if (`gmatch $geo "*JNTBLOCK"`)
+			{
+				if (`objExists $jntName`)
+				{
+					print ("jnt = "+$jntName+"\n");
+					skinCluster -tsb $jntName $geo;
+				}
+				else
+					print ($jntName +" does not exist"+"\n");
+			}
+			else{
+				print ($geo+" not constrained= "+"\n");
+			}
+		}
+	}
+
+}
 
 global proc string[] rig_arrayReverse( string $array[] )
 {

@@ -82,9 +82,65 @@ def rig_skinClusterFindMirrorMissing(sc=''):
 	cmds.select(rList)
 
 
+'''
 
+ rig_skinWeightsTransfer(geo, source_JNT, 'dest_JNT')  
 
+'''
 
+def rig_skinWeightsTransfer(geom, source, dest):
+
+    if cmds.objExists(geom) and cmds.objExists(source) and cmds.objExists(dest):
+        cmds.undoInfo(state=False)
+
+        skinCluster = mm.eval('findRelatedSkinCluster "'+geom+'";')
+        if skinCluster:
+            cmds.select(geom,r=True)
+            vtxNum = cmds.polyEvaluate( v=True )
+            cmds.setAttr( skinCluster+'.normalizeWeights' ,2)
+            infs = cmds.skinCluster(skinCluster, inf=True, q=True)
+            for i in infs:
+                cmds.setAttr( i+'.liw', 1 )
+                
+            cmds.setAttr( source+'.liw', 0 )
+            cmds.setAttr( dest+'.liw', 0 )
+            skinMatrix = ''
+            skinMatrixDest = ''
+            try:
+                cons = cmds.listConnections(source+'.worldMatrix[0]', d=True, p=True)
+                cons2 = cmds.listConnections(dest+'.worldMatrix[0]', d=True, p=True)
+                for c in cons:
+                    if skinCluster in c:
+                        skinMatrix = c
+                for c in cons2:
+                    if skinCluster in c:
+                        skinMatrixDest = c
+                if skinMatrix and skinMatrixDest:
+                    num1 = skinMatrix.split('[')[1]
+                    numID = num1.split(']')[0]
+                    num1 = skinMatrixDest.split('[')[1]
+                    numIDDest = num1.split(']')[0]
+                    for i in range(0, vtxNum):
+                        index = str(i)
+                        val = cmds.getAttr(skinCluster+'.weightList['+index+'].weights['+numID+']')
+                        if val != 0.0:
+                            valDest = cmds.getAttr(skinCluster+'.weightList['+index+'].weights['+numIDDest+']')
+                            newVal = val+valDest
+                            cmds.setAttr(skinCluster+'.weightList['+index+'].weights['+numIDDest+']', newVal)
+                            cmds.setAttr(skinCluster+'.weightList['+index+'].weights['+numID+']', 0)
+
+                    cmds.skinCluster( skinCluster, ri =source ,e=True )
+            except:
+                print 'Passing '+source+'... not in '+skinCluster
+
+            cmds.setAttr( skinCluster+'.normalizeWeights' ,1)
+        
+            for i in infs:
+                cmds.setAttr( i+'.liw', 0 )
+
+        print ('Done transferring '+source+' to '+dest+' on '+geom)
+
+        cmds.undoInfo(state=True)
 
 
 

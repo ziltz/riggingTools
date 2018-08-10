@@ -86,7 +86,7 @@ global proc string rig_objModify(string $obj)
 
 global proc string[] rig_returnDeformers(string $obj, string $defType)
 {
-	string $defs[] = `findRelatedDeformer("skin_C_body_GV")`;
+	string $defs[] = `findRelatedDeformer($obj)`;
 
 	string $listDef[] = {};
 	for ($d in $defs)

@@ -9,6 +9,41 @@ from rutils.rig_name import *
 from rutils.rig_nodes import *
 from rutils.rig_anim import *
 
+'''
+
+procs
+
+
+import create.rig_facial as facial
+facial.facialTransformHierarchy(cmds.ls(sl=True), 'headJALocal_JNT' )
+
+
+snap tweakers to curve with knots of 10 (rebuild from hi curve)
+
+grpList = pm.ls(sl=True)
+_curve = pm.PyNode('upperLip_CRVShape')
+
+u = 0 
+for loc in grpList:
+    nme = loc.replace('Offset_GRP', '_poi')
+    poi = pm.createNode( 'pointOnCurveInfo', n=nme )
+    fourByMat = cmds.shadingNode('fourByFourMatrix', asUtility=True)
+    dMatr = cmds.shadingNode('decomposeMatrix', asUtility=True)
+    pm.connectAttr( _curve+'.worldSpace', poi + '.inputCurve' )
+    pm.setAttr( poi +'.parameter', u )
+    pm.connectAttr( poi+'.position', loc+'.t')
+    cmds.connectAttr( poi+'.normalizedTangentX', fourByMat+'.in00',f=True )
+    cmds.connectAttr( poi+'.normalizedTangentY', fourByMat+'.in01',f=True )
+    cmds.connectAttr( poi+'.normalizedTangentZ', fourByMat+'.in02',f=True )
+    cmds.connectAttr( fourByMat+'.output', dMatr+'.inputMatrix',f=True )
+    cmds.connectAttr( dMatr+'.outputRotate', loc+'.rotate',f=True )
+    u += 0.1
+
+
+
+'''
+
+
 
 def defaultShapeDriverList():
 
@@ -39,10 +74,10 @@ def defaultShapeDriverList():
 	return shapes
 
 
-def connectShapesToShapeBS():
+def connectShapesToShapeBS(shapeBS):
 
 	shapeDriver = 'facialShapeDriver_LOC'
-	shapeBS = 'shapeBS'
+	#shapeBS = 'shapeBS'
 
 	shapes = defaultShapeDriverList()
 
@@ -207,7 +242,7 @@ def connectFacialCorrectiveBS():
 
 # y and z four way control direct connect
 
-def fourWayShapeControl(driver, shapes, parent, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def fourWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -225,26 +260,26 @@ def fourWayShapeControl(driver, shapes, parent, ctrlSize=1, facialLoc='facialSha
 	#pm.parentConstraint(parent, driverCtrl.offset, mo=True)
 	pm.parent(driverCtrl.offset, parent)
 
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,1), facialLoc+'.'+shapes[0], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1), facialLoc+'.'+shapes[1], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, 1), facialLoc+'.'+shapes[2], (0, 1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, -1), facialLoc+'.'+shapes[3], (0, 1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shapes[0], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1*mult), facialLoc+'.'+shapes[1], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, mult), facialLoc+'.'+shapes[2], (0, 1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, -1*mult), facialLoc+'.'+shapes[3], (0, 1))
 
 
 	multiplyDivideNode(side+base, 'multiply', input1=[driverCtrl.ctrl.translateY,
 	                                                    driverCtrl.ctrl.translateZ, 0],
-	                   input2=[-0.5, -0.5, 0.5],
+	                   input2=[-0.5*mult, -0.5*mult, 0.5*mult],
 	                   output=[driverCtrl.modify+'.translateY',driverCtrl.modify+'.translateZ'])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(-1, 1), ety=(1, 1))
-	pm.transformLimits(driverCtrl.ctrl, tz=(-1, 1), etz=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(-1*mult, mult), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, tz=(-1*mult, mult), etz=(1, 1))
 
 	return driverCtrl
 
 
 # y axis two way control direct connect
 
-def twoWayShapeControl(driver, shapes, parent, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def twoWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -262,20 +297,20 @@ def twoWayShapeControl(driver, shapes, parent, ctrlSize=1, facialLoc='facialShap
 	#pm.parentConstraint(parent, driverCtrl.offset, mo=True)
 	pm.parent(driverCtrl.offset, parent)
 
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,1), facialLoc+'.'+shapes[0], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1), facialLoc+'.'+shapes[1], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shapes[0], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1*mult), facialLoc+'.'+shapes[1], (0,1))
 
 	multiplyDivideNode(side + base, 'multiply', input1=[driverCtrl.ctrl.translateY,0, 0],
-	                   input2=[-0.5, -0.5, 0.5],
+	                   input2=[0.5*mult, 0.5*mult, 0.5*mult],
 	                   output=[driverCtrl.modify + '.translateY',])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(-1, 1), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(-1*mult, mult), ety=(1, 1))
 
 	return driverCtrl
 
 # y axis one way control direct connect
 
-def oneWayShapeControl(driver, shape, parent, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def oneWayShapeControl(driver, shape, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -293,13 +328,14 @@ def oneWayShapeControl(driver, shape, parent, ctrlSize=1, facialLoc='facialShape
 	#pm.parentConstraint(parent, driverCtrl.offset, mo=True)
 	pm.parent( driverCtrl.offset, parent)
 
-	pm.connectAttr( driverCtrl.ctrl.translateY, facialLoc+'.'+shape )
+	#pm.connectAttr( driverCtrl.ctrl.translateY, facialLoc+'.'+shape )
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shape, (0,1))
 
 	multiplyDivideNode(side + base, 'multiply', input1=[driverCtrl.ctrl.translateY,0,0],
-	                   input2=[-0.5, -0.5, 0.5],
+	                   input2=[0.5*mult, 0.5*mult, 0.5*mult],
 	                   output=[driverCtrl.modify + '.translateY', ])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(0, 1), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(0, mult), ety=(1, 1))
 
 	return driverCtrl
 
@@ -366,4 +402,26 @@ def facialLocalWorldControllers(module,parent, ctrlSize=1):
 		for at in ('tx','ty','tz','rx','ry','rz'):
 			pm.connectAttr( localCon+'.'+at, ctrl.modify+'.'+at )
 			pm.connectAttr( ctrl.ctrl + '.' + at, jnt + '.' + at)
+
+
+
+
+'''
+
+'''
+
+def createJointsFromCVs(curve):
+
+	crv = pm.PyNode(curve)
+
+	crvShape = crv.getShape()
+	crvCVs = crvShape.getCVs()
+
+	for p in crvCVs:
+	    print p
+	    cmds.select(cl=True)
+	    cmds.joint(p=p)
+
+
+
 

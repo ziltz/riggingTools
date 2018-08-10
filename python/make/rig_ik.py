@@ -375,6 +375,7 @@ def rig_ikChainSpline( name, rootJnt, ctrlSize=1.0, **kwds ):
     numFkControls = defaultReturn(5, 'numFkControls', param=kwds)
     dWorldUpAxis = defaultReturn(6, 'dWorldUpAxis', param=kwds)
     parentRoot = defaultReturn('spineJA_JNT', 'parent', param=kwds)
+    lockBase = defaultReturn(1, 'lockBase', param=kwds)
     module = rig_module(name)
     ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
     ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]

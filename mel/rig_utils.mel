@@ -29,8 +29,14 @@ aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpT
 int $borders[] = `polyOptions -q -displayMapBorder`;float $borderWidth[] = `optionVar -q displayPolyBorderEdgeSize`;polyOptions -displayMapBorder (!$borders[0]) -sizeBorder $borderWidth[1];
 
 
+string $outliners[] = `getPanel -type outlinerPanel`;
+// Set
+for ( $outliner in $outliners )
+{ outlinerEditor -e -setFilter "defaultSetFilter" $outliner; }
+
 
 */
+
 
 
 /*

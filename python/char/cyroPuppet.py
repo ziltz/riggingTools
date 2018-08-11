@@ -13,6 +13,7 @@ from make.rig_tail import *
 from make.rig_controls import *
 from make.rig_flex import *
 
+from rutils.rig_nodes import *
 
 import string
 
@@ -184,6 +185,10 @@ def cyroFinish():
         pm.connectAttr( "global_CTRL.lodDisplay", cNode+'.secondTerm')
         pm.connectAttr( cNode+'.outColorR', hiDeltaMush[0]+'.envelope')
         
+    # mid LOD
+    #cmds.setAttr("global_CTRL.lodDisplay", 1)
+
+
 def cyroShoulderUpgrade(side='', ctrlSize=1):
     name = side+'_quadShoulder'
 
@@ -343,6 +348,7 @@ def cyroFacialShapeDriver():
 
 def cryoBuildFacial():
     # build facial
+    print 'Cyro Facial'
 
     facialModule = rig_module('facial')
     pm.parent(facialModule.top, 'rigModules_GRP')
@@ -351,16 +357,27 @@ def cryoBuildFacial():
 
     for side in ['l', 'r']:
         nostrilCtrl = twoWayShapeControl(side + '_nostrilShape_LOC', (side + '_nostrilClose', side + '_nostrilOpen'),
-                            'headShapeWorld_GRP', mult=3, ctrlSize=10)
+                            'headShapeWorld_GRP', mult=1.5, ctrlSize=10, negPos=1)
 
         pm.rotate(nostrilCtrl.ctrl.cv, -90, 0, 0,r=True, os=True)
 
+        pm.addAttr(nostrilCtrl.ctrl, longName='sinusBreathe',
+               attributeType="double",
+               min=0, max=1, defaultValue=1, keyable=True)
+
+        nostrilMD = multiplyDivideNode( side+'nostril', 'multiply', input1=[nostrilCtrl.ctrl.sinusBreathe,0,0], 
+                                        input2=[nostrilCtrl.ctrl.translateY,1,1],
+                                        output=['facialShapeDriver_LOC.'+side+'_sinusBreathe'])
+
+
         eyeCtrl = oneWayShapeControl(side + '_eyeShape_LOC', side+'_eyeClosed',
-                           'headShapeWorld_GRP', mult=3, ctrlSize=10)
+                           'headShapeWorld_GRP', mult=1.5, ctrlSize=10, negPos=1)
 
         pm.rotate(eyeCtrl.ctrl.cv, 0, -90, 0,r=True, os=True)
         if side == 'r':
             pm.rotate(eyeCtrl.ctrl.cv, 180, 0, 0,r=True, os=True)
+
+
 
     pm.parent('headShapeWorld_GRP', facialModule.controls)
     pm.parentConstraint('headJA_JNT', 'headShapeWorld_GRP')
@@ -392,28 +409,50 @@ def cryoBuildFacial():
     pm.move(pm.PyNode('upperLipTwk_CTRL').cv, 0, 0, 3.7, r=True)
 
     pm.move( pm.PyNode('nostrilMoverTwk_CTRL').cv, 0, 0, 10,r=True,os=True )
+
+    pm.move( pm.PyNode('l_masseterTwk_CTRL').cv, 0, 0, 0.3,r=True,os=True )
+    pm.move( pm.PyNode('r_masseterTwk_CTRL').cv, 0, 0, -0.3,r=True,os=True )
+
+    print 'Finished Cyro Facial'
     
-def setFlex(name, driver, shapes, parents):
-    ctrl = rig_flexControl(name, driver, shapes=shapes)
+def setFlex(name, driver, shapes, parents, colour='red'):
+    print 'setFlex start'
+    ctrl = rig_flexControl(name, driver, shapes=shapes, colour=colour)
     if isinstance('', str):
         pm.parentConstraint( parents, ctrl.offset, mo=True)
     else:
         pm.pointConstraint(parents[0], parents[1], ctrl.offset, mo=True )
         con = pm.orientConstraint(parents[0], parents[1], ctrl.offset, mo=True )
         pm.setAttr(con.interpType, 2)
+    print 'setFlex end'
     return ctrl
 
 def cyroFlexControls():
+    print 'cyroFlexControls start'
     flexModule = rig_module('flex')
 
     hyoidCtrl = setFlex('hyoid', 'hyoidShapeDriver_LOC', shapes=['hyoidIn_neck','hyoidOut_neck'],
                 parents=('jawJEnd_JNT', 'neckJA_JNT') )
     neckTense = setFlex('neckTense', 'neckTenseShapeDriver_LOC', shapes=['tenseOut_neck','tenseIn_neck'],
-                parents=('jawJEnd_JNT', 'neckJA_JNT') )
+                parents=('jawJEnd_JNT', 'neckJA_JNT'), colour='orange' )
     neckSwallow = setFlex('neckSwallow', 'neckSwallowShapeDriver_LOC', shapes=['swallowDown_neck','swallowUp_neck'],
                 parents='neckJC_JNT' )
     neckBulge = setFlex('neckBulge', 'neckBulgeShapeDriver_LOC', shapes=['bulgeOut_neck','bulgeIn_neck'],
-                parents='neckJB_JNT' )
+                parents='neckJB_JNT', colour='orange' )
 
     pm.parent(hyoidCtrl.offset, neckTense.offset, neckSwallow.offset, neckBulge.offset, flexModule.controls )
+
+    print 'cyroFlexControls end'
+
+
+
+
+
+
+
+
+
+
+
+
 

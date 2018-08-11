@@ -8,6 +8,7 @@ from rutils.rig_transform import rig_transform
 from rutils.rig_name import *
 from rutils.rig_nodes import *
 from rutils.rig_anim import *
+from rutils.rig_utils import *
 
 '''
 
@@ -242,7 +243,9 @@ def connectFacialCorrectiveBS():
 
 # y and z four way control direct connect
 
-def fourWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def fourWayShapeControl(driver, shapes, parent, mult=0.5, ctrlSize=1, facialLoc='facialShapeDriver_LOC', **kwds):
+
+	negPos = defaultReturn(-1, 'negPos', param=kwds)
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -260,26 +263,28 @@ def fourWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='f
 	#pm.parentConstraint(parent, driverCtrl.offset, mo=True)
 	pm.parent(driverCtrl.offset, parent)
 
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shapes[0], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1*mult), facialLoc+'.'+shapes[1], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, mult), facialLoc+'.'+shapes[2], (0, 1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, -1*mult), facialLoc+'.'+shapes[3], (0, 1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,1), facialLoc+'.'+shapes[0], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1), facialLoc+'.'+shapes[1], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, 1), facialLoc+'.'+shapes[2], (0, 1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateZ, (0, -1), facialLoc+'.'+shapes[3], (0, 1))
 
 
 	multiplyDivideNode(side+base, 'multiply', input1=[driverCtrl.ctrl.translateY,
 	                                                    driverCtrl.ctrl.translateZ, 0],
-	                   input2=[-0.5*mult, -0.5*mult, 0.5*mult],
+	                   input2=[negPos*mult, negPos*mult, negPos*mult],
 	                   output=[driverCtrl.modify+'.translateY',driverCtrl.modify+'.translateZ'])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(-1*mult, mult), ety=(1, 1))
-	pm.transformLimits(driverCtrl.ctrl, tz=(-1*mult, mult), etz=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(-1, 1), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, tz=(-1, 1), etz=(1, 1))
 
 	return driverCtrl
 
 
 # y axis two way control direct connect
 
-def twoWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def twoWayShapeControl(driver, shapes, parent, mult=0.5, ctrlSize=1, facialLoc='facialShapeDriver_LOC', **kwds):
+
+	negPos = defaultReturn(-1, 'negPos', param=kwds)
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -297,20 +302,22 @@ def twoWayShapeControl(driver, shapes, parent, mult=1, ctrlSize=1, facialLoc='fa
 	#pm.parentConstraint(parent, driverCtrl.offset, mo=True)
 	pm.parent(driverCtrl.offset, parent)
 
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shapes[0], (0,1))
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1*mult), facialLoc+'.'+shapes[1], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,1), facialLoc+'.'+shapes[0], (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,-1), facialLoc+'.'+shapes[1], (0,1))
 
 	multiplyDivideNode(side + base, 'multiply', input1=[driverCtrl.ctrl.translateY,0, 0],
-	                   input2=[0.5*mult, 0.5*mult, 0.5*mult],
-	                   output=[driverCtrl.modify + '.translateY',])
+	                   input2=[negPos*mult, negPos*mult, negPos*mult],
+	                   output=[driverCtrl.modify + '.translateY'])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(-1*mult, mult), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(-1, 1), ety=(1, 1))
 
 	return driverCtrl
 
 # y axis one way control direct connect
 
-def oneWayShapeControl(driver, shape, parent, mult=1, ctrlSize=1, facialLoc='facialShapeDriver_LOC'):
+def oneWayShapeControl(driver, shape, parent, mult=0.5, ctrlSize=1, facialLoc='facialShapeDriver_LOC', **kwds):
+
+	negPos = defaultReturn(-1, 'negPos', param=kwds)
 
 	ctrlSizeHalf = [ctrlSize / 2.0, ctrlSize / 2.0, ctrlSize / 2.0]
 	ctrlSizeQuarter = [ctrlSize / 4.0, ctrlSize / 4.0, ctrlSize / 4.0]
@@ -329,13 +336,13 @@ def oneWayShapeControl(driver, shape, parent, mult=1, ctrlSize=1, facialLoc='fac
 	pm.parent( driverCtrl.offset, parent)
 
 	#pm.connectAttr( driverCtrl.ctrl.translateY, facialLoc+'.'+shape )
-	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,mult), facialLoc+'.'+shape, (0,1))
+	rig_animDrivenKey(driverCtrl.ctrl.translateY, (0,1), facialLoc+'.'+shape, (0,1))
 
 	multiplyDivideNode(side + base, 'multiply', input1=[driverCtrl.ctrl.translateY,0,0],
-	                   input2=[0.5*mult, 0.5*mult, 0.5*mult],
+	                   input2=[negPos*mult, negPos*mult, negPos*mult],
 	                   output=[driverCtrl.modify + '.translateY', ])
 
-	pm.transformLimits(driverCtrl.ctrl, ty=(0, mult), ety=(1, 1))
+	pm.transformLimits(driverCtrl.ctrl, ty=(0, 1), ety=(1, 1))
 
 	return driverCtrl
 

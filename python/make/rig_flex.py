@@ -56,17 +56,19 @@ rig_flexControl('hyoid', 'hyoidShapeDriver_LOC', shapes=['hyoidIn_neck','hyoidOu
 def rig_flexControl(name, shapeDriverLoc, shapes=[], flexLoc='flexShapes_LOC', **kwds):
 
     scale = defaultReturn(5, 'scale', param=kwds)
+    shape = defaultReturn('sphere', 'shape', param=kwds)
+    colour = defaultReturn('red', 'colour', param=kwds)
 
     flexCenter = rig_control(name=name+'FlexCenter', shape='box', scale=(scale,scale,scale),
                              colour='white',lockHideAttrs=['tx','ty','tz','rx','ry','rz'])
     pm.delete(pm.parentConstraint( shapeDriverLoc ,flexCenter.offset))
 
-    flexCtrl = rig_control(name=name+'Flex', shape='sphere', scale=(scale/2,scale/2,scale/2),
-                             parentOffset=flexCenter.con, colour='red',lockHideAttrs=['tx','tz','rx','ry','rz'])
+    flexCtrl = rig_control(name=name+'Flex', shape=shape, scale=(scale/2,scale/2,scale/2),
+                             parentOffset=flexCenter.con, colour=colour,lockHideAttrs=['tx','tz','rx','ry','rz'])
     pm.delete(pm.parentConstraint( flexCenter.con ,flexCtrl.offset))
 
     rig_curveBetweenTwoPoints(flexCenter.con,flexCtrl.con, name=name+'_curveBetween' , degree=1, 
-                                colour='white', parent=flexCenter.offset)
+                                colour=colour, parent=flexCenter.offset)
 
     i = 0
     bi = 10
@@ -79,7 +81,38 @@ def rig_flexControl(name, shapeDriverLoc, shapes=[], flexLoc='flexShapes_LOC', *
 
     pm.setAttr(flexCenter.ctrl.overrideDisplayType, 1)
 
+    '''
+    cmds.select(flexCtrl.ctrl.cv[1], flexCtrl.ctrl.cv[27], flexCtrl.ctrl.cv[36],
+                 flexCtrl.ctrl.cv[46], flexCtrl.ctrl.cv[54], r=True)
+    cmds.move(0, 3, 0,r=True, os=True, wd=True)
+
+    cmds.select(flexCtrl.ctrl.cv[22], flexCtrl.ctrl.cv[32], flexCtrl.ctrl.cv[41],
+                 flexCtrl.ctrl.cv[50], flexCtrl.ctrl.cv[61], r=True)
+    cmds.move(0, -1, 0,r=True, os=True, wd=True)
+    '''
+    
     return flexCenter
+
+
+
+
+
+'''
+
+
+'''
+def rig_autoFlexControl(name, shapeDriverLoc, shapes=[], flexLoc='flexShapes_LOC', **kwds):
+
+
+    return
+
+
+
+
+
+
+
+
 
 
 

@@ -4,6 +4,8 @@ __author__ = 'Jerry'
 import pymel.core as pm
 import maya.cmds as cmds
 
+from rutils.rig_utils import *
+
 def blendColors(objA, objB, objResult, name='', driverAttr='', attribute=''):
 	bldColor = pm.shadingNode('blendColors', asUtility=True,
 	                          name=name +'_blendColor')
@@ -112,6 +114,60 @@ def multDoubleLinear( in1, in2, out, name='multDoubleLinear#'):
 		print 'cannot find attribute ' + str(out)
 
 	return mdlNode
+
+def remapValueNode( inputValue, inputMin=0, inputMax=1, outputMin=0, outputMax=1, name='remapValue#', **kwds ):
+	valueinterp = defaultReturn(1, 'valueinterp', param=kwds) # 1 linear 2 smooth
+
+	remap = pm.shadingNode('remapValue', asUtility=True)
+	remapNode = pm.rename(remap, name+'_RMV')
+
+	try:
+		pm.connectAttr(inputValue, remapNode+'.inputValue', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.inputValue', inputValue )
+		except:
+			pass
+	try:
+		pm.connectAttr(inputMin, remapNode+'.inputMin', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.inputMin', inputMin )
+		except:
+			pass
+	try:
+		pm.connectAttr(inputMax, remapNode+'.inputMax', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.inputMax', inputMax )
+		except:
+			pass
+	try:
+		pm.connectAttr(outputMin, remapNode+'.outputMin', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.outputMin', outputMin )
+		except:
+			pass
+	try:
+		pm.connectAttr(outputMin, remapNode+'.outputMin', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.outputMin', outputMin )
+		except:
+			pass
+	try:
+		pm.connectAttr(outputMax, remapNode+'.outputMax', f=True)
+	except RuntimeError:
+		try:
+			pm.setAttr(remapNode+'.outputMax', outputMax )
+		except:
+			pass
+
+	pm.setAttr(remapNode+".value[0].value_Interp", valueinterp)
+	pm.setAttr(remapNode+".value[1].value_Interp", valueinterp)
+
+	return remapNode
 
 '''
 

@@ -185,8 +185,10 @@ def cyroFinish():
         pm.connectAttr( "global_CTRL.lodDisplay", cNode+'.secondTerm')
         pm.connectAttr( cNode+'.outColorR', hiDeltaMush[0]+'.envelope')
         
+
+    pm.setAttr("displayModulesToggleControl.flex", 0)
     # mid LOD
-    #cmds.setAttr("global_CTRL.lodDisplay", 1)
+    cmds.setAttr("global_CTRL.lodDisplay", 1)
 
 
 def cyroShoulderUpgrade(side='', ctrlSize=1):
@@ -417,8 +419,8 @@ def cryoBuildFacial():
     
 def setFlex(name, driver, shapes, parents, colour='red'):
     print 'setFlex start'
-    ctrl = rig_flexControl(name, driver, shapes=shapes, colour=colour)
-    if isinstance('', str):
+    ctrl, flexCtrl = rig_flexControl(name, driver, shapes=shapes, colour=colour)
+    if isinstance(parents, str):
         pm.parentConstraint( parents, ctrl.offset, mo=True)
     else:
         pm.pointConstraint(parents[0], parents[1], ctrl.offset, mo=True )
@@ -434,11 +436,50 @@ def cyroFlexControls():
     hyoidCtrl = setFlex('hyoid', 'hyoidShapeDriver_LOC', shapes=['hyoidIn_neck','hyoidOut_neck'],
                 parents=('jawJEnd_JNT', 'neckJA_JNT') )
     neckTense = setFlex('neckTense', 'neckTenseShapeDriver_LOC', shapes=['tenseOut_neck','tenseIn_neck'],
-                parents=('jawJEnd_JNT', 'neckJA_JNT'), colour='orange' )
+                parents=('jawJEnd_JNT', 'neckJA_JNT'), colour='yellow' )
     neckSwallow = setFlex('neckSwallow', 'neckSwallowShapeDriver_LOC', shapes=['swallowDown_neck','swallowUp_neck'],
                 parents='neckJC_JNT' )
     neckBulge = setFlex('neckBulge', 'neckBulgeShapeDriver_LOC', shapes=['bulgeOut_neck','bulgeIn_neck'],
-                parents='neckJB_JNT', colour='orange' )
+                parents='neckJB_JNT', colour='yellow' )
+
+    flexColour = 'white'
+    for side in ('l', 'r'):
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_bicepFlexor', side+'_upperArmFlexDriver_LOC', startEnd=(side+'_armJA_JNT',side+'_armLowerTwist2_JNT'), 
+            shapeDriven=side+'_upperFront_arm', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_armJA_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_brachiFlexor', side+'_lowerArmFlexDriver_LOC', startEnd=(side+'_armUpperTwist3_JNT',side+'_handJA_JNT'), 
+            shapeDriven=side+'_lower_arm', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_elbowJA_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_caudiFlexor', side+'_caudiFlexDriver_LOC', startEnd=(side+'_legJA_JNT','tailJI_JNT'), 
+            shapeDriven=side+'_caudofemoralis', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( 'tailJC_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_latsFlexor', side+'_latsFlexDriver_LOC', startEnd=('spineJD_JNT',side+'_armUpperTwist1_JNT'), 
+            shapeDriven=side+'_latissimus', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( 'spineJE_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_neckFlexor', side+'_neckFlexDriver_LOC', startEnd=(side+'_neckStartStretchy_JNT',side+'_neckEndStretchy_JNT'), 
+            shapeDriven=side+'_flex_neck', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_neckEndStretchy_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_hamstringFlexor', side+'_hamstringFlexDriver_LOC', startEnd=(side+'_hamstringStartStretchy_JNT',side+'_hamstringEndStretchy_JNT'), 
+            shapeDriven=side+'_upperBack_leg', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_hamstringEndStretchy_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_quadFlexor', side+'_quadFlexDriver_LOC', startEnd=(side+'_sartoriusStartStretchy_JNT',side+'_sartoriusEndStretchy_JNT'), 
+            shapeDriven=side+'_upperFront_leg', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_sartoriusEndStretchy_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_shinFlexor', side+'_shinFlexDriver_LOC', startEnd=(side+'_kneeJA_JNT',side+'_ankleTwist1_JNT'), 
+            shapeDriven=side+'_lowerFront_leg', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_kneeJA_JNT', ctrl.offset, mo=True)
+
+        ctrl, flexCtrl = rig_autoFlexControl(side+'_gastrocFlexor', side+'_gastrocFlexDriver_LOC', startEnd=(side+'_gastrocStartStretchy_JNT',side+'_gastrocEndStretchy_JNT'), 
+            shapeDriven=side+'_lowerBack_leg', flexLoc='flexShapes_LOC',module=flexModule, colour=flexColour)
+        pm.parentConstraint( side+'_gastrocEndStretchy_JNT', ctrl.offset, mo=True)
+
 
     pm.parent(hyoidCtrl.offset, neckTense.offset, neckSwallow.offset, neckBulge.offset, flexModule.controls )
 

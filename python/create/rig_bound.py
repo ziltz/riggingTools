@@ -4,6 +4,7 @@ __author__ = 'Jerry'
 
 from rutils.rig_object import rig_object
 from rutils.rig_utils import *
+from rutils.rig_joint import *
 from make.rig_controls import *
 from rutils.rig_transform import rig_transform
 from create.rig_skeleton import *
@@ -283,6 +284,10 @@ class bound(rig_object):
 			if layer.stripNamespace() not in 'defaultLayer':
 				pm.delete(layer)
 		
+		rootJoint = cmds.listRelatives('skeleton_GRP', typ='joint')[0]
+		listJoints = listSkeletonHierarchy(rootJoint)
+		rig_jointAssignLabel(listJoints)
+
 		cmds.dgdirty(allPlugs=True)
 		cmds.refresh()
 		

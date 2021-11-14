@@ -64,7 +64,7 @@ class bound(rig_object):
 			projectRoot = pm.workspace(q=True, rd=True) +'scenes/release/'
 			print ' project root '+projectRoot+' found'
 
-			modelPath = projectRoot+'model/'
+			modelPath = projectRoot+'model/'+self.character+'/'
 			if self.model is None:
 				fileList = []
 				os.chdir(modelPath)
@@ -73,6 +73,7 @@ class bound(rig_object):
 
 				fileList.sort()
 				latestFile = fileList[-1:][0]
+				print fileList
 				self.model = modelPath + latestFile
 			else:
 				self.model = modelPath + self.model + '.ma'
@@ -89,7 +90,7 @@ class bound(rig_object):
 			cmds.dgdirty(allPlugs=True)
 			cmds.refresh()
 			
-			skeletonPath = projectRoot + 'rigSkeleton/'
+			skeletonPath = projectRoot + 'rigSkeleton/'+self.character+'/'
 			if self.skeleton is None:
 				fileList = []
 				os.chdir(skeletonPath)

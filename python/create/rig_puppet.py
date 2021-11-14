@@ -1,6 +1,5 @@
 __author__ = 'Jerry'
-
-
+print 'Starting Puppet'
 
 from rutils.rig_object import rig_object
 from rutils.rig_utils import *

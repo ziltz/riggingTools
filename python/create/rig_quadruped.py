@@ -896,7 +896,7 @@ class rig_quadruped(object):
 
         pm.addAttr(quadShoulderControl.ctrl, longName='followArm',
                                at='float', k=True, min=0,
-                               max=10, defaultValue=5)
+                               max=10, defaultValue=3)
 
         pm.connectAttr( quadShoulderControl.ctrl.followArm, side+'_shoulder_CTRL.followArm'  )
 
@@ -1485,13 +1485,15 @@ class rig_quadruped(object):
                                  cd=module.top.ikFkSwitch,
                                  dv=0,
                                  v=1)
+        
+        '''
         elbowFk = fkCtrls[1]
         rotateAxis = ['rx', 'ry', 'rz']
         if self.elbowAxis in rotateAxis: rotateAxis.remove(self.elbowAxis)
         for at in rotateAxis:
             elbowFk.ctrl.attr(at).setKeyable(False)
             elbowFk.ctrl.attr(at).setLocked(True)
-
+        '''
         self.armControls['fk'] = fkCtrls
 
         self.connectIkFkSwitch(chains=[chainResult, chainIK, chainFK],
@@ -1529,7 +1531,8 @@ class rig_quadruped(object):
 
         rotateAxis.remove(axis)
 
-        skipAxis = rotateAxis + ['tx', 'ty','tz' ]
+        #skipAxis = rotateAxis + ['tx', 'ty','tz' ]
+        skipAxis =  ['tx', 'ty','tz' ]
 
         for finger in ( self.fngThumb, self.fngIndex, self.fngMid, self.fngRing,
                         self.fngPinky ):
@@ -1572,7 +1575,7 @@ class rig_quadruped(object):
                                lockHideAttrs=skipAxis)
 
                 # fk control
-                armControl = self.armControls['fingers'].ctrl
+                armControl = self.armControls['fing'].ctrl
                 if 'Thumb' in fng:
                     if pm.objExists(armControl.curlThumb):
                         for key in sc:
@@ -1662,10 +1665,16 @@ class rig_quadruped(object):
                             type='parentConstraint')
             '''
 
-    def leg (self, side='', ctrlSize=1.0):
-        name = side + '_leg'
+    def leg (self, side='', ctrlSize=1.0, **kwds):
+
+        self.prefix = defaultReturn('', 'prefix', param=kwds)
+        self.doRolls = defaultReturn(1, 'doRolls', param=kwds)
+
+        prefix = self.prefix
+
+        name = side + '_leg'+prefix
         if side == '':
-            name = 'leg'
+            name = 'leg'+prefix
 
         secColour = 'green'
         if side == 'r':
@@ -1699,23 +1708,23 @@ class rig_quadruped(object):
         ctrlSizeEight = [ctrlSize / 8.0, ctrlSize / 8.0, ctrlSize / 8.0]
         ctrlSize = [ctrlSize, ctrlSize, ctrlSize]
 
-        self.legTop = rig_transform(0, name=side + '_legTop',
+        self.legTop = rig_transform(0, name=name+'Top',
                                     target=leg, parent=module.parts).object
 
-        legSkeletonParts = rig_transform(0, name=side + '_legSkeletonParts',
+        legSkeletonParts = rig_transform(0, name=name+'SkeletonParts',
                                          parent=self.legTop).object
 
         # chain result
-        legResult = rig_transform(0, name=side + '_legResult', type='joint',
+        legResult = rig_transform(0, name=name+'Result', type='joint',
                                   target=leg, parent=legSkeletonParts,
                                   rotateOrder=2).object
-        kneeResult = rig_transform(0, name=side + '_kneeResult', type='joint',
+        kneeResult = rig_transform(0, name=side + '_knee'+prefix+'Result', type='joint',
                                     target=knee, rotateOrder=2).object
-        footResult = rig_transform(0, name=side + '_footResult', type='joint',
+        footResult = rig_transform(0, name=side + '_foot'+prefix+'Result', type='joint',
                                    target=foot, rotateOrder=2).object
-        footBResult = rig_transform(0, name=side + '_footBResult', type='joint',
+        footBResult = rig_transform(0, name=side + '_footB'+prefix+'Result', type='joint',
                                       target=footB, rotateOrder=2).object
-        toesResult = rig_transform(0, name=side + '_toesResult', type='joint',
+        toesResult = rig_transform(0, name=side + '_toes'+prefix+'Result', type='joint',
                                     target=toes, rotateOrder=2).object
 
         chainResult = [legResult, kneeResult, footResult, footBResult, toesResult]
@@ -1724,15 +1733,15 @@ class rig_quadruped(object):
         chainResult.reverse()
 
         # chain FK
-        legFK = rig_transform(0, name=side + '_legFK', type='joint', target=leg,
+        legFK = rig_transform(0, name=name+'FK', type='joint', target=leg,
                               parent=legSkeletonParts, rotateOrder=2).object
-        kneeFK = rig_transform(0, name=side + '_kneeFK', type='joint',
+        kneeFK = rig_transform(0, name=side + '_knee'+prefix+'FK', type='joint',
                                 target=knee, rotateOrder=2).object
-        footFK = rig_transform(0, name=side + '_footFK', type='joint', target=foot, rotateOrder=2
+        footFK = rig_transform(0, name=side + '_foot'+prefix+'FK', type='joint', target=foot, rotateOrder=2
         ).object
-        footBFK = rig_transform(0, name=side + '_footBFK', type='joint', target=footB, rotateOrder=2
+        footBFK = rig_transform(0, name=side + '_footB'+prefix+'FK', type='joint', target=footB, rotateOrder=2
         ).object
-        toesFK = rig_transform(0, name=side + '_toesFK', type='joint', target=toes, rotateOrder=2
+        toesFK = rig_transform(0, name=side + '_toes'+prefix+'FK', type='joint', target=toes, rotateOrder=2
         ).object
 
         chainFK = [legFK, kneeFK, footFK, footBFK, toesFK]
@@ -1741,15 +1750,15 @@ class rig_quadruped(object):
         chainFK.reverse()
 
         # chain IK
-        legIK = rig_transform(0, name=side + '_legIK', type='joint', target=leg,
+        legIK = rig_transform(0, name=name+'IK', type='joint', target=leg,
                               parent=legSkeletonParts, rotateOrder=2).object
-        kneeIK = rig_transform(0, name=side + '_kneeIK', type='joint',
+        kneeIK = rig_transform(0, name=side + '_knee'+prefix+'IK', type='joint',
                                 target=knee, rotateOrder=2).object
-        footIK = rig_transform(0, name=side + '_footIK', type='joint', target=foot, rotateOrder=2
+        footIK = rig_transform(0, name=side + '_foot'+prefix+'IK', type='joint', target=foot, rotateOrder=2
         ).object
-        footBIK = rig_transform(0, name=side + '_footBIK', type='joint', target=footB, rotateOrder=2
+        footBIK = rig_transform(0, name=side + '_footB'+prefix+'IK', type='joint', target=footB, rotateOrder=2
         ).object
-        toesIK = rig_transform(0, name=side + '_toesIK', type='joint', target=toes, rotateOrder=2
+        toesIK = rig_transform(0, name=side + '_toes'+prefix+'IK', type='joint', target=toes, rotateOrder=2
         ).object
 
         chainIK = [legIK, kneeIK, footIK, footBIK,toesIK]
@@ -1762,7 +1771,7 @@ class rig_quadruped(object):
         pm.parent(ik.handle, module.parts)
         pm.hide(ik.handle)
 
-        poleVector = rig_control(side=side, name='legPV', shape='box',
+        poleVector = rig_control(side=side, name='leg'+prefix+'PV', shape='box',
                                  modify=1, lockHideAttrs=['rx', 'ry', 'rz'],
                                  targetOffset=[leg, foot],
                                  parentOffset=module.controls, scale=ctrlSizeEight)
@@ -1802,7 +1811,7 @@ class rig_quadruped(object):
         print 'ik handle ' + ik.handle
 
         # ## MAKE FOOT CONTROL
-        footControl = rig_control(side=side, name='foot', shape='box', modify=2,
+        footControl = rig_control(side=side, name='foot'+prefix, shape='box', modify=2,
                                   parentOffset=module.controls, lockHideAttrs=['rx', 'ry', 'rz'], scale=ctrlSizeHalf,
                                   rotateOrder=2)
 
@@ -1825,10 +1834,10 @@ class rig_quadruped(object):
         self.legControls['foot'] = footControl
 
         # auto pole vector LOCATOR
-        autoPVOffset = rig_transform(0, name=side + '_autoLegPVOffset',
+        autoPVOffset = rig_transform(0, name=side + '_autoLeg'+prefix+'PVOffset',
                                      parent=module.parts, target=poleVector.con
         ).object
-        autoPVLoc = rig_transform(0, name=side + '_autoLegPV', type='locator',
+        autoPVLoc = rig_transform(0, name=side + '_autoLeg'+prefix+'PV', type='locator',
                                   parent=autoPVOffset, target=autoPVOffset).object
 
         #pm.parentConstraint(self.centerConnection, autoPVOffset, mo=True)
@@ -1843,7 +1852,7 @@ class rig_quadruped(object):
         rig_curveBetweenTwoPoints(poleVector.con, knee, name=name+'PV')
 
         # ## MAKE FOOT BALL CONTROL
-        footBallControl = rig_control(side=side, name='footBall', shape='box', modify=2,
+        footBallControl = rig_control(side=side, name='footBall'+prefix, shape='box', modify=2,
                                       parentOffset=module.controls, scale=ctrlSize2,
                                       rotateOrder=2, colour=secColour)
 
@@ -1883,7 +1892,7 @@ class rig_quadruped(object):
 
 
         ### MAKE FOOT TOES CONTROL
-        footToesControl = rig_control(side=side, name='footToes', shape='cylinder', modify=2,
+        footToesControl = rig_control(side=side, name='footToes'+prefix, shape='cylinder', modify=2,
                                       parentOffset=module.controls, scale=ctrlSizeQuarter,
                                       rotateOrder=2, colour=secColour)
 
@@ -1907,57 +1916,58 @@ class rig_quadruped(object):
         pm.parent( footControl.offset, footBallControl.con )
         
         ## MAKE FOOT ROLLS
-        pm.addAttr(footBallControl.ctrl, ln='ROLLS', at='enum',
-                   enumName='___________',
-                   k=True)
-        footBallControl.ctrl.ROLLS.setLocked(True)
-        rollTip = rig_transform(0, name=side + '_footRollTip',
-                                    parent=footBallControl.gimbal.ctrl,
-                                    target=side+'_footRollTip_LOC').object
-        rollHeel = rig_transform(0, name=side + '_footRollHeel',
-                            parent=rollTip,
-                            target=side + '_footRollHeel_LOC').object
-        rollIn = rig_transform(0, name=side + '_footRollIn',
-                             parent=rollHeel,
-                             target=side + '_footRollIn_LOC').object
-        rollOut = rig_transform(0, name=side + '_footRollOut',
-                               parent=rollIn,
-                               target=side + '_footRollOut_LOC').object
-        pm.parent( footBallControl.con, rollOut )
+        if self.doRolls:
+            pm.addAttr(footBallControl.ctrl, ln='ROLLS', at='enum',
+                       enumName='___________',
+                       k=True)
+            footBallControl.ctrl.ROLLS.setLocked(True)
+            rollTip = rig_transform(0, name=side + '_footRollTip'+prefix,
+                                        parent=footBallControl.gimbal.ctrl,
+                                        target=side+'_footRollTip'+prefix+'_LOC').object
+            rollHeel = rig_transform(0, name=side + '_footRollHeel'+prefix,
+                                parent=rollTip,
+                                target=side + '_footRollHeel'+prefix+'_LOC').object
+            rollIn = rig_transform(0, name=side + '_footRollIn'+prefix,
+                                 parent=rollHeel,
+                                 target=side + '_footRollIn'+prefix+'_LOC').object
+            rollOut = rig_transform(0, name=side + '_footRollOut'+prefix,
+                                   parent=rollIn,
+                                   target=side + '_footRollOut'+prefix+'_LOC').object
+            pm.parent( footBallControl.con, rollOut )
 
-        pm.delete(pm.ls(side+"_footRoll*_LOC"))
+            pm.delete(pm.ls(side+"_footRoll*_LOC"))
 
-        pm.addAttr(footBallControl.ctrl, longName='rollTip', at='float', k=True, min=0,
-                   max=10, dv=0)
-        pm.addAttr(footBallControl.ctrl, longName='rollHeel', at='float', k=True, min=0,
-                   max=10, dv=0)
-        pm.addAttr(footBallControl.ctrl, longName='rollIn', at='float', k=True, min=0,
-                   max=10, dv=0)
-        pm.addAttr(footBallControl.ctrl, longName='rollOut', at='float', k=True, min=0,
-                   max=10, dv=0)
+            pm.addAttr(footBallControl.ctrl, longName='rollTip', at='float', k=True, min=0,
+                       max=10, dv=0)
+            pm.addAttr(footBallControl.ctrl, longName='rollHeel', at='float', k=True, min=0,
+                       max=10, dv=0)
+            pm.addAttr(footBallControl.ctrl, longName='rollIn', at='float', k=True, min=0,
+                       max=10, dv=0)
+            pm.addAttr(footBallControl.ctrl, longName='rollOut', at='float', k=True, min=0,
+                       max=10, dv=0)
 
-        flipRoll = 1
-        if side == 'r':
-            flipRoll = -1
-        rig_animDrivenKey(footBallControl.ctrl.rollTip, (0, 10),
-                          rollTip+'.rotateX', (0, 90 ))
-        rig_animDrivenKey(footBallControl.ctrl.rollHeel, (0, 10),
-                          rollHeel+'.rotateX', (0, -90 ))
-        rig_animDrivenKey(footBallControl.ctrl.rollIn, (0, 10),
-                          rollIn+'.rotateZ', (0, 90*flipRoll ))
-        rig_animDrivenKey(footBallControl.ctrl.rollOut, (0, 10),
-                          rollOut + '.rotateZ', (0, -90*flipRoll ))
+            flipRoll = 1
+            if side == 'r':
+                flipRoll = -1
+            rig_animDrivenKey(footBallControl.ctrl.rollTip, (0, 10),
+                              rollTip+'.rotateX', (0, 90 ))
+            rig_animDrivenKey(footBallControl.ctrl.rollHeel, (0, 10),
+                              rollHeel+'.rotateX', (0, -90 ))
+            rig_animDrivenKey(footBallControl.ctrl.rollIn, (0, 10),
+                              rollIn+'.rotateZ', (0, 90*flipRoll ))
+            rig_animDrivenKey(footBallControl.ctrl.rollOut, (0, 10),
+                              rollOut + '.rotateZ', (0, -90*flipRoll ))
 
-        ## do foot roll with footBall and footToes modify
-        rig_animDrivenKey(footBallControl.ctrl.footRoll, (0,5, 10),
-                          footToesControl.modify[1] + '.rotateX', (0, 20,30 ))
-        #rig_animDrivenKey(footBallControl.ctrl.footRoll, (0, 5, 10),
-        #                  footToesControl.modify[1] + '.rotateX', (0, 0, 40 ))
+            ## do foot roll with footBall and footToes modify
+            rig_animDrivenKey(footBallControl.ctrl.footRoll, (0,5, 10),
+                              footToesControl.modify[1] + '.rotateX', (0, 20,30 ))
+            #rig_animDrivenKey(footBallControl.ctrl.footRoll, (0, 5, 10),
+            #                  footToesControl.modify[1] + '.rotateX', (0, 0, 40 ))
         
         
 
         # ## MAKE TOES CONTROL
-        toesControl = rig_control(side=side, name='toes', shape='pyramid', modify=1,
+        toesControl = rig_control(side=side, name='toes'+prefix, shape='pyramid', modify=1,
                                      parentOffset=module.controls, scale=ctrlSizeQuarter,
                                      rotateOrder=2, lockHideAttrs=['tx','ty','tz'])
 
@@ -1977,7 +1987,7 @@ class rig_quadruped(object):
         
 
         toesPos = pm.xform(toesControl.con, translation=True, query=True, ws=True)
-        endPos = pm.xform(side + '_toesJEnd_JNT', translation=True, query=True, ws=True)
+        endPos = pm.xform(side + '_toes'+prefix+'JEnd_JNT', translation=True, query=True, ws=True)
 
         toesLength = lengthVector(toesPos, endPos)
 
@@ -2004,16 +2014,16 @@ class rig_quadruped(object):
 
         # make reverse ankle ik setup
         pm.parent( footBIK, legSkeletonParts  )
-        footBReverseJnt = rig_transform(0, name=side + '_footBReverse', type='joint',
+        footBReverseJnt = rig_transform(0, name=side + '_footB'+prefix+'Reverse', type='joint',
                                 parent=legSkeletonParts, target=footBIK).object
-        ankleReverseJnt = rig_transform(0, name=side + '_ankleReverse', type='joint',
+        ankleReverseJnt = rig_transform(0, name=side + '_ankle'+prefix+'Reverse', type='joint',
                                 parent=legSkeletonParts, target = footIK).object
         pm.parent( ankleReverseJnt, footBReverseJnt )
-        ankleIK = rig_ik( side+'_ankle' ,footBReverseJnt, ankleReverseJnt, 'ikRPsolver' )
+        ankleIK = rig_ik( side+'_ankle'+prefix ,footBReverseJnt, ankleReverseJnt, 'ikRPsolver' )
         #pm.parent(ankleIK.handle, module.parts)
         pm.hide(ankleIK.handle)
         pm.parent(ankleIK.handle, footToesControl.con)
-        anklePV = rig_transform(0, name=side + '_anklePV', type='locator',
+        anklePV = rig_transform(0, name=side + '_anklePV'+prefix, type='locator',
                                 parent=module.parts, target=footBallControl.con).object
         pm.move(anklePV, [50, 0, 0],relative=True, objectSpace=True)
         pm.parentConstraint( footToesControl.con, anklePV, mo=True )
@@ -2025,9 +2035,9 @@ class rig_quadruped(object):
         pm.orientConstraint( ankleReverseJnt, footIK, mo=True )
 
         # make leg aim
-        legAimLoc = rig_transform(0, name=side + '_legFootAim', type='locator',
+        legAimLoc = rig_transform(0, name=name+'FootAim', type='locator',
                                     parent=module.parts).object
-        footAimLoc = rig_transform(0, name=side + '_footLegAim', type='locator',
+        footAimLoc = rig_transform(0, name=side + '_footLeg'+prefix+'Aim', type='locator',
                                 parent=module.parts).object
 
         pm.pointConstraint( self.legTop, legAimLoc  )
@@ -2036,7 +2046,7 @@ class rig_quadruped(object):
         pm.setAttr( footAimLoc+'.rotateZ', -90 )
         pm.setAttr(legAimLoc+'.rotateZ', -90)
 
-        legAimTop = mm.eval('rig_makePiston("'+legAimLoc+'", "'+footAimLoc+'", "'+side+'_legAim");')
+        legAimTop = mm.eval('rig_makePiston("'+legAimLoc+'", "'+footAimLoc+'", "'+name+'Aim");')
 
         #legAimMod = rig_transform(0, name=side + '_legFootAimModify', type='group',
          #                           parent=side+'_footLegAim_LOC', target=side+'_footLegAim_LOC').object
@@ -2046,9 +2056,9 @@ class rig_quadruped(object):
         pm.parent( legAimTop, module.parts )
 
         # make foot ankle aim
-        ankleAimLoc = rig_transform(0, name=side + '_ankleLegAim', type='locator',
+        ankleAimLoc = rig_transform(0, name=side + '_ankleLeg'+prefix+'Aim', type='locator',
                                 parent=module.parts).object
-        footBAimLoc = rig_transform(0, name=side + '_footBAim', type='locator',
+        footBAimLoc = rig_transform(0, name=side + '_footB'+prefix+'Aim', type='locator',
                                     parent=module.parts).object
 
         pm.parentConstraint( footIK, ankleAimLoc  )
@@ -2057,10 +2067,10 @@ class rig_quadruped(object):
         #pm.setAttr( footAimLoc+'.rotateZ', -90 )
         #pm.setAttr(legAimLoc+'.rotateZ', -90)
 
-        ankleAimTop = mm.eval('rig_makePiston("'+ankleAimLoc+'", "'+footBAimLoc+'", "'+side+'_ankleAim");')
+        ankleAimTop = mm.eval('rig_makePiston("'+ankleAimLoc+'", "'+footBAimLoc+'", "'+side+'_ankle'+prefix+'Aim");')
 
         pm.parent( ankleAimTop, module.parts )
-        pm.parentConstraint( side+'_ankleLegAim_JNT', footBIK, skipRotate=('x','y','z'), mo=True )
+        pm.parentConstraint( side+'_ankleLeg'+prefix+'Aim_JNT', footBIK, skipRotate=('x','y','z'), mo=True )
         pm.parentConstraint( footToesControl.con, footBIK, skipTranslate=('x','y','z'), mo=True )
 
         # make ankle bend
@@ -2085,15 +2095,15 @@ class rig_quadruped(object):
 
         
         '''
-        mm.eval('expression -o ("'+side+'_footLegAim_JNT") -s ("float $outputX = '+legDist_MD+'.outputX; float $degrees = 0;$degrees = -1*atand(1.0-$outputX);ry = $degrees*1.5;") -n ("'+side+'_legRotate_EXP") -ae 1 -uc all ;')
+        mm.eval('expression -o ("'+side+'_footLeg'+prefix+'Aim_JNT") -s ("float $outputX = '+legDist_MD+'.outputX; float $degrees = 0;$degrees = -1*atand(1.0-$outputX);ry = $degrees*1.5;") -n ("'+name+'Rotate_EXP") -ae 1 -uc all ;')
 
-        footOrientLoc = rig_transform(0, name=side+'_footOrient', type='locator',
-                                  parent=side+'_footLegAim_JNT', target=footControl.con).object
+        footOrientLoc = rig_transform(0, name=side+'_footOrient'+prefix, type='locator',
+                                  parent=side+'_footLeg'+prefix+'Aim_JNT', target=footControl.con).object
         pm.setAttr( footOrientLoc+'.tx', 0)
         pm.setAttr( footOrientLoc+'.ty', 0)
         pm.setAttr( footOrientLoc+'.tz', 0)
         con = pm.parentConstraint( footControl.offset, footOrientLoc, footControl.modify[0], mo=True )
-        pm.parentConstraint( side+'_legFootAim_JNT', side+'_footLegAim_JNT', autoPVOffset, mo=True )
+        pm.parentConstraint( name+'FootAim_JNT', side+'_footLeg'+prefix+'Aim_JNT', autoPVOffset, mo=True )
 
         
         # create ik stretchy and soft pop
@@ -2117,7 +2127,7 @@ class rig_quadruped(object):
 
         targets = con.getWeightAliasList()
         pm.connectAttr( footBallControl.ctrl.ankleStiffness, targets[0] )
-        connectReverse( name=side+'_ankleOrient_reverseNode#', input=(targets[0],0,0), output=(targets[1],0,0) )
+        connectReverse( name=name+'_ankleOrient_reverseNode#', input=(targets[0],0,0), output=(targets[1],0,0) )
 
         pm.connectAttr( footBallControl.ctrl.ikStretch, footControl.ctrl.ikStretch)
         pm.connectAttr( footBallControl.ctrl.midSlide, footControl.ctrl.midSlide)
@@ -2140,11 +2150,13 @@ class rig_quadruped(object):
                                  dv=0,
                                  v=1)
         kneeFk = fkCtrls[1]
+        '''
         rotateAxis = ['rx', 'ry', 'rz']
         if self.elbowAxis in rotateAxis: rotateAxis.remove(self.kneeAxis)
         for at in rotateAxis:
             kneeFk.ctrl.attr(at).setKeyable(False)
             kneeFk.ctrl.attr(at).setLocked(True)
+        '''
 
         self.legControls['fk'] = fkCtrls
 

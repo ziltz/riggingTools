@@ -77,14 +77,14 @@ def elephantRigModules():
 
         armModule = quad.arm(side, ctrlSize = 60)
 
-        #handModule = quad.hand(side, ctrlSize = 30)
+        handModule = quad.hand(side, ctrlSize = 30)
 
         shoulderModule = quad.shoulder(side, ctrlSize = 30)
 
         # make quadruped leg 
         legModule = quad.leg(side, ctrlSize = 70)
 
-        #toesModule = quad.foot(side, ctrlSize=7, baseLimit=1)
+        toesModule = quad.foot(side, ctrlSize=7, baseLimit=1)
 
         quad.connectLegPelvis()
 
@@ -105,6 +105,7 @@ def elephantRigModules():
                         numIKCtrls = 6, 
                         numFKCtrls = 6,  
                         ctrlSize = 15,
+                        makeLag = 0,
                         makeDynamic = 0 )
     trunk.make()
 

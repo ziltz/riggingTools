@@ -81,6 +81,7 @@ class rig_biped(object):
 		self.spineFullBodyCtrl = None
 		self.spineUpperCtrl = None
 		self.spineLowerCtrl = None
+		self.headCtrl = None
 
 		self.spineConnection = 'spineJF_JNT'
 		self.centerConnection = 'spineJA_JNT'
@@ -632,6 +633,7 @@ class rig_biped(object):
 		                          colour='yellow', parentOffset=module.controls, rotateOrder=2)
 		headControl.gimbal = createCtrlGimbal(headControl)
 		headControl.pivot = createCtrlPivot(headControl)
+		self.headCtrl = headControl
 
 
 		constrainObject(headControl.offset,

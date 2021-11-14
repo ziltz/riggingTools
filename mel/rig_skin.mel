@@ -1,7 +1,14 @@
 
+/*
 
 
 
+string $sel = `ls -sl`;
+source "/Users/jerry/Documents/dev/riggingTools/mel/rig_skin.mel";
+rig_copySkinWeights($sel[0], $sel[1]);
+
+
+*/
 global proc rig_copySkinWeights(string $source, string $destin[])
 {
 	for ($dest in $destin)

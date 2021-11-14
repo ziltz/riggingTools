@@ -2,7 +2,8 @@
 
 /*
 
-	
+source '/Users/jerry/Documents/dev/riggingTools/mel/rig_twistChain.mel';
+
 
 */
 global proc string[] rig_twistChain(string $name, string $start ,string $end, int $numJoints)
@@ -375,6 +376,34 @@ global proc rig_twistChainQuadruped()
 			parent ($endLoc+"Up") $offset;
 			parent $offset $upParent;
 			orientConstraint -mo -skip y -skip z ($side+"_footJB_JNT") $offset;
+
+			setAttr ($offset+".rotateOrder") 5; // zyx
+
+			parent $topGrp $twistGrp;
+
+		}
+
+		// wrist twist
+		if ( (`objExists ($side+"_handJA_JNT")`) && (`objExists ($side+"_handJB_JNT")`) )
+		{
+			string $startLoc = rig_stringFirst(`spaceLocator -n ($side+"_wristStartTwist_LOC")`);
+			string $endLoc = rig_stringFirst(`spaceLocator -n ($side+"_wristEndTwist_LOC")`);
+			delete`parentConstraint ($side+"_handJB_JNT") $startLoc`;
+			delete`orientConstraint  ($side+"_handJA_JNT") $startLoc`;
+			parentConstraint -mo ($side+"_handJA_JNT") $startLoc;
+			parentConstraint ($side+"_handJA_JNT") $endLoc;
+			string $topGrp = rig_stringFirst(rig_twistChain(($side+"_wrist"), $startLoc, $endLoc , 3 ));
+
+			delete`pointConstraint ($side+"_handJB_JNT") ($startLoc+"Up") `;
+			delete`pointConstraint ($side+"_handJB_JNT") ($endLoc+"Up") `;
+			orientConstraint -mo ($side+"_handJB_JNT") ($endLoc+"Up");
+
+			string $offset = `group -em -n ($endLoc+"UpOffset") `;
+			delete`parentConstraint ($side+"_handJB_JNT") $offset`;
+			string $upParent = rig_stringFirst(`listRelatives -p ($endLoc+"Up")`);
+			parent ($endLoc+"Up") $offset;
+			parent $offset $upParent;
+			orientConstraint -mo -skip y -skip z ($side+"_handJB_JNT") $offset;
 
 			setAttr ($offset+".rotateOrder") 5; // zyx
 
